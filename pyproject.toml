@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "worst_crm"
+version = "0.1.0"
+description = "WorstCRM is the worst CRM software."
+authors = ["Fabio Ghirardello"]
+readme = "README.md"
+packages = [{include = "worst_crm"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = {extras = ["all"], version = "^0.95.1"}
+python-jose = "^3.3.0"
+psycopg = "^3.1.8"
+psycopg-binary = "^3.1.8"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

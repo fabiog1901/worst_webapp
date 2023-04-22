@@ -1,1 +1,1 @@
-# worst-crm
+# WorstCRM
