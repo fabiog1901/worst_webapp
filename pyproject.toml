@@ -9,10 +9,11 @@ packages = [{include = "worst_crm"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = {extras = ["all"], version = "^0.95.1"}
-python-jose = "^3.3.0"
-psycopg = "^3.1.8"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+psycopg = {extras = ["pool"], version = "^3.1.8"}
 psycopg-binary = "^3.1.8"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
 
 
 [tool.poetry.group.dev.dependencies]
