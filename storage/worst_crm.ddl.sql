@@ -17,18 +17,22 @@ ALTER DATABASE worst_crm CONFIGURE ZONE USING
 CREATE TABLE accounts (
     account_id UUID NOT NULL DEFAULT gen_random_uuid(),
     account_name STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     description STRING,
     tags STRING [],
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     CONSTRAINT pk PRIMARY KEY (account_id)
 );
 
 CREATE TABLE projects (
     account_id UUID NOT NULL,
     project_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     description STRING,
     project_name STRING NOT NULL,
     status STRING,
     tags STRING [],
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     CONSTRAINT pk PRIMARY KEY (account_id, project_id),
     CONSTRAINT fk_accounts FOREIGN KEY (account_id) 
         REFERENCES accounts(account_id) ON DELETE CASCADE

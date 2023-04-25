@@ -1,5 +1,9 @@
+from typing import Any
 from psycopg_pool import ConnectionPool
+from psycopg import Cursor
+
 from uuid import UUID
+from pydantic import BaseModel
 
 from worst_crm.models import NewAccount, Account, NewProject, Project, NewNote, Note, NewTask, Task
 from worst_crm.models import User, UserInDB
@@ -61,23 +65,27 @@ def delete_user(username: str) -> bool:
 
 
 # ACCOUNTS
+ACCOUNTS_COLS = "account_id, account_name, created_at, updated_at, description, tags"
 def get_all_accounts() -> list[Account]:
 
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
-                select account_id, account_name, description, tags
+                f"""
+                select {ACCOUNTS_COLS}
                 from accounts
                 order by account_name
                 """,
                 ())
 
+            return ret_obj(Account, cur, True) # type: ignore
+        
             rs = cur.fetchall()
-
-            if rs:
-                return [Account(**{k: r[i] for i, k in enumerate(sorted(Account.__fields__.keys()))})
-                        for r in rs]
+            
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+            
+                return [Account(**{k: r[i] for i, k in enumerate(col_names) }) for r in rs]
 
     return []
 
@@ -87,17 +95,20 @@ def get_account(account_id: UUID) -> Account | None:
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
-                select account_id, account_name, description, tags
+                f"""
+                select {ACCOUNTS_COLS} 
                 from accounts 
                 where account_id = %s
                 """,
                 (account_id, ))
 
+            return ret_obj(Account, cur) 
+        
             rs = cur.fetchone()
 
-            if rs:
-                return Account(**{k: rs[i] for i, k in enumerate(sorted(Account.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -118,8 +129,9 @@ def create_account(new_account: NewAccount) -> Account | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Account(**{k: rs[i] for i, k in enumerate(sorted(Account.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -149,8 +161,9 @@ def update_account(account_id: UUID, account: NewAccount) -> Account | None:
 
                 rs = cur.fetchone()
 
-                if rs:
-                    return Account(**{k: rs[i] for i, k in enumerate(sorted(Account.__fields__.keys()))})
+                if cur.description and rs:
+                    col_names = [desc[0] for desc in cur.description]
+                    return Account(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -169,8 +182,9 @@ def delete_account(account_id: UUID) -> Account | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Account(**{k: rs[i] for i, k in enumerate(sorted(Account.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -190,9 +204,9 @@ def get_all_projects(account_id: UUID) -> list[Project]:
 
             rs = cur.fetchall()
 
-            if rs:
-                return [Project(**{k: r[i] for i, k in enumerate(sorted(Project.__fields__.keys()))})
-                        for r in rs]
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return [Project(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
 
     return []
 
@@ -211,8 +225,9 @@ def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Project(**{k: rs[i] for i, k in enumerate(sorted(Project.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -234,8 +249,9 @@ def create_project(account_id: UUID, new_project: NewProject) -> Project | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Project(**{k: rs[i] for i, k in enumerate(sorted(Project.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -267,8 +283,9 @@ def update_project(account_id: UUID, project_id: UUID, project: NewProject) -> P
 
                 rs = cur.fetchone()
 
-                if rs:
-                    return Project(**{k: rs[i] for i, k in enumerate(sorted(Project.__fields__.keys()))})
+                if cur.description and rs:
+                    col_names = [desc[0] for desc in cur.description]
+                    return Project(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -287,8 +304,9 @@ def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Project(**{k: rs[i] for i, k in enumerate(sorted(Project.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -308,9 +326,9 @@ def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
 
             rs = cur.fetchall()
 
-            if rs:
-                return [Note(**{k: r[i] for i, k in enumerate(sorted(Note.__fields__.keys()))})
-                        for r in rs]
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return [Note(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
 
     return []
 
@@ -329,8 +347,9 @@ def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Note(**{k: rs[i] for i, k in enumerate(sorted(Note.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -354,8 +373,9 @@ def create_note(account_id: UUID, project_id: UUID, new_note: NewNote) -> Note |
 
             print(rs)
             
-            if rs:  
-                return Note(**{k: rs[i] for i, k in enumerate(sorted(Note.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -386,8 +406,9 @@ def update_note(account_id: UUID, project_id: UUID, note_id: int, note: NewNote)
 
                 rs = cur.fetchone()
 
-                if rs:
-                    return Note(**{k: rs[i] for i, k in enumerate(sorted(Note.__fields__.keys()))})
+                if cur.description and rs:
+                    col_names = [desc[0] for desc in cur.description]
+                    return Note(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -406,8 +427,9 @@ def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None
 
             rs = cur.fetchone()
 
-            if rs:
-                return Note(**{k: rs[i] for i, k in enumerate(sorted(Note.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -429,9 +451,9 @@ def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
 
             rs = cur.fetchall()
 
-            if rs:
-                return [Task(**{k: r[i] for i, k in enumerate(sorted(Task.__fields__.keys()))})
-                        for r in rs]
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return [Task(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
 
     return []
 
@@ -450,8 +472,9 @@ def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
 
             rs = cur.fetchone()
 
-            if rs:
-                return Task(**{k: rs[i] for i, k in enumerate(sorted(Task.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -475,8 +498,9 @@ def create_task(account_id: UUID, project_id: UUID, new_task: NewTask) -> Task |
 
             print(rs)
             
-            if rs:  
-                return Task(**{k: rs[i] for i, k in enumerate(sorted(Task.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -508,8 +532,9 @@ def update_task(account_id: UUID, project_id: UUID, task_id: int, task: NewTask)
 
                 rs = cur.fetchone()
 
-                if rs:
-                    return Task(**{k: rs[i] for i, k in enumerate(sorted(Task.__fields__.keys()))})
+                if cur.description and rs:
+                    col_names = [desc[0] for desc in cur.description]
+                    return Task(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
 
@@ -528,7 +553,29 @@ def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None
 
             rs = cur.fetchone()
 
-            if rs:
-                return Task(**{k: rs[i] for i, k in enumerate(sorted(Task.__fields__.keys()))})
+            if cur.description and rs:
+                col_names = [desc[0] for desc in cur.description]
+                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
 
     return None
+
+def ret_obj(obj, cur: Cursor, is_list: bool = False) -> Any:
+
+    if is_list:
+        rs = cur.fetchall()
+        
+        if cur.description and rs:
+            col_names = [desc[0] for desc in cur.description]
+            
+            return [obj(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
+
+        return []
+    
+    rs = cur.fetchone()
+
+    if cur.description and rs:
+        col_names = [desc[0] for desc in cur.description]
+        
+        return obj(**{k: rs[i] for i, k in enumerate(col_names)})
+
+    return None 

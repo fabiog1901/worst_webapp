@@ -45,7 +45,7 @@ def get_password_hash(password: str) -> str:
 
 
 def authenticate_user(username: str, password: str):
-    user: UserInDB = get_user(username)
+    user: UserInDB | None = get_user(username)
 
     if not user:
         return False
@@ -86,7 +86,7 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str | None = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_scopes = payload.get("scopes", [])
@@ -94,7 +94,7 @@ async def get_current_user(
     except (JWTError, ValidationError):
         raise credentials_exception
 
-    user = get_user(token_data.username)
+    user: UserInDB | None = get_user(token_data.username)
     
     if user is None:
         raise credentials_exception

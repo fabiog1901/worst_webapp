@@ -21,7 +21,8 @@ class NewAccount(BaseModel):
 
 class Account(NewAccount):
     account_id: UUID
-    
+    created_at: dt.datetime
+    updated_at: dt.datetime
 
 class NewProject(BaseModel):
     project_name: str
@@ -32,6 +33,8 @@ class NewProject(BaseModel):
 class Project(NewProject):
     account_id: UUID
     project_id: UUID
+    created_at: dt.datetime
+    updated_at: dt.datetime
 
 
 class NewNote(BaseModel):
