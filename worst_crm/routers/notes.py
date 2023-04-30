@@ -26,9 +26,9 @@ async def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | N
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])
 @router.post("/{account_id}/{project_id}")
-async def create_Note(account_id: UUID, project_id: UUID, new_note: NewNote) -> Note | None:
+async def create_Note(account_id: UUID, project_id: UUID, note: NewNote) -> Note | None:
 
-    return db.create_note(account_id, project_id, new_note)
+    return db.create_note(account_id, project_id, note)
 
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])

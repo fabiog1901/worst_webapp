@@ -1,139 +1,163 @@
 from typing import Any
 from psycopg_pool import ConnectionPool
-from psycopg import Cursor
+from pydantic import PyObject
+import os
 
 from uuid import UUID
-from pydantic import BaseModel
 
 from worst_crm.models import NewAccount, Account, NewProject, Project, NewNote, Note, NewTask, Task
-from worst_crm.models import User, UserInDB
+from worst_crm.models import User, UserInDB, UpdatedUserInDB
+from dotenv import load_dotenv
 
+load_dotenv()
 
-dburl = 'postgres://root@localhost:26257/worst_crm?sslmode=disable'
+DBURL = os.getenv('DBURL')
+
+if not DBURL:
+    raise EnvironmentError("DBURL env variable not found!")
 
 # the pool starts connecting immediately.
-pool = ConnectionPool(dburl, kwargs={'autocommit': True})
-
-# ADMIN
-def get_user(username: str) -> UserInDB | None:
-
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                select username, full_name, email, hashed_password, is_disabled, scopes 
-                from users 
-                where username = %s
-                """,
-                (username, ))
-
-            rs = cur.fetchone()
-
-            if rs is not None:
-
-                return UserInDB(
-                    username=rs[0],
-                    full_name=rs[1],
-                    email=rs[2],
-                    hashed_password=rs[3],
-                    is_disabled=rs[4],
-                    scopes=rs[5]
-                )
-
-    return None
+pool = ConnectionPool(DBURL, kwargs={'autocommit': True})
 
 
-def create_user(user: UserInDB) -> bool:
-    if user.username not in fake_users_db:
-        fake_users_db[user.username] = user
-        return True
-    return False
+def get_fields(model) -> str:
+    return ', '.join([x for x in model.__fields__.keys()])
 
 
-def update_user(user: UserInDB) -> bool:
-    if user.username in fake_users_db:
-        fake_users_db[user.username] = user
-        return True
-    return False
+def get_placeholders(model) -> str:
+    return ('%s, ' * len(tuple(model.__fields__.keys())))[:-2]
 
 
-def delete_user(username: str) -> bool:
-    if username in fake_users_db:
-        del fake_users_db[username]
-        return True
-    return False
+# ADMIN/USERS
+USERS_COLS = get_fields(User)
+USERINDB_COLS = get_fields(UserInDB)
+USERINDB_PLACEHOLDERS = get_placeholders(UserInDB)
+
+
+def get_all_users() -> list[User]:
+
+    return execute_stmt(
+        f"""
+        select {USERS_COLS} 
+        from users
+        order by full_name
+        """,
+        (),
+        User, True)
+
+
+def get_user_with_hash(user_id: str) -> UserInDB | None:
+
+    return execute_stmt(
+        f"""
+        select {USERINDB_COLS}
+        from users 
+        where user_id = %s
+        """,
+        (user_id, ),
+        UserInDB)
+
+
+def get_user(user_id: str) -> User | None:
+
+    return execute_stmt(
+        f"""
+        select {USERS_COLS}
+        from users 
+        where user_id = %s
+        """,
+        (user_id, ),
+        User)
+
+
+def create_user(user: UserInDB) -> User | None:
+
+    return execute_stmt(
+        f"""
+        insert into users 
+            ({USERINDB_COLS})
+        values
+            ({USERINDB_PLACEHOLDERS})
+        returning {USERS_COLS}
+        """,
+        tuple(user.dict().values()),
+        User)
+
+
+def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
+
+    old_uid = get_user_with_hash(user_id)
+
+    if old_uid:
+        update_data = user.dict(exclude_unset=True)
+
+        new_uid = old_uid.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            update users set 
+            ({USERINDB_COLS}) = 
+                ({USERINDB_PLACEHOLDERS})
+            where user_id  = %s
+            returning {USERS_COLS}
+            """,
+            (*tuple(new_uid.dict().values()), user_id),
+            User)
+
+
+def delete_user(user_id: str) -> User | None:
+
+    return execute_stmt(
+        f"""
+        delete from users
+        where user_id = %s
+        returning {USERS_COLS}
+        """,
+        (user_id, ),
+        User)
 
 
 # ACCOUNTS
-ACCOUNTS_COLS = "account_id, account_name, created_at, updated_at, description, tags"
+NEWACCOUNT_COLS = get_fields(NewAccount)
+NEWACCOUNT_PLACEHOLDERS = get_placeholders(NewAccount)
+ACCOUNTS_COLS = get_fields(Account)
+
+
 def get_all_accounts() -> list[Account]:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                select {ACCOUNTS_COLS}
-                from accounts
-                order by account_name
-                """,
-                ())
-
-            return ret_obj(Account, cur, True) # type: ignore
-        
-            rs = cur.fetchall()
-            
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-            
-                return [Account(**{k: r[i] for i, k in enumerate(col_names) }) for r in rs]
-
-    return []
+    return execute_stmt(
+        f"""
+        select {ACCOUNTS_COLS}
+        from accounts
+        order by account_name
+        """,
+        (),
+        Account, True)
 
 
 def get_account(account_id: UUID) -> Account | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                select {ACCOUNTS_COLS} 
-                from accounts 
-                where account_id = %s
-                """,
-                (account_id, ))
-
-            return ret_obj(Account, cur) 
-        
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        select {ACCOUNTS_COLS} 
+        from accounts 
+        where account_id = %s
+        """,
+        (account_id, ),
+        Account)
 
 
 def create_account(new_account: NewAccount) -> Account | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                insert into accounts (account_name, description, tags)
-                values
-                (%s, %s, %s)
-                returning account_id, account_name, description, tags
-                """,
-                (new_account.account_name, new_account.description, new_account.tags)
-            )
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        insert into accounts ({NEWACCOUNT_COLS})
+        values
+        ({NEWACCOUNT_PLACEHOLDERS})
+        returning {ACCOUNTS_COLS}
+        """,
+        tuple(new_account.dict().values()),
+        Account)
 
 
 def update_account(account_id: UUID, account: NewAccount) -> Account | None:
@@ -141,119 +165,77 @@ def update_account(account_id: UUID, account: NewAccount) -> Account | None:
     old_acc = get_account(account_id)
 
     if old_acc:
-
+        old_acc = NewAccount(**old_acc.dict())
         update_data = account.dict(exclude_unset=True)
-
         new_acc = old_acc.copy(update=update_data)
 
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    update accounts set 
-                    account_name = %s,
-                    description  = %s,
-                    tags = %s
-                    where account_id  = %s
-                    returning account_id, account_name, description, tags
-                    """,
-                    (new_acc.account_name, new_acc.description, new_acc.tags, account_id))
-
-                rs = cur.fetchone()
-
-                if cur.description and rs:
-                    col_names = [desc[0] for desc in cur.description]
-                    return Account(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+        return execute_stmt(
+            f"""
+            update accounts set 
+                ({NEWACCOUNT_COLS}) = ({NEWACCOUNT_PLACEHOLDERS})
+            where account_id = %s
+            returning {ACCOUNTS_COLS}
+            """,
+            (*tuple(new_acc.dict().values()), account_id),
+            Account)
 
 
 def delete_account(account_id: UUID) -> Account | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                delete from accounts
-                where account_id = %s
-                returning account_id, account_name, description, tags
-                """,
-                (account_id, ))
+    return execute_stmt(
+        f"""
+        delete from accounts
+        where account_id = %s
+        returning {ACCOUNTS_COLS}
+        """,
+        (account_id, ),
+        Account)
 
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Account(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
 
 # PROJECTS
+PROJECTS_COLS = get_fields(Project)
+NEWPROJECT_COLS = get_fields(NewProject)
+NEWPROJECT_PLACEHOLODERS = get_placeholders(NewProject)
+
+
 def get_all_projects(account_id: UUID) -> list[Project]:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                select account_id, description, project_id, project_name, status, tags
-                from projects
-                where account_id = %s
-                order by project_name
-                """,
-                (account_id, ))
-
-            rs = cur.fetchall()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return [Project(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
-
-    return []
+    return execute_stmt(
+        f"""
+        select {PROJECTS_COLS}
+        from projects
+        where account_id = %s
+        order by project_name
+        """,
+        (account_id, ),
+        Project, True)
 
 
 def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                select account_id, description, project_id, project_name, status, tags
-                from projects 
-                where (account_id, project_id) = (%s, %s)
-                """,
-                (account_id, project_id))
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        select {PROJECTS_COLS}
+        from projects 
+        where (account_id, project_id) = (%s, %s)
+        """,
+        (account_id, project_id),
+        Project)
 
 
 def create_project(account_id: UUID, new_project: NewProject) -> Project | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                insert into projects (account_id, project_name, description, status, tags)
-                values
-                (%s, %s, %s, %s, %s)
-                returning account_id, description, project_id, project_name, status, tags
-                """,
-                (account_id, new_project.project_name,
-                 new_project.description, new_project.status, new_project.tags)
-            )
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        insert into projects 
+            ({NEWPROJECT_COLS}, account_id)
+        values
+            ({NEWPROJECT_PLACEHOLODERS}, %s)
+        returning {PROJECTS_COLS}
+        """,
+        (*tuple(new_project.dict().values()), account_id),
+        Project
+    )
 
 
 def update_project(account_id: UUID, project_id: UUID, project: NewProject) -> Project | None:
@@ -261,123 +243,76 @@ def update_project(account_id: UUID, project_id: UUID, project: NewProject) -> P
     old_proj = get_project(account_id, project_id)
 
     if old_proj:
-
+        old_proj = NewProject(**old_proj.dict())
         update_data = project.dict(exclude_unset=True)
-
         new_proj = old_proj.copy(update=update_data)
 
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    update projects set 
-                    project_name = %s,
-                    description  = %s,
-                    status = %s,
-                    tags = %s
-                    where (account_id, project_id) = (%s, %s)
-                    returning account_id, description, project_id, project_name, status, tags
-                    """,
-                    (new_proj.project_name, new_proj.description, new_proj.status, new_proj.tags, account_id,
-                     project_id))
-
-                rs = cur.fetchone()
-
-                if cur.description and rs:
-                    col_names = [desc[0] for desc in cur.description]
-                    return Project(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+        return execute_stmt(
+            f"""
+            update projects set 
+                ({NEWPROJECT_COLS}) = ({NEWPROJECT_PLACEHOLODERS})
+            where (account_id, project_id) = (%s, %s)
+            returning {PROJECTS_COLS}
+            """,
+            (*tuple(new_proj.dict().values()), account_id, project_id),
+            Project)
 
 
 def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                delete from projects
-                where (account_id, project_id) = (%s, %s)
-                returning account_id, description, project_id, project_name, status, tags
-                """,
-                (account_id, project_id))
+    return execute_stmt(
+        f"""
+        delete from projects
+        where (account_id, project_id) = (%s, %s)
+        returning {PROJECTS_COLS}
+        """,
+        (account_id, project_id),
+        Project)
 
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Project(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
 
 # NOTES
+NOTES_COLS = get_fields(Note)
+NEWNOTE_COLS = get_fields(NewNote)
+NEWNOTE_PLACEHOLDERS = get_placeholders(NewNote)
+
+
 def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                select account_id, content, note_id, note_name, project_id, tags, updated_at
-                from notes
-                where (account_id, project_id) =  (%s, %s)
-                order by note_id desc
-                """,
-                (account_id, project_id))
-
-            rs = cur.fetchall()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return [Note(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
-
-    return []
+    return execute_stmt(
+        f"""
+        select {NOTES_COLS} 
+        from notes
+        where (account_id, project_id) =  (%s, %s)
+        order by note_id desc
+        """,
+        (account_id, project_id),
+        Note, True)
 
 
 def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                select account_id, content, note_id, note_name, project_id, tags, updated_at
-                from notes 
-                where (account_id, project_id, note_id) = (%s, %s, %s)
-                """,
-                (account_id, project_id, note_id))
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        select {NOTES_COLS}
+        from notes 
+        where (account_id, project_id, note_id) = (%s, %s, %s)
+        """,
+        (account_id, project_id, note_id),
+        Note)
 
 
 def create_note(account_id: UUID, project_id: UUID, new_note: NewNote) -> Note | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                insert into notes (account_id, project_id, note_name, content, tags)
-                values
-                (%s, %s, %s, %s, %s)
-                returning account_id, content, note_id, note_name, project_id, tags, updated_at
-                """,
-                (account_id, project_id, new_note.note_name,
-                 new_note.content, new_note.tags)
-            )
-
-            rs = cur.fetchone()
-
-            print(rs)
-            
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        insert into notes 
+            ({NEWNOTE_COLS}, account_id, project_id)
+        values
+            ({NEWNOTE_PLACEHOLDERS}, %s, %s)
+        returning {NOTES_COLS}
+        """,
+        (*tuple(new_note.dict().values()), account_id, project_id),
+        Note)
 
 
 def update_note(account_id: UUID, project_id: UUID, note_id: int, note: NewNote) -> Note | None:
@@ -385,124 +320,77 @@ def update_note(account_id: UUID, project_id: UUID, note_id: int, note: NewNote)
     old_note = get_note(account_id, project_id, note_id)
 
     if old_note:
-
+        old_note = NewNote(**old_note.dict())
         update_data = note.dict(exclude_unset=True)
-
         new_note = old_note.copy(update=update_data)
 
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    update notes set 
-                    note_name = %s,
-                    content  = %s,
-                    tags = %s
-                    where (account_id, project_id, note_id) = (%s, %s, %s)
-                    returning account_id, content, note_id, note_name, project_id, tags, updated_at
-                    """,
-                    (new_note.note_name, new_note.content, new_note.tags, account_id, project_id,
-                     note_id))
-
-                rs = cur.fetchone()
-
-                if cur.description and rs:
-                    col_names = [desc[0] for desc in cur.description]
-                    return Note(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+        return execute_stmt(
+            f"""
+            update notes set 
+                ({NEWNOTE_COLS}) = ({NEWNOTE_PLACEHOLDERS})
+            where (account_id, project_id, note_id) = (%s, %s, %s)
+            returning {NOTES_COLS}
+            """,
+            (*tuple(new_note.dict().values()),
+                account_id, project_id, note_id),
+            Note)
 
 
 def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                delete from notes
-                where (account_id, project_id, note_id) = (%s, %s, %s)
-                returning account_id, content, note_id, note_name, project_id, tags, updated_at
-                """,
-                (account_id, project_id, note_id))
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Note(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        delete from notes
+        where (account_id, project_id, note_id) = (%s, %s, %s)
+        returning {NOTES_COLS}
+        """,
+        (account_id, project_id, note_id),
+        Note)
 
 
 # TASKS
-TASKS_COLS = "account_id, content, project_id, tags, task_id, task_name, task_status, updated_at"
+TASKS_COLS = get_fields(Task)
+NEWTASK_COLS = get_fields(NewTask)
+NEWTASK_PLACEHOLDERS = get_placeholders(NewTask)
+
+
 def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                select {TASKS_COLS}
-                from tasks
-                where (account_id, project_id) =  (%s, %s)
-                order by task_id desc
-                """,
-                (account_id, project_id))
-
-            rs = cur.fetchall()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return [Task(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
-
-    return []
+    return execute_stmt(
+        f"""
+        select {TASKS_COLS}
+        from tasks
+        where (account_id, project_id) =  (%s, %s)
+        order by task_id desc
+        """,
+        (account_id, project_id),
+        Task, True)
 
 
 def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                select {TASKS_COLS}
-                from tasks 
-                where (account_id, project_id, task_id) = (%s, %s, %s)
-                """,
-                (account_id, project_id, task_id))
-
-            rs = cur.fetchone()
-
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        select {TASKS_COLS}
+        from tasks 
+        where (account_id, project_id, task_id) = (%s, %s, %s)
+        """,
+        (account_id, project_id, task_id),
+        Task)
 
 
 def create_task(account_id: UUID, project_id: UUID, new_task: NewTask) -> Task | None:
 
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                insert into tasks (account_id, project_id, task_name, content, task_status, tags)
-                values
-                (%s, %s, %s, %s, %s, %s)
-                returning {TASKS_COLS}
-                """,
-                (account_id, project_id, new_task.task_name, new_task.content,
-                 new_task.task_status, new_task.tags)
-            )
-
-            rs = cur.fetchone()
-
-            print(rs)
-            
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+    return execute_stmt(
+        f"""
+        insert into tasks 
+            ({NEWTASK_COLS}, account_id, project_id)
+        values
+            ({NEWTASK_PLACEHOLDERS}, %s, %s)
+        returning {TASKS_COLS}
+        """,
+        (*tuple(new_task.dict().values()), account_id, project_id),
+        Task)
 
 
 def update_task(account_id: UUID, project_id: UUID, task_id: int, task: NewTask) -> Task | None:
@@ -510,72 +398,55 @@ def update_task(account_id: UUID, project_id: UUID, task_id: int, task: NewTask)
     old_task = get_task(account_id, project_id, task_id)
 
     if old_task:
-
+        old_task = NewTask(**old_task.dict())
         update_data = task.dict(exclude_unset=True)
-
         new_task = old_task.copy(update=update_data)
 
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    f"""
-                    update tasks set 
-                    task_name = %s,
-                    task_status = %s,
-                    content  = %s,
-                    tags = %s
-                    where (account_id, project_id, task_id) = (%s, %s, %s)
-                    returning {TASKS_COLS}
-                    """,
-                    (new_task.task_name, new_task.task_status, new_task.content, new_task.tags, account_id, project_id,
-                     task_id))
-
-                rs = cur.fetchone()
-
-                if cur.description and rs:
-                    col_names = [desc[0] for desc in cur.description]
-                    return Task(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None
+        return execute_stmt(
+            f"""
+            update tasks set 
+                ({NEWTASK_COLS}) = ({NEWTASK_PLACEHOLDERS})
+            where (account_id, project_id, task_id) = (%s, %s, %s)
+            returning {TASKS_COLS}
+            """,
+            (*tuple(new_task.dict().values()),
+                account_id, project_id, task_id),
+            Task)
 
 
 def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
 
+    return execute_stmt(
+        f"""
+        delete from tasks
+        where (account_id, project_id, task_id) = (%s, %s, %s)
+        returning {TASKS_COLS}
+        """,
+        (account_id, project_id, task_id),
+        Task)
+
+
+def execute_stmt(stmt: str, args: tuple, model: PyObject, is_list: bool = False) -> Any:
+
+    def get_col_names():
+        if not cur.description:
+            raise ValueError("Couldn't fetch column names from ResultSet")
+
+        return [desc[0] for desc in cur.description]
+
     with pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                delete from tasks
-                where (account_id, project_id, task_id) = (%s, %s, %s)
-                returning {TASKS_COLS}
-                """,
-                (account_id, project_id, task_id))
 
-            rs = cur.fetchone()
+            if is_list:
+                rsl = cur.execute(stmt, args).fetchall()  # type: ignore
 
-            if cur.description and rs:
-                col_names = [desc[0] for desc in cur.description]
-                return Task(**{k: rs[i] for i, k in enumerate(col_names)})
+                col_names = get_col_names()
+                return [model(**{k: rs[i] for i, k in enumerate(col_names)}) for rs in rsl]
 
-    return None
+            else:
+                rs = cur.execute(stmt, args).fetchone()  # type: ignore
 
-def ret_obj(obj, cur: Cursor, is_list: bool = False) -> Any:
-
-    if is_list:
-        rs = cur.fetchall()
-        
-        if cur.description and rs:
-            col_names = [desc[0] for desc in cur.description]
-            
-            return [obj(**{k: r[i] for i, k in enumerate(col_names)}) for r in rs]
-
-        return []
-    
-    rs = cur.fetchone()
-
-    if cur.description and rs:
-        col_names = [desc[0] for desc in cur.description]
-        
-        return obj(**{k: rs[i] for i, k in enumerate(col_names)})
-
-    return None 
+                if rs:
+                    return model(**{k: rs[i] for i, k in enumerate(get_col_names())})
+                else:
+                    return None

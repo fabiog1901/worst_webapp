@@ -66,13 +66,13 @@ CREATE TABLE tasks (
 );
 
 CREATE TABLE users (
-    username string not null,
+    user_id string not null,
     full_name string,
     email string,
     hashed_password string,
     is_disabled bool,
     scopes string[],
-    CONSTRAINT pk PRIMARY KEY (username)
+    CONSTRAINT pk PRIMARY KEY (user_id)
 );
 
 INSERT INTO accounts
@@ -84,7 +84,7 @@ INSERT INTO accounts
 ;
 
 INSERT INTO users 
-    (username, full_name, email, hashed_password, is_disabled, scopes)
+    (user_id, full_name, email, hashed_password, is_disabled, scopes)
     VALUES 
     ('admin', 'admin', 'admin', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
         False, ARRAY['admin', 'rw']),

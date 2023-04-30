@@ -26,9 +26,9 @@ async def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | N
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])
 @router.post("/{account_id}/{project_id}")
-async def create_Task(account_id: UUID, project_id: UUID, new_task: NewTask) -> Task | None:
+async def create_Task(account_id: UUID, project_id: UUID, task: NewTask) -> Task | None:
 
-    return db.create_task(account_id, project_id, new_task)
+    return db.create_task(account_id, project_id, task)
 
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])

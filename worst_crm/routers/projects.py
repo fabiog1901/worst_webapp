@@ -27,9 +27,9 @@ async def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])
 @router.post("/{account_id}")
-async def create_Project(account_id: UUID, new_project: NewProject) -> Project | None:
+async def create_Project(account_id: UUID, project: NewProject) -> Project | None:
 
-    return db.create_project(account_id, new_project)
+    return db.create_project(account_id, project)
 
 
 # , dependencies=[Security(get_current_active_user, scopes=["rw"])])
