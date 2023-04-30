@@ -18,11 +18,11 @@ class CommonUser(BaseModel):
     email: str | None = None
     is_disabled: bool | None = None
     scopes: list[str] | None = None
-    
-    
+
+
 class User(CommonUser):
     user_id: str
-    
+
 
 class UpdatedUser(CommonUser):
     password: str | None = None

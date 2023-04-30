@@ -13,19 +13,18 @@ from worst_crm.models import User, UserInDB, Token, TokenData
 
 # to get a string like this run:
 # openssl rand -hex 32
-JWT_KEY = os.getenv('JWT_KEY')
-JWT_KEY_ALGORITHM = os.getenv('JWT_KEY_ALGORITHM')
+JWT_KEY = os.getenv("JWT_KEY")
+JWT_KEY_ALGORITHM = os.getenv("JWT_KEY_ALGORITHM")
 
 if not JWT_KEY or not JWT_KEY_ALGORITHM:
-    raise EnvironmentError('JWT_KEY or JWT_KEY_ALGORITHM env variables not found!')
+    raise EnvironmentError("JWT_KEY or JWT_KEY_ALGORITHM env variables not found!")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="login",
-    scopes={"rw": "rw",
-            "admin": "admin"}
-    )
+    tokenUrl="login", scopes={"rw": "rw", "admin": "admin"}
+)
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -36,7 +35,6 @@ def get_password_hash(password: str) -> str:
 
 
 def authenticate_user(username: str, password: str):
-    
     user: UserInDB | None = db.get_user_with_hash(username)
 
     if not user:
@@ -58,8 +56,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    security_scopes: SecurityScopes
+    token: Annotated[str, Depends(oauth2_scheme)], security_scopes: SecurityScopes
 ):
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
@@ -70,7 +67,7 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": authenticate_value},
     )
-        
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -87,7 +84,7 @@ async def get_current_user(
         raise credentials_exception
 
     user: UserInDB | None = db.get_user_with_hash(token_data.username)
-    
+
     if user is None:
         raise credentials_exception
     for scope in security_scopes.scopes:
@@ -97,7 +94,7 @@ async def get_current_user(
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
-            
+
     return user
 
 

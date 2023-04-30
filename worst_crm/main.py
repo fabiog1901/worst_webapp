@@ -12,20 +12,22 @@ load_dotenv()
 
 
 app = FastAPI(
-    title='WorstCRM API',
-    docs_url="/api",
-    openapi_url="/worst_crm.openapi.json"
+    title="WorstCRM API", docs_url="/api", openapi_url="/worst_crm.openapi.json"
 )
 
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 
-@app.post("/login", response_model=Token, tags=['auth'])
+@app.get("/healthcheck")
+async def healthcheck():
+    return {}
+
+
+@app.post("/login", response_model=Token, tags=["auth"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
-    user: UserInDB | None = authenticate_user(
-        form_data.username, form_data.password)
+    user: UserInDB | None = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,10 +37,11 @@ async def login_for_access_token(
 
     access_token = create_access_token(
         data={"sub": user.user_id, "scopes": user.scopes},
-        expires_delta=dt.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=dt.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 app.include_router(accounts.router)
 app.include_router(projects.router)
