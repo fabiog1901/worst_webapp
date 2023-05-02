@@ -16,17 +16,15 @@ from worst_crm.models import (
     Task,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
-from dotenv import load_dotenv
 
-load_dotenv()
 
-DBURL = os.getenv("DBURL")
+DB_URL = os.getenv("DB_URL")
 
-if not DBURL:
-    raise EnvironmentError("DBURL env variable not found!")
+if not DB_URL:
+    raise EnvironmentError("DB_URL env variable not found!")
 
 # the pool starts connecting immediately.
-pool = ConnectionPool(DBURL, kwargs={"autocommit": True})
+pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
 
 
 def get_fields(model) -> str:

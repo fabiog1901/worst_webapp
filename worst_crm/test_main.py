@@ -34,7 +34,7 @@ def test_get_accounts_non_auth():
     assert r.status_code == 401
 
 
-def ztest_get_accounts():
+def test_create_accounts():
     token = test_login()
     r = client.get("/accounts", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200

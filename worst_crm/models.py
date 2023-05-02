@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr
 from uuid import UUID
 import datetime as dt
 
@@ -8,14 +8,9 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
-    username: str
-    scopes: list[str] = []
-
-
 class CommonUser(BaseModel):
     full_name: str | None = None
-    email: str | None = None
+    email: EmailStr | None = None
     is_disabled: bool | None = None
     scopes: list[str] | None = None
 
@@ -33,7 +28,7 @@ class UpdatedUserInDB(CommonUser):
 
 
 class NewUser(User):
-    password: str
+    password: str = Field(min_length=8)
 
 
 class UserInDB(User):

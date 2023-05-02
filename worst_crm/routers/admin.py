@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Security, HTTPException, status
 
 from worst_crm import db
 from worst_crm import dependencies as dep
@@ -27,6 +27,7 @@ async def get_user(user_id: str) -> User | None:
 
 @router_users.post("")
 async def create_user(new_user: NewUser) -> User | None:
+        
     uid = UserInDB(
         **new_user.dict(), hashed_password=dep.get_password_hash(new_user.password)
     )
