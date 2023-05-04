@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Account, NewAccount
-import worst_crm.tests.test_admin_users as ad
+import worst_crm.tests.test_utils as utils
 
 client = TestClient(app)
 
@@ -13,9 +13,9 @@ def test_get_accounts_non_auth():
 
 
 def test_crud_account():
-    ad.test_setup()
+    utils.test_setup()
     
-    token = ad.login()
+    token = utils.login()
 
     assert token is not None
     
@@ -93,4 +93,4 @@ def test_crud_account():
     assert r.status_code == 200
     assert r.json() is None
 
-    ad.test_cleanup()
+    utils.test_cleanup()
