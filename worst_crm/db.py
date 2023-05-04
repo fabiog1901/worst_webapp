@@ -92,6 +92,17 @@ def create_user(user: UserInDB) -> User | None:
     )
 
 
+def increase_failed_attempt_count(user_id: str) -> UserInDB | None:
+    return execute_stmt(
+        f"""update users set
+            failed_attempts = failed_attempts +1 
+        where user_id = %s
+        returning {USERINDB_COLS}""",
+        (user_id,),
+        UserInDB,
+    )
+
+
 def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
     old_uid = get_user_with_hash(user_id)
 

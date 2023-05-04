@@ -28,11 +28,12 @@ class UpdatedUserInDB(CommonUser):
 
 
 class NewUser(User):
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=50)
 
 
 class UserInDB(User):
     hashed_password: str
+    failed_attempts: int = 0
 
 
 class NewAccount(BaseModel):

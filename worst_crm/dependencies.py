@@ -25,7 +25,7 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def verify_password(plain_password, hashed_password) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -38,14 +38,22 @@ def authenticate_user(username: str, password: str) -> UserInDB | None:
 
     if not user:
         return None
+    if user.failed_attempts >= 3:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="User is locked. Contact your Administrator.",
+        )
     if not verify_password(password, user.hashed_password):
+        db.increase_failed_attempt_count(user.user_id)
         return None
     return user
 
 
 def create_access_token(data: dict, expire_seconds: int) -> str:
     to_encode = data.copy()
-    to_encode.update({"exp": dt.datetime.utcnow() + dt.timedelta(seconds=expire_seconds)})
+    to_encode.update(
+        {"exp": dt.datetime.utcnow() + dt.timedelta(seconds=expire_seconds)}
+    )
 
     try:
         encoded_jwt: str = jwt.encode(to_encode, JWT_KEY, JWT_KEY_ALGORITHM)
@@ -99,5 +107,3 @@ async def get_current_active_user(
         )
 
     return user
-
-

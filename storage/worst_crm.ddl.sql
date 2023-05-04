@@ -72,7 +72,9 @@ CREATE TABLE users (
     hashed_password string,
     is_disabled bool,
     scopes string[],
-    CONSTRAINT pk PRIMARY KEY (user_id)
+    failed_attempts INT8 NULL,
+    CONSTRAINT pk PRIMARY KEY (user_id),
+    CONSTRAINT failed_attempts_max_3 CHECK (failed_attempts BETWEEN 0:::INT8 AND 3:::INT8)
 );
 
 INSERT INTO accounts

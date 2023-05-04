@@ -24,6 +24,8 @@ async def get_account(account_id: UUID) -> Account | None:
 
 @router.post("", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])])
 async def create_account(account: NewAccount) -> Account | None:
+    if account.tags:
+        account.tags = sorted(list(set(account.tags)))
     return db.create_account(account)
 
 
@@ -31,6 +33,9 @@ async def create_account(account: NewAccount) -> Account | None:
     "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
 )
 async def update_account(account_id: UUID, account: NewAccount) -> Account | None:
+    if account.tags:
+        account.tags = sorted(list(set(account.tags)))
+
     return db.update_account(account_id, account)
 
 
