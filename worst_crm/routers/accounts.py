@@ -28,14 +28,13 @@ async def create_account(
     account: NewAccount,
     current_user: Annotated[User, Depends(dep.get_current_active_user)],
 ) -> Account | None:
-       
     acc_in_db = AccountInDB(
-        **account.dict(exclude={'data'}), 
-        data=json.dumps(account.data), 
-        created_by=current_user.user_id, 
+        **account.dict(exclude={"data"}),
+        data=json.dumps(account.data),
+        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
-  
+
     return db.create_account(acc_in_db)
 
 
@@ -43,15 +42,14 @@ async def create_account(
     "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
 )
 async def update_account(
-    account_id: UUID, 
+    account_id: UUID,
     account: NewAccount,
-    current_user: Annotated[User, Depends(dep.get_current_active_user)]
+    current_user: Annotated[User, Depends(dep.get_current_active_user)],
 ) -> Account | None:
-    
     acc_in_db = AccountInDB(
-        **account.dict(exclude={'data'}), 
-        data=json.dumps(account.data), 
-        created_by=current_user.user_id, 
+        **account.dict(exclude={"data"}),
+        data=json.dumps(account.data),
+        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
     return db.update_account(account_id, acc_in_db)

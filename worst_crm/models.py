@@ -39,81 +39,82 @@ class UserInDB(User):
 
 
 # DATA OBJECTS
-
-class CommonAccount(BaseModel):
+class Basic(BaseModel):
     name: str
     owned_by: str | None = None
-    description: str | None = None
+    text: str | None = None
     status: str | None = None
-    
-    
-class NewAccount(CommonAccount):
+
+
+class Basic2(BaseModel):
     data: dict | None = None
     tags: set[str] | None = None
-    
 
-class AccountInDB(CommonAccount):
+
+class CommonInDB(Basic):
     created_by: str
     updated_by: str
     data: Any | None = None
     tags: list[str] | None = None
 
 
-class Account(AccountInDB):
-    account_id: UUID
+class DBComputed(BaseModel):
     created_at: dt.datetime
     updated_at: dt.datetime
 
 
-class NewProject(BaseModel):
-    name: str
-    owned_by: str | None = None
-    description: str | None = None
-    status: str | None = None
-    data: Json | None = None
-    tags: list[str] | None = None
+# ACCOUNT
+class AccountInDB(CommonInDB):
+    pass
 
 
-class Project(NewProject):
+class NewAccount(Basic, Basic2):
+    pass
+
+
+class Account(DBComputed, AccountInDB):
+    account_id: UUID
+
+
+# PROJECT
+class ProjectInDB(CommonInDB):
+    pass
+
+
+class NewProject(Basic, Basic2):
+    pass
+
+
+class Project(DBComputed, ProjectInDB):
     account_id: UUID
     project_id: UUID
-    created_at: dt.datetime
-    created_by: str
-    updated_at: dt.datetime
-    updated_by: str
 
 
-class NewTask(BaseModel):
-    name: str
-    owned_by: str | None = None
-    description: str | None = None
-    status: str | None = None
-    data: Json | None = None
-    tags: list[str] | None = None
+# TASK
+class TaskInDB(CommonInDB):
+    pass
 
 
-class Task(NewTask):
+class NewTask(Basic, Basic2):
+    pass
+
+
+class Task(DBComputed, TaskInDB):
     account_id: UUID
     project_id: UUID
     task_id: int
-    created_at: dt.datetime
-    created_by: str
-    updated_at: dt.datetime
-    updated_by: str
 
 
-class NewNote(BaseModel):
-    name: str
-    content: str | None = None
-    data: Json | None = None
-    tags: list[str] | None = None
+# NOTES
+class NoteInDB(CommonInDB):
+    pass
 
 
-class Note(NewNote):
+class NewNote(Basic, Basic2):
+    pass
+
+
+class Note(DBComputed, NoteInDB):
     account_id: UUID
     project_id: UUID
     note_id: int
-    created_at: dt.datetime
-    created_by: str
-    updated_at: dt.datetime
-    updated_by: str

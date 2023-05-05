@@ -18,10 +18,10 @@ def login(username: str = "dummyadmin", password: str = "dummyadmin") -> str | N
 
 def test_setup():
     acc_list = db.get_all_accounts()
-    
+
     for acc in acc_list:
         db.delete_account(acc.account_id)
-    
+
     db.delete_user("dummyadmin")
 
     assert db.create_user(

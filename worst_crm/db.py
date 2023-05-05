@@ -163,7 +163,7 @@ def get_account(account_id: UUID) -> Account | None:
         FROM accounts 
         WHERE account_id = %s
         """,
-        (account_id, ),
+        (account_id,),
         Account,
     )
 

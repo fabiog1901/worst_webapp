@@ -31,7 +31,7 @@ def test_crud_account():
             "status": "NEW",
             "tags": ["t1", "t2", "t2"],
             "data": {"k": "v"}
-        }"""
+        }""",
     )
 
     assert r.status_code == 200
@@ -65,7 +65,7 @@ def test_crud_account():
             "owned_by": "dummyadmin",
             "tags": ["t1", "t2", "t5555"],
             "data": {"k": "v", "kk": "vv"}
-        }"""
+        }""",
     )
 
     upd_acc = Account(**r.json())
