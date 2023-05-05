@@ -8,6 +8,7 @@ from uuid import UUID
 from worst_crm.models import (
     NewAccount,
     Account,
+    AccountInDB,
     NewProject,
     Project,
     NewNote,
@@ -137,17 +138,17 @@ def delete_user(user_id: str) -> User | None:
 
 
 # ACCOUNTS
-NEWACCOUNT_COLS = get_fields(NewAccount)
-NEWACCOUNT_PLACEHOLDERS = get_placeholders(NewAccount)
+ACCOUNTINDB_COLS = get_fields(AccountInDB)
+ACCOUNTINDB_PLACEHOLDERS = get_placeholders(AccountInDB)
 ACCOUNTS_COLS = get_fields(Account)
 
 
 def get_all_accounts() -> list[Account]:
     return execute_stmt(
         f"""
-        select {ACCOUNTS_COLS}
-        from accounts
-        order by account_name
+        SELECT {ACCOUNTS_COLS}
+        FROM accounts
+        ORDER BY name
         """,
         (),
         Account,
@@ -158,42 +159,43 @@ def get_all_accounts() -> list[Account]:
 def get_account(account_id: UUID) -> Account | None:
     return execute_stmt(
         f"""
-        select {ACCOUNTS_COLS} 
-        from accounts 
-        where account_id = %s
+        SELECT {ACCOUNTS_COLS} 
+        FROM accounts 
+        WHERE account_id = %s
         """,
-        (account_id,),
+        (account_id, ),
         Account,
     )
 
 
-def create_account(new_account: NewAccount) -> Account | None:
+def create_account(account_in_db: AccountInDB) -> Account | None:
     return execute_stmt(
         f"""
-        insert into accounts ({NEWACCOUNT_COLS})
-        values
-        ({NEWACCOUNT_PLACEHOLDERS})
-        returning {ACCOUNTS_COLS}
+        INSERT INTO accounts 
+            ({ACCOUNTINDB_COLS})
+        VALUES
+            ({ACCOUNTINDB_PLACEHOLDERS})
+        RETURNING {ACCOUNTS_COLS}
         """,
-        tuple(new_account.dict().values()),
+        tuple(account_in_db.dict().values()),
         Account,
     )
 
 
-def update_account(account_id: UUID, account: NewAccount) -> Account | None:
+def update_account(account_id: UUID, account: AccountInDB) -> Account | None:
     old_acc = get_account(account_id)
 
     if old_acc:
-        old_acc = NewAccount(**old_acc.dict())
+        old_acc = AccountInDB(**old_acc.dict())
         update_data = account.dict(exclude_unset=True)
         new_acc = old_acc.copy(update=update_data)
 
         return execute_stmt(
             f"""
-            update accounts set 
-                ({NEWACCOUNT_COLS}) = ({NEWACCOUNT_PLACEHOLDERS})
-            where account_id = %s
-            returning {ACCOUNTS_COLS}
+            UPDATE accounts SET 
+                ({ACCOUNTINDB_COLS}) = ({ACCOUNTINDB_PLACEHOLDERS})
+            WHERE account_id = %s
+            RETURNING {ACCOUNTS_COLS}
             """,
             (*tuple(new_acc.dict().values()), account_id),
             Account,
@@ -224,7 +226,7 @@ def get_all_projects(account_id: UUID) -> list[Project]:
         select {PROJECTS_COLS}
         from projects
         where account_id = %s
-        order by project_name
+        order by name
         """,
         (account_id,),
         Project,

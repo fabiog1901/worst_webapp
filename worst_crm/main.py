@@ -26,7 +26,7 @@ async def get_user_me(
     return current_user
 
 
-@app.put("/update_password", dependencies=[Depends(dep.get_current_active_user)])
+@app.put("/update-password", dependencies=[Depends(dep.get_current_active_user)])
 async def update_password(
     old_password: str,
     new_password: Annotated[str, Query(min_length=8, max_length=50)],

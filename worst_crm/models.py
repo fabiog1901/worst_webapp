@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, Json
 from uuid import UUID
 import datetime as dt
+from typing import Any
 
 
+# ADMIN OBJECTS
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -36,22 +38,39 @@ class UserInDB(User):
     failed_attempts: int = 0
 
 
-class NewAccount(BaseModel):
-    account_name: str
+# DATA OBJECTS
+
+class CommonAccount(BaseModel):
+    name: str
+    owned_by: str | None = None
     description: str | None = None
+    status: str | None = None
+    
+    
+class NewAccount(CommonAccount):
+    data: dict | None = None
+    tags: set[str] | None = None
+    
+
+class AccountInDB(CommonAccount):
+    created_by: str
+    updated_by: str
+    data: Any | None = None
     tags: list[str] | None = None
 
 
-class Account(NewAccount):
+class Account(AccountInDB):
     account_id: UUID
     created_at: dt.datetime
     updated_at: dt.datetime
 
 
 class NewProject(BaseModel):
-    project_name: str
+    name: str
+    owned_by: str | None = None
     description: str | None = None
     status: str | None = None
+    data: Json | None = None
     tags: list[str] | None = None
 
 
@@ -59,26 +78,17 @@ class Project(NewProject):
     account_id: UUID
     project_id: UUID
     created_at: dt.datetime
+    created_by: str
     updated_at: dt.datetime
-
-
-class NewNote(BaseModel):
-    note_name: str
-    content: str | None = None
-    tags: list[str] | None = None
-
-
-class Note(NewNote):
-    account_id: UUID
-    project_id: UUID
-    note_id: int
-    updated_at: dt.datetime
+    updated_by: str
 
 
 class NewTask(BaseModel):
-    task_name: str
-    content: str | None = None
-    task_status: str
+    name: str
+    owned_by: str | None = None
+    description: str | None = None
+    status: str | None = None
+    data: Json | None = None
     tags: list[str] | None = None
 
 
@@ -86,4 +96,24 @@ class Task(NewTask):
     account_id: UUID
     project_id: UUID
     task_id: int
+    created_at: dt.datetime
+    created_by: str
     updated_at: dt.datetime
+    updated_by: str
+
+
+class NewNote(BaseModel):
+    name: str
+    content: str | None = None
+    data: Json | None = None
+    tags: list[str] | None = None
+
+
+class Note(NewNote):
+    account_id: UUID
+    project_id: UUID
+    note_id: int
+    created_at: dt.datetime
+    created_by: str
+    updated_at: dt.datetime
+    updated_by: str

@@ -14,84 +14,134 @@ ALTER DATABASE worst_crm CONFIGURE ZONE USING
     constraints = '[]',
     lease_preferences = '[]';
 
+
+CREATE TABLE users (
+    user_id STRING NOT NULL,
+    full_name STRING,
+    email STRING,
+    hashed_password STRING,
+    is_disabled STRING,
+    scopes STRING[],
+    failed_attempts INT2 NULL,
+    CONSTRAINT pk PRIMARY KEY (user_id),
+    CONSTRAINT failed_attempts_max_3 CHECK (failed_attempts BETWEEN 0:::INT8 AND 3:::INT8)
+);
+
+
 CREATE TABLE accounts (
     account_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    account_name STRING NOT NULL,
+    name STRING NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NOT NULL,
+    owned_by STRING NULL,
     description STRING,
+    status STRING,
+    data JSONB NULL,
     tags STRING [],
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
-    CONSTRAINT pk PRIMARY KEY (account_id)
+    updated_by STRING NULL,
+    CONSTRAINT pk PRIMARY KEY (account_id),
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+CREATE INVERTED INDEX accounts_data_gin ON accounts(data);
 
 CREATE TABLE projects (
     account_id UUID NOT NULL,
     project_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    name STRING NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NOT NULL,
+    owned_by STRING NOT NULL,
     description STRING,
-    project_name STRING NOT NULL,
     status STRING,
+    data JSONB NULL,
     tags STRING [],
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
     CONSTRAINT pk PRIMARY KEY (account_id, project_id),
     CONSTRAINT fk_accounts FOREIGN KEY (account_id) 
-        REFERENCES accounts(account_id) ON DELETE CASCADE
+        REFERENCES accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE TABLE notes (
-    account_id UUID NOT NULL,
-    project_id UUID NOT NULL,
-    note_id INT8 NOT NULL DEFAULT now()::INT8,
-    note_name STRING NOT NULL,
-    content STRING,
-    tags STRING [],
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
-    CONSTRAINT pk PRIMARY KEY (account_id, project_id, note_id),
-    CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
-        REFERENCES projects(account_id, project_id) ON DELETE CASCADE
-);
+CREATE INVERTED INDEX projects_data_gin ON projects(data);
 
 CREATE TABLE tasks (
     account_id UUID NOT NULL,
     project_id UUID NOT NULL,
     task_id INT8 NOT NULL DEFAULT now()::INT8,
-    task_name STRING NOT NULL,
-    content STRING,
-    task_status STRING,
+    name STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NULL,
+    owned_by STRING NOT NULL,
+    description STRING,
+    status STRING,
+    data JSONB NULL,
     tags STRING [],
+    updated_by STRING NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, task_id),
     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
-        REFERENCES projects(account_id, project_id) ON DELETE CASCADE
+        REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
+        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE TABLE users (
-    user_id string not null,
-    full_name string,
-    email string,
-    hashed_password string,
-    is_disabled bool,
-    scopes string[],
-    failed_attempts INT8 NULL,
-    CONSTRAINT pk PRIMARY KEY (user_id),
-    CONSTRAINT failed_attempts_max_3 CHECK (failed_attempts BETWEEN 0:::INT8 AND 3:::INT8)
+CREATE INVERTED INDEX tasks_data_gin ON tasks(data);
+
+CREATE TABLE notes (
+    account_id UUID NOT NULL,
+    project_id UUID NOT NULL,
+    note_id INT8 NOT NULL DEFAULT now()::INT8,
+    name STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NULL,
+    content STRING,
+    data JSONB NULL,
+    tags STRING [],
+    updated_by STRING NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    CONSTRAINT pk PRIMARY KEY (account_id, project_id, note_id),
+    CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
+        REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-INSERT INTO accounts
-    (account_id, account_name, description, tags)
-    VALUES
-    ('3f08facf-960f-41f7-99d4-02cfe45adc54', 'BOSM', 'Bank of SuperMario. Saving accounts for kids.', ARRAY['tlc', 'sh']),
-    ('97e70557-bad0-47d5-ba96-2daaf40b3840', 'Tully', 'CI/CD SaaS providing full build automation', ARRAY['saas']),
-    ('fb7e42a2-33de-442f-a194-cc295aaf93d1', 'AirMars', 'Cheap flights to Mars', ARRAY['saas', 'prom'])
-;
+CREATE INVERTED INDEX notes_data_gin ON notes(data);
 
-INSERT INTO users 
-    (user_id, full_name, email, hashed_password, is_disabled, scopes)
-    VALUES 
-    ('admin', 'admin', 'admin', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
-        False, ARRAY['admin', 'rw']),
-    ('fabio', 'fabio', 'fabio', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
-        False, ARRAY['rw']),
-    ('ro', 'readonly', 'ro', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
-        False, ARRAY[])
-;
+-- INSERT INTO accounts
+--     (account_id, account_name, description, tags)
+--     VALUES
+--     ('3f08facf-960f-41f7-99d4-02cfe45adc54', 'BOSM', 'Bank of SuperMario. Saving accounts for kids.', ARRAY['tlc', 'sh']),
+--     ('97e70557-bad0-47d5-ba96-2daaf40b3840', 'Tully', 'CI/CD SaaS providing full build automation', ARRAY['saas']),
+--     ('fb7e42a2-33de-442f-a194-cc295aaf93d1', 'AirMars', 'Cheap flights to Mars', ARRAY['saas', 'prom'])
+-- ;
+
+-- INSERT INTO users 
+--     (user_id, full_name, email, hashed_password, is_disabled, scopes)
+--     VALUES 
+--     ('admin', 'admin', 'admin', '$2b$12$RP/eiWXHSSHd8BL2tm4LquEflpXWMFNrGp5hcoVrKKBzmk63IzIym', -- worst_crm
+--         False, ARRAY['admin', 'rw']),
+--     ('fabio', 'fabio', 'fabio', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
+--         False, ARRAY['rw']),
+--     ('ro', 'readonly', 'ro', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
+--         False, ARRAY[])
+-- ;

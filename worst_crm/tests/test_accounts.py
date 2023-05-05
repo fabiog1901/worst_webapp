@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Account, NewAccount
 import worst_crm.tests.test_utils as utils
+from pydantic import Json
 
 client = TestClient(app)
 
@@ -14,20 +15,23 @@ def test_get_accounts_non_auth():
 
 def test_crud_account():
     utils.test_setup()
-    
+
     token = utils.login()
 
     assert token is not None
-    
+
     # CREATE
     r = client.post(
         "/accounts",
         headers={"Authorization": f"Bearer {token}"},
-        content=NewAccount(
-                account_name="dummy_acc1",
-                description="dummy_acc_descr",
-                tags=["tag1", "tag2", "tag3", "tag3"],
-            ).json(),
+        content="""
+        {
+            "name": "dummy_acc1",
+            "description": "dummy descr",
+            "status": "NEW",
+            "tags": ["t1", "t2", "t2"],
+            "data": {"k": "v"}
+        }"""
     )
 
     assert r.status_code == 200
@@ -53,11 +57,15 @@ def test_crud_account():
     r = client.put(
         f"/accounts/{acc.account_id}",
         headers={"Authorization": f"Bearer {token}"},
-        content=NewAccount(
-            account_name="dummy_acc1",
-            description="updated dummy_acc_descr",
-            tags=["tag1", "tag2", "tag3", "tag4"],
-        ).json(),
+        content="""
+        {
+            "name": "dummy_acc1",
+            "description": "dummy descr UPDATED",
+            "status": "NEW",
+            "owned_by": "dummyadmin",
+            "tags": ["t1", "t2", "t5555"],
+            "data": {"k": "v", "kk": "vv"}
+        }"""
     )
 
     upd_acc = Account(**r.json())

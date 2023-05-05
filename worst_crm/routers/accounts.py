@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Security
 from uuid import UUID
-
+from typing import Annotated
 from worst_crm import db
 import worst_crm.dependencies as dep
-from worst_crm.models import Account, NewAccount
+from worst_crm.models import Account, NewAccount, User, AccountInDB
+import json
 
 router = APIRouter(
     prefix="/accounts",
@@ -23,20 +24,37 @@ async def get_account(account_id: UUID) -> Account | None:
 
 
 @router.post("", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])])
-async def create_account(account: NewAccount) -> Account | None:
-    if account.tags:
-        account.tags = sorted(list(set(account.tags)))
-    return db.create_account(account)
+async def create_account(
+    account: NewAccount,
+    current_user: Annotated[User, Depends(dep.get_current_active_user)],
+) -> Account | None:
+       
+    acc_in_db = AccountInDB(
+        **account.dict(exclude={'data'}), 
+        data=json.dumps(account.data), 
+        created_by=current_user.user_id, 
+        updated_by=current_user.user_id
+    )
+  
+    return db.create_account(acc_in_db)
 
 
 @router.put(
     "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
 )
-async def update_account(account_id: UUID, account: NewAccount) -> Account | None:
-    if account.tags:
-        account.tags = sorted(list(set(account.tags)))
-
-    return db.update_account(account_id, account)
+async def update_account(
+    account_id: UUID, 
+    account: NewAccount,
+    current_user: Annotated[User, Depends(dep.get_current_active_user)]
+) -> Account | None:
+    
+    acc_in_db = AccountInDB(
+        **account.dict(exclude={'data'}), 
+        data=json.dumps(account.data), 
+        created_by=current_user.user_id, 
+        updated_by=current_user.user_id
+    )
+    return db.update_account(account_id, acc_in_db)
 
 
 @router.delete(
