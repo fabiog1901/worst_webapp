@@ -32,15 +32,21 @@ CREATE TABLE account_status(
     CONSTRAINT pk PRIMARY KEY (name)
 );
 
+INSERT INTO account_status (name) VALUES ('NEW'), ('OPPORTUNITY'), ('ENTERPRISE'), ('POC'), ('COMMERCIAL');
+
 CREATE TABLE project_status(
     name STRING(20) NOT NULL,
     CONSTRAINT pk PRIMARY KEY (name)
 );
 
+INSERT INTO project_status (name) VALUES ('NEW'), ('OPEN'), ('IN PROGRESS'), ('ON HOLD'), ('COMPLETED');
+
 CREATE TABLE task_status(
     name STRING(20) NOT NULL,
     CONSTRAINT pk PRIMARY KEY (name)
 );
+
+INSERT INTO task_status (name) VALUES ('NEW'), ('OPEN'), ('ON HOLD'), ('PENDING'), ('CLOSED');
 
 
 CREATE TABLE accounts (
@@ -49,6 +55,7 @@ CREATE TABLE accounts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NOT NULL,
     owned_by STRING NULL,
+    due_date DATE NULL,
     text STRING NULL,
     status STRING NULL,
     data JSONB NULL,
@@ -77,6 +84,7 @@ CREATE TABLE projects (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NOT NULL,
     owned_by STRING NOT NULL,
+    due_date DATE NULL,
     text STRING,
     status STRING,
     data JSONB NULL,
@@ -107,6 +115,7 @@ CREATE TABLE tasks (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
     owned_by STRING NOT NULL,
+    due_date DATE NULL,
     text STRING,
     status STRING,
     data JSONB NULL,

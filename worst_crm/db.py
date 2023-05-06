@@ -14,7 +14,7 @@ from worst_crm.models import (
     Note,
     TaskInDB,
     Task,
-    Status
+    Status,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -43,31 +43,51 @@ def get_placeholders(model) -> str:
 
 # STATUS
 def get_all_account_status() -> list[Status]:
-    return execute_stmt('SELECT name FROM account_status', model=Status, is_list=True)
+    return execute_stmt("SELECT name FROM account_status", model=Status, is_list=True)
+
 
 def create_account_status(status: str):
-    execute_stmt('UPSERT INTO account_status(name) VALUES (%s)', (status, ), returning_rs=False)
+    execute_stmt(
+        "UPSERT INTO account_status(name) VALUES (%s)", (status,), returning_rs=False
+    )
+
 
 def delete_account_status(status: str):
-    execute_stmt('DELETE FROM account_status WHERE name = %s', (status, ), returning_rs=False)
+    execute_stmt(
+        "DELETE FROM account_status WHERE name = %s", (status,), returning_rs=False
+    )
+
 
 def get_all_project_status() -> list[Status]:
-    return execute_stmt('SELECT name FROM project_status', model=Status, is_list=True)
+    return execute_stmt("SELECT name FROM project_status", model=Status, is_list=True)
+
 
 def create_project_status(status: str):
-    execute_stmt('UPSERT INTO project_status(name) VALUES (%s)', (status, ), returning_rs=False)
+    execute_stmt(
+        "UPSERT INTO project_status(name) VALUES (%s)", (status,), returning_rs=False
+    )
+
 
 def delete_project_status(status: str):
-    execute_stmt('DELETE FROM project_status WHERE name = %s', (status, ), returning_rs=False)
+    execute_stmt(
+        "DELETE FROM project_status WHERE name = %s", (status,), returning_rs=False
+    )
+
 
 def get_all_task_status() -> list[Status]:
-    return execute_stmt('SELECT name FROM task_status', model=Status, is_list=True)
+    return execute_stmt("SELECT name FROM task_status", model=Status, is_list=True)
+
 
 def create_task_status(status: str):
-    execute_stmt('UPSERT INTO task_status(name) VALUES (%s)', (status, ), returning_rs=False)
+    execute_stmt(
+        "UPSERT INTO task_status(name) VALUES (%s)", (status,), returning_rs=False
+    )
+
 
 def delete_task_status(status: str):
-    execute_stmt('DELETE FROM task_status WHERE name = %s', (status, ), returning_rs=False)
+    execute_stmt(
+        "DELETE FROM task_status WHERE name = %s", (status,), returning_rs=False
+    )
 
 
 # ADMIN/USERS
@@ -492,7 +512,13 @@ def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None
     )
 
 
-def execute_stmt(stmt: str, args: tuple = (), model: PyObject = Any, is_list: bool = False, returning_rs: bool = True) -> Any:
+def execute_stmt(
+    stmt: str,
+    args: tuple = (),
+    model: PyObject = Any,
+    is_list: bool = False,
+    returning_rs: bool = True,
+) -> Any:
     def get_col_names():
         if not cur.description:
             raise ValueError("Couldn't fetch column names from ResultSet")
@@ -501,13 +527,13 @@ def execute_stmt(stmt: str, args: tuple = (), model: PyObject = Any, is_list: bo
 
     with pool.connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(stmt, args) # type: ignore
-            
+            cur.execute(stmt, args)  # type: ignore
+
             if is_list:
                 if not returning_rs:
                     return
-                
-                rsl = cur.fetchall()  
+
+                rsl = cur.fetchall()
 
                 col_names = get_col_names()
                 return [
@@ -517,9 +543,9 @@ def execute_stmt(stmt: str, args: tuple = (), model: PyObject = Any, is_list: bo
             else:
                 if not returning_rs:
                     return
-                
+
                 rs = cur.fetchone()
-                
+
                 if rs:
                     return model(**{k: rs[i] for i, k in enumerate(get_col_names())})
                 else:

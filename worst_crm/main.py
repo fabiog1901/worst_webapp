@@ -4,9 +4,10 @@ import fastapi
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from worst_crm.models import UserInDB, Token, User, UpdatedUserInDB
-from worst_crm.routers import accounts, projects, notes, tasks, admin, status
+from worst_crm.routers import accounts, projects, notes, tasks
 import os
 import worst_crm.dependencies as dep
+from worst_crm.routers.admin import admin, status
 
 app = FastAPI(
     title="WorstCRM API", docs_url="/api", openapi_url="/worst_crm.openapi.json"
