@@ -6,14 +6,13 @@ import os
 from uuid import UUID
 
 from worst_crm.models import (
-    NewAccount,
     Account,
     AccountInDB,
-    NewProject,
+    ProjectInDB,
     Project,
-    NewNote,
+    NoteInDB,
     Note,
-    NewTask,
+    TaskInDB,
     Task,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
@@ -205,9 +204,9 @@ def update_account(account_id: UUID, account: AccountInDB) -> Account | None:
 def delete_account(account_id: UUID) -> Account | None:
     return execute_stmt(
         f"""
-        delete from accounts
-        where account_id = %s
-        returning {ACCOUNTS_COLS}
+        DELETE FROM accounts
+        WHERE account_id = %s
+        RETURNING {ACCOUNTS_COLS}
         """,
         (account_id,),
         Account,
@@ -216,17 +215,17 @@ def delete_account(account_id: UUID) -> Account | None:
 
 # PROJECTS
 PROJECTS_COLS = get_fields(Project)
-NEWPROJECT_COLS = get_fields(NewProject)
-NEWPROJECT_PLACEHOLODERS = get_placeholders(NewProject)
+PROJECTINDB_COLS = get_fields(ProjectInDB)
+PROJECTINDB_PLACEHOLDERS = get_placeholders(ProjectInDB)
 
 
 def get_all_projects(account_id: UUID) -> list[Project]:
     return execute_stmt(
         f"""
-        select {PROJECTS_COLS}
-        from projects
-        where account_id = %s
-        order by name
+        SELECT {PROJECTS_COLS}
+        FROM projects
+        WHERE account_id = %s
+        ORDER BY name
         """,
         (account_id,),
         Project,
@@ -237,45 +236,45 @@ def get_all_projects(account_id: UUID) -> list[Project]:
 def get_project(account_id: UUID, project_id: UUID) -> Project | None:
     return execute_stmt(
         f"""
-        select {PROJECTS_COLS}
-        from projects 
-        where (account_id, project_id) = (%s, %s)
+        SELECT {PROJECTS_COLS}
+        FROM projects 
+        WHERE (account_id, project_id) = (%s, %s)
         """,
         (account_id, project_id),
         Project,
     )
 
 
-def create_project(account_id: UUID, new_project: NewProject) -> Project | None:
+def create_project(account_id: UUID, project_in_db: ProjectInDB) -> Project | None:
     return execute_stmt(
         f"""
-        insert into projects 
-            ({NEWPROJECT_COLS}, account_id)
-        values
-            ({NEWPROJECT_PLACEHOLODERS}, %s)
-        returning {PROJECTS_COLS}
+        INSERT INTO projects 
+            ({PROJECTINDB_COLS}, account_id)
+        VALUES
+            ({PROJECTINDB_PLACEHOLDERS}, %s)
+        RETURNING {PROJECTS_COLS}
         """,
-        (*tuple(new_project.dict().values()), account_id),
+        (*tuple(project_in_db.dict().values()), account_id),
         Project,
     )
 
 
 def update_project(
-    account_id: UUID, project_id: UUID, project: NewProject
+    account_id: UUID, project_id: UUID, project_in_db: ProjectInDB
 ) -> Project | None:
     old_proj = get_project(account_id, project_id)
 
     if old_proj:
-        old_proj = NewProject(**old_proj.dict())
-        update_data = project.dict(exclude_unset=True)
+        old_proj = ProjectInDB(**old_proj.dict())
+        update_data = project_in_db.dict(exclude_unset=True)
         new_proj = old_proj.copy(update=update_data)
 
         return execute_stmt(
             f"""
-            update projects set 
-                ({NEWPROJECT_COLS}) = ({NEWPROJECT_PLACEHOLODERS})
-            where (account_id, project_id) = (%s, %s)
-            returning {PROJECTS_COLS}
+            UPDATE projects SET 
+                ({PROJECTINDB_COLS}) = ({PROJECTINDB_PLACEHOLDERS})
+            WHERE (account_id, project_id) = (%s, %s)
+            RETURNING {PROJECTS_COLS}
             """,
             (*tuple(new_proj.dict().values()), account_id, project_id),
             Project,
@@ -285,9 +284,9 @@ def update_project(
 def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
     return execute_stmt(
         f"""
-        delete from projects
-        where (account_id, project_id) = (%s, %s)
-        returning {PROJECTS_COLS}
+        DELETE FROM projects
+        WHERE (account_id, project_id) = (%s, %s)
+        RETURNING {PROJECTS_COLS}
         """,
         (account_id, project_id),
         Project,
@@ -296,17 +295,17 @@ def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
 
 # NOTES
 NOTES_COLS = get_fields(Note)
-NEWNOTE_COLS = get_fields(NewNote)
-NEWNOTE_PLACEHOLDERS = get_placeholders(NewNote)
+NOTEINDB_COLS = get_fields(NoteInDB)
+NOTEINDB_PLACEHOLDERS = get_placeholders(NoteInDB)
 
 
 def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
     return execute_stmt(
         f"""
-        select {NOTES_COLS} 
-        from notes
-        where (account_id, project_id) =  (%s, %s)
-        order by note_id desc
+        SELECT {NOTES_COLS} 
+        FROM notes
+        WHERE (account_id, project_id) =  (%s, %s)
+        ORDER BY note_id DESC
         """,
         (account_id, project_id),
         Note,
@@ -317,45 +316,47 @@ def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
 def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
     return execute_stmt(
         f"""
-        select {NOTES_COLS}
-        from notes 
-        where (account_id, project_id, note_id) = (%s, %s, %s)
+        SELECT {NOTES_COLS}
+        FROM notes 
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
         """,
         (account_id, project_id, note_id),
         Note,
     )
 
 
-def create_note(account_id: UUID, project_id: UUID, new_note: NewNote) -> Note | None:
+def create_note(
+    account_id: UUID, project_id: UUID, note_in_db: NoteInDB
+) -> Note | None:
     return execute_stmt(
         f"""
-        insert into notes 
-            ({NEWNOTE_COLS}, account_id, project_id)
-        values
-            ({NEWNOTE_PLACEHOLDERS}, %s, %s)
-        returning {NOTES_COLS}
+        INSERT INTO notes 
+            ({NOTEINDB_COLS}, account_id, project_id)
+        VALUES
+            ({NOTEINDB_PLACEHOLDERS}, %s, %s)
+        RETURNING {NOTES_COLS}
         """,
-        (*tuple(new_note.dict().values()), account_id, project_id),
+        (*tuple(note_in_db.dict().values()), account_id, project_id),
         Note,
     )
 
 
 def update_note(
-    account_id: UUID, project_id: UUID, note_id: int, note: NewNote
+    account_id: UUID, project_id: UUID, note_id: int, note_in_db: NoteInDB
 ) -> Note | None:
     old_note = get_note(account_id, project_id, note_id)
 
     if old_note:
-        old_note = NewNote(**old_note.dict())
-        update_data = note.dict(exclude_unset=True)
+        old_note = NoteInDB(**old_note.dict())
+        update_data = note_in_db.dict(exclude_unset=True)
         new_note = old_note.copy(update=update_data)
 
         return execute_stmt(
             f"""
-            update notes set 
-                ({NEWNOTE_COLS}) = ({NEWNOTE_PLACEHOLDERS})
-            where (account_id, project_id, note_id) = (%s, %s, %s)
-            returning {NOTES_COLS}
+            UPDATE notes SET 
+                ({NOTEINDB_COLS}) = ({NOTEINDB_PLACEHOLDERS})
+            WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+            RETURNING {NOTES_COLS}
             """,
             (*tuple(new_note.dict().values()), account_id, project_id, note_id),
             Note,
@@ -365,9 +366,9 @@ def update_note(
 def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
     return execute_stmt(
         f"""
-        delete from notes
-        where (account_id, project_id, note_id) = (%s, %s, %s)
-        returning {NOTES_COLS}
+        DELETE FROM notes
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        RETURNING {NOTES_COLS}
         """,
         (account_id, project_id, note_id),
         Note,
@@ -376,17 +377,17 @@ def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None
 
 # TASKS
 TASKS_COLS = get_fields(Task)
-NEWTASK_COLS = get_fields(NewTask)
-NEWTASK_PLACEHOLDERS = get_placeholders(NewTask)
+TASKSINDB_COLS = get_fields(TaskInDB)
+TASKINDB_PLACEHOLDERS = get_placeholders(TaskInDB)
 
 
 def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
     return execute_stmt(
         f"""
-        select {TASKS_COLS}
-        from tasks
-        where (account_id, project_id) =  (%s, %s)
-        order by task_id desc
+        SELECT {TASKS_COLS}
+        FROM tasks
+        WHERE (account_id, project_id) =  (%s, %s)
+        ORDER BY task_id DESC
         """,
         (account_id, project_id),
         Task,
@@ -397,45 +398,47 @@ def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
 def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
     return execute_stmt(
         f"""
-        select {TASKS_COLS}
-        from tasks 
-        where (account_id, project_id, task_id) = (%s, %s, %s)
+        SELECT {TASKS_COLS}
+        FROM tasks 
+        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
         """,
         (account_id, project_id, task_id),
         Task,
     )
 
 
-def create_task(account_id: UUID, project_id: UUID, new_task: NewTask) -> Task | None:
+def create_task(
+    account_id: UUID, project_id: UUID, task_in_db: TaskInDB
+) -> Task | None:
     return execute_stmt(
         f"""
-        insert into tasks 
-            ({NEWTASK_COLS}, account_id, project_id)
-        values
-            ({NEWTASK_PLACEHOLDERS}, %s, %s)
-        returning {TASKS_COLS}
+        INSERT INTO tasks 
+            ({TASKSINDB_COLS}, account_id, project_id)
+        VALUES
+            ({TASKINDB_PLACEHOLDERS}, %s, %s)
+        RETURNING {TASKS_COLS}
         """,
-        (*tuple(new_task.dict().values()), account_id, project_id),
+        (*tuple(task_in_db.dict().values()), account_id, project_id),
         Task,
     )
 
 
 def update_task(
-    account_id: UUID, project_id: UUID, task_id: int, task: NewTask
+    account_id: UUID, project_id: UUID, task_id: int, task_in_db: TaskInDB
 ) -> Task | None:
     old_task = get_task(account_id, project_id, task_id)
 
     if old_task:
-        old_task = NewTask(**old_task.dict())
-        update_data = task.dict(exclude_unset=True)
+        old_task = TaskInDB(**old_task.dict())
+        update_data = task_in_db.dict(exclude_unset=True)
         new_task = old_task.copy(update=update_data)
 
         return execute_stmt(
             f"""
-            update tasks set 
-                ({NEWTASK_COLS}) = ({NEWTASK_PLACEHOLDERS})
-            where (account_id, project_id, task_id) = (%s, %s, %s)
-            returning {TASKS_COLS}
+            UPDATE tasks SET 
+                ({TASKSINDB_COLS}) = ({TASKINDB_PLACEHOLDERS})
+            WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+            RETURNING {TASKS_COLS}
             """,
             (*tuple(new_task.dict().values()), account_id, project_id, task_id),
             Task,
@@ -445,9 +448,9 @@ def update_task(
 def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
     return execute_stmt(
         f"""
-        delete from tasks
-        where (account_id, project_id, task_id) = (%s, %s, %s)
-        returning {TASKS_COLS}
+        DELETE FROM tasks
+        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        RETURNING {TASKS_COLS}
         """,
         (account_id, project_id, task_id),
         Task,

@@ -39,6 +39,8 @@ class UserInDB(User):
 
 
 # DATA OBJECTS
+
+# COMMON
 class Basic(BaseModel):
     name: str
     owned_by: str | None = None
@@ -51,11 +53,14 @@ class Basic2(BaseModel):
     tags: set[str] | None = None
 
 
-class CommonInDB(Basic):
-    created_by: str
-    updated_by: str
+class Basic2InDB(BaseModel):
     data: Any | None = None
     tags: list[str] | None = None
+
+
+class CommonInDB(BaseModel):
+    created_by: str
+    updated_by: str
 
 
 class DBComputed(BaseModel):
@@ -64,7 +69,7 @@ class DBComputed(BaseModel):
 
 
 # ACCOUNT
-class AccountInDB(CommonInDB):
+class AccountInDB(Basic, Basic2InDB, CommonInDB):
     pass
 
 
@@ -77,7 +82,7 @@ class Account(DBComputed, AccountInDB):
 
 
 # PROJECT
-class ProjectInDB(CommonInDB):
+class ProjectInDB(Basic, Basic2InDB, CommonInDB):
     pass
 
 
@@ -91,7 +96,7 @@ class Project(DBComputed, ProjectInDB):
 
 
 # TASK
-class TaskInDB(CommonInDB):
+class TaskInDB(Basic, Basic2InDB, CommonInDB):
     pass
 
 
@@ -106,7 +111,7 @@ class Task(DBComputed, TaskInDB):
 
 
 # NOTES
-class NoteInDB(CommonInDB):
+class NoteInDB(Basic, Basic2InDB, CommonInDB):
     pass
 
 

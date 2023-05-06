@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Security
-from uuid import UUID
 from typing import Annotated
+from uuid import UUID
 from worst_crm import db
-import worst_crm.dependencies as dep
-from worst_crm.models import Account, NewAccount, User, AccountInDB
+from worst_crm.models import Account, NewAccount, AccountInDB, User
 import json
+import worst_crm.dependencies as dep
 
 router = APIRouter(
     prefix="/accounts",
