@@ -40,6 +40,7 @@ class UserInDB(User):
 
 # DATA OBJECTS
 
+
 # COMMON
 class Basic(BaseModel):
     name: str
@@ -68,6 +69,11 @@ class DBComputed(BaseModel):
     updated_at: dt.datetime
 
 
+# STATUS
+class Status(BaseModel):
+    name: str = Field(min_length=3, max_length=20)
+
+    
 # ACCOUNT
 class AccountInDB(Basic, Basic2InDB, CommonInDB):
     pass

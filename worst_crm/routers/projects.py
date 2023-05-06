@@ -8,7 +8,7 @@ import worst_crm.dependencies as dep
 
 router = APIRouter(
     prefix="/projects",
-    dependencies=[Depends(dep.get_current_active_user)],
+    dependencies=[Depends(dep.get_current_user)],
     tags=["projects"],
 )
 
@@ -24,49 +24,46 @@ async def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 
 
 @router.post(
-    "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
+    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def create_project(
-    account_id: UUID, 
+    account_id: UUID,
     project: NewProject,
-    current_user: Annotated[User, Depends(dep.get_current_active_user)],
+    current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
-    
-    
     project_in_db = ProjectInDB(
         **project.dict(exclude={"data"}),
         data=json.dumps(project.data),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
-    
+
     return db.create_project(account_id, project_in_db)
 
 
 @router.put(
     "/{account_id}/{project_id}",
-    dependencies=[Security(dep.get_current_active_user, scopes=["rw"])],
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_project(
-    account_id: UUID, 
-    project_id: UUID, 
+    account_id: UUID,
+    project_id: UUID,
     project: NewProject,
-    current_user: Annotated[User, Depends(dep.get_current_active_user)],
+    current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
-    
     project_in_db = ProjectInDB(
         **project.dict(exclude={"data"}),
         data=json.dumps(project.data),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
-    
+
     return db.update_project(account_id, project_id, project_in_db)
 
 
 @router.delete(
     "/{account_id}/{project_id}",
-    dependencies=[Security(dep.get_current_active_user, scopes=["rw"])],
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
     return db.delete_project(account_id, project_id)

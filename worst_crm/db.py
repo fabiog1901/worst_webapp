@@ -14,6 +14,7 @@ from worst_crm.models import (
     Note,
     TaskInDB,
     Task,
+    Status
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -27,12 +28,46 @@ if not DB_URL:
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
 
 
+def load_schema(ddl_filename):
+    with open(ddl_filename) as f:
+        execute_stmt(f.read(), returning_rs=False)
+
+
 def get_fields(model) -> str:
     return ", ".join([x for x in model.__fields__.keys()])
 
 
 def get_placeholders(model) -> str:
     return ("%s, " * len(tuple(model.__fields__.keys())))[:-2]
+
+
+# STATUS
+def get_all_account_status() -> list[Status]:
+    return execute_stmt('SELECT name FROM account_status', model=Status, is_list=True)
+
+def create_account_status(status: str):
+    execute_stmt('UPSERT INTO account_status(name) VALUES (%s)', (status, ), returning_rs=False)
+
+def delete_account_status(status: str):
+    execute_stmt('DELETE FROM account_status WHERE name = %s', (status, ), returning_rs=False)
+
+def get_all_project_status() -> list[Status]:
+    return execute_stmt('SELECT name FROM project_status', model=Status, is_list=True)
+
+def create_project_status(status: str):
+    execute_stmt('UPSERT INTO project_status(name) VALUES (%s)', (status, ), returning_rs=False)
+
+def delete_project_status(status: str):
+    execute_stmt('DELETE FROM project_status WHERE name = %s', (status, ), returning_rs=False)
+
+def get_all_task_status() -> list[Status]:
+    return execute_stmt('SELECT name FROM task_status', model=Status, is_list=True)
+
+def create_task_status(status: str):
+    execute_stmt('UPSERT INTO task_status(name) VALUES (%s)', (status, ), returning_rs=False)
+
+def delete_task_status(status: str):
+    execute_stmt('DELETE FROM task_status WHERE name = %s', (status, ), returning_rs=False)
 
 
 # ADMIN/USERS
@@ -44,9 +79,9 @@ USERINDB_PLACEHOLDERS = get_placeholders(UserInDB)
 def get_all_users() -> list[User]:
     return execute_stmt(
         f"""
-        select {USERS_COLS} 
-        from users
-        order by full_name
+        SELECT {USERS_COLS} 
+        FROM users
+        ORDER BY full_name
         """,
         (),
         User,
@@ -457,7 +492,7 @@ def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None
     )
 
 
-def execute_stmt(stmt: str, args: tuple, model: PyObject, is_list: bool = False) -> Any:
+def execute_stmt(stmt: str, args: tuple = (), model: PyObject = Any, is_list: bool = False, returning_rs: bool = True) -> Any:
     def get_col_names():
         if not cur.description:
             raise ValueError("Couldn't fetch column names from ResultSet")
@@ -466,8 +501,13 @@ def execute_stmt(stmt: str, args: tuple, model: PyObject, is_list: bool = False)
 
     with pool.connection() as conn:
         with conn.cursor() as cur:
+            cur.execute(stmt, args) # type: ignore
+            
             if is_list:
-                rsl = cur.execute(stmt, args).fetchall()  # type: ignore
+                if not returning_rs:
+                    return
+                
+                rsl = cur.fetchall()  
 
                 col_names = get_col_names()
                 return [
@@ -475,8 +515,11 @@ def execute_stmt(stmt: str, args: tuple, model: PyObject, is_list: bool = False)
                 ]
 
             else:
-                rs = cur.execute(stmt, args).fetchone()  # type: ignore
-
+                if not returning_rs:
+                    return
+                
+                rs = cur.fetchone()
+                
                 if rs:
                     return model(**{k: rs[i] for i, k in enumerate(get_col_names())})
                 else:

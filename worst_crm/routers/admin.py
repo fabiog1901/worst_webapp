@@ -6,7 +6,7 @@ from worst_crm.models import NewUser, User, UserInDB, UpdatedUser, UpdatedUserIn
 
 router_admin = APIRouter(
     prefix="/admin",
-    dependencies=[Security(dep.get_current_active_user, scopes=["admin"])],
+    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
 )
 
 router_users = APIRouter(

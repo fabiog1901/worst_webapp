@@ -17,12 +17,7 @@ def login(username: str = "dummyadmin", password: str = "dummyadmin") -> str | N
 
 
 def test_setup():
-    acc_list = db.get_all_accounts()
-
-    for acc in acc_list:
-        db.delete_account(acc.account_id)
-
-    db.delete_user("dummyadmin")
+    db.load_schema("storage/worst_crm.ddl.sql")
 
     assert db.create_user(
         UserInDB(
@@ -35,7 +30,7 @@ def test_setup():
 
 
 def test_cleanup():
-    assert db.delete_user("dummyadmin")
+    pass
 
 
 # GENERAL

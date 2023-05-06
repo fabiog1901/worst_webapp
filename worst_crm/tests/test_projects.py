@@ -1,18 +1,18 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Account
+from worst_crm.models import Project
 import worst_crm.tests.test_utils as utils
 
 client = TestClient(app)
 
 
-def test_get_accounts_non_auth():
-    r = client.get("/accounts")
+def test_get_projects_non_auth():
+    r = client.get("/projects/12345")
 
     assert r.status_code == 401
 
 
-def test_crud_account():
+def test_crud_project():
     utils.test_setup()
 
     token = utils.login()

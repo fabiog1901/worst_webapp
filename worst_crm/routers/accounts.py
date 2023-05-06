@@ -8,7 +8,7 @@ import worst_crm.dependencies as dep
 
 router = APIRouter(
     prefix="/accounts",
-    dependencies=[Depends(dep.get_current_active_user)],
+    dependencies=[Depends(dep.get_current_user)],
     tags=["accounts"],
 )
 
@@ -23,10 +23,10 @@ async def get_account(account_id: UUID) -> Account | None:
     return db.get_account(account_id)
 
 
-@router.post("", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])])
+@router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def create_account(
     account: NewAccount,
-    current_user: Annotated[User, Depends(dep.get_current_active_user)],
+    current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
         **account.dict(exclude={"data"}),
@@ -39,12 +39,12 @@ async def create_account(
 
 
 @router.put(
-    "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
+    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def update_account(
     account_id: UUID,
     account: NewAccount,
-    current_user: Annotated[User, Depends(dep.get_current_active_user)],
+    current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
         **account.dict(exclude={"data"}),
@@ -56,7 +56,7 @@ async def update_account(
 
 
 @router.delete(
-    "/{account_id}", dependencies=[Security(dep.get_current_active_user, scopes=["rw"])]
+    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def delete_account(account_id: UUID) -> Account | None:
     return db.delete_account(account_id)

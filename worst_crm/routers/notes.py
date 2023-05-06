@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, Security
+from typing import Annotated
 from uuid import UUID
-
 from worst_crm import db
+from worst_crm.models import Note, NewNote, NoteInDB, User
+import json
 import worst_crm.dependencies as dep
-from worst_crm.models import NewNote, Note
 
 router = APIRouter(
     prefix="/notes",
-    dependencies=[Depends(dep.get_current_active_user)],
+    dependencies=[Depends(dep.get_current_user)],
     tags=["notes"],
 )
 
@@ -24,25 +25,48 @@ async def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | N
 
 @router.post(
     "/{account_id}/{project_id}",
-    dependencies=[Security(dep.get_current_active_user, scopes=["rw"])],
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def create_Note(account_id: UUID, project_id: UUID, note: NewNote) -> Note | None:
-    return db.create_note(account_id, project_id, note)
+async def create_note(
+    account_id: UUID,
+    project_id: UUID,
+    note: NewNote,
+    current_user: Annotated[User, Depends(dep.get_current_user)],
+) -> Note | None:
+    note_in_db = NoteInDB(
+        **note.dict(exclude={"data"}),
+        data=json.dumps(note.data),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
+    )
+
+    return db.create_note(account_id, project_id, note_in_db)
 
 
 @router.put(
     "/{account_id}/{project_id}/{note_id}",
-    dependencies=[Security(dep.get_current_active_user, scopes=["rw"])],
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def update_Note(
-    account_id: UUID, project_id: UUID, note_id: int, note: NewNote
+async def update_note(
+    account_id: UUID,
+    project_id: UUID,
+    note_id: int,
+    note: NewNote,
+    current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Note | None:
-    return db.update_note(account_id, project_id, note_id, note)
+    note_in_db = NoteInDB(
+        **note.dict(exclude={"data"}),
+        data=json.dumps(note.data),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
+    )
+
+    return db.update_note(account_id, project_id, note_id, note_in_db)
 
 
 @router.delete(
     "/{account_id}/{project_id}/{note_id}",
-    dependencies=[Security(dep.get_current_active_user, scopes=["rw"])],
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def delete_Note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
+async def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
     return db.delete_note(account_id, project_id, note_id)
