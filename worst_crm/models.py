@@ -47,6 +47,7 @@ class Basic(BaseModel):
     owned_by: str
     text: str | None = None
     status: str | None = None
+    due_date: dt.date | None = None
 
 
 class Basic2(BaseModel):
@@ -71,7 +72,7 @@ class DBComputed(BaseModel):
 
 # ACCOUNT
 class BaseAccount(Basic):
-    due_date: dt.date | None = None
+    pass
 
 
 class NewAccount(BaseAccount, Basic2):
@@ -88,7 +89,7 @@ class Account(DBComputed, AccountInDB):
 
 # PROJECT
 class BaseProject(Basic):
-    due_date: dt.date | None = None
+    pass
 
 
 class NewProject(BaseProject, Basic2):
@@ -106,7 +107,7 @@ class Project(DBComputed, ProjectInDB):
 
 # TASK
 class BaseTask(Basic):
-    due_date: dt.date | None = None
+    pass
 
 
 class NewTask(BaseTask, Basic2):
@@ -124,8 +125,9 @@ class Task(DBComputed, TaskInDB):
 
 
 # NOTES
-class BaseNote(Basic):
-    due_date: dt.date | None = None
+class BaseNote(BaseModel):
+    name: str | None = Field(min_length=2, max_length=50)
+    text: str | None = None
 
 
 class NewNote(BaseNote, Basic2):

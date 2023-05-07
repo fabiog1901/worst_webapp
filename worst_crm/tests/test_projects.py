@@ -77,6 +77,7 @@ def test_crud_project(login, setup_test):
     assert r.status_code == 200
     assert proj == Project(**r.json())
 
+    # READ ALL
     r = client.get(
         f"/projects/{proj.account_id}",
         headers={"Authorization": f"Bearer {token}"},

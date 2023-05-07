@@ -59,6 +59,7 @@ def test_crud_account(login, setup_test):
 
     assert acc == Account(**r.json())
 
+    # READ ALL
     r = client.get(
         "/accounts",
         headers={"Authorization": f"Bearer {token}"},

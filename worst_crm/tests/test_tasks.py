@@ -1,104 +1,130 @@
-# from fastapi.testclient import TestClient
-# from worst_crm.main import app
-# from worst_crm.models import Account, NewAccount
-# import worst_crm.tests.test_utils as utils
-# from pydantic import Json
+from fastapi.testclient import TestClient
+from worst_crm.main import app
+from worst_crm.models import Task
+from worst_crm.tests.test_accounts import create_account, delete_account
+from worst_crm.tests.test_projects import create_project, delete_project
+from uuid import UUID
+from worst_crm.tests.utils import login, setup_test
 
-# client = TestClient(app)
-
-
-# def test_get_accounts_non_auth():
-#     r = client.get("/accounts")
-
-#     assert r.status_code == 401
+client = TestClient(app)
 
 
-# def test_crud_account():
-#     utils.test_setup()
+# CREATE
+def test_get_tasks_non_auth():
+    r = client.get("/tasks/dfads/asdgfads")
 
-#     token = utils.login()
+    assert r.status_code == 401
 
-#     assert token is not None
 
-#     # CREATE
-#     r = client.post(
-#         "/accounts",
-#         headers={"Authorization": f"Bearer {token}"},
-#         content="""
-#         {
-#             "name": "dummy_acc1",
-#             "description": "dummy descr",
-#             "status": "NEW",
-#             "tags": ["t1", "t2", "t2"],
-#             "data": {"k": "v"}
-#         }""",
-#     )
+def get_task(
+    account_id: UUID, project_id: UUID, task_id: int, token: str
+) -> Task | None:
+    r = client.get(
+        f"/tasks/{account_id}/{project_id}/{task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
-#     assert r.status_code == 200
-#     acc = Account(**r.json())
+    assert r.status_code == 200
 
-#     # READ
-#     r = client.get(
-#         f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-#     )
+    if r.json():
+        return Task(**r.json())
+    return None
 
-#     assert acc == Account(**r.json())
 
-#     r = client.get(
-#         "/accounts",
-#         headers={"Authorization": f"Bearer {token}"},
-#     )
+def create_task(account_id: UUID, project_id: UUID, token: str) -> Task:
+    r = client.post(
+        f"/tasks/{account_id}/{project_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content="""
+        {
+            "name": "dummy_task1",
+            "description": "dummy Task descr",
+            "status": "NEW",
+            "owned_by": "dummyadmin",
+            "tags": ["p1", "p2", "p2"],
+            "data": {"key-task": "val-task"}
+        }""",
+    )
 
-#     l: list[Account] = [Account(**x) for x in r.json()]
+    assert r.status_code == 200
 
-#     assert len(l) > 0
+    return Task(**r.json())
 
-#     # UPDATE
-#     r = client.put(
-#         f"/accounts/{acc.account_id}",
-#         headers={"Authorization": f"Bearer {token}"},
-#         content="""
-#         {
-#             "name": "dummy_acc1",
-#             "description": "dummy descr UPDATED",
-#             "status": "NEW",
-#             "owned_by": "dummyadmin",
-#             "tags": ["t1", "t2", "t5555"],
-#             "data": {"k": "v", "kk": "vv"}
-#         }""",
-#     )
 
-#     upd_acc = Account(**r.json())
+def delete_task(
+    account_id: UUID, project_id: UUID, task_id: int, token: str
+) -> Task | None:
+    r = client.delete(
+        f"/tasks/{account_id}/{project_id}/{task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
-#     r = client.get(
-#         f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-#     )
+    assert r.status_code == 200
 
-#     assert upd_acc == Account(**r.json())
+    if r.json():
+        return Task(**r.json())
+    return None
 
-#     # DELETE
-#     r = client.delete(
-#         f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-#     )
 
-#     del_acc = Account(**r.json())
+def test_crud_task(login, setup_test):
+    token = login
 
-#     assert del_acc == upd_acc
+    # CREATE
+    acc = create_account(token)
 
-#     # a read returns null
-#     r = client.get(
-#         f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-#     )
+    proj = create_project(acc.account_id, token)
 
-#     assert r.status_code == 200
-#     assert r.json() is None
+    task = create_task(proj.account_id, proj.project_id, token)
 
-#     # a second delete return null
-#     r = client.delete(
-#         f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-#     )
+    # READ
+    r = client.get(
+        f"/tasks/{task.account_id}/{task.project_id}/{task.task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200
+    assert task == Task(**r.json())
 
-#     assert r.status_code == 200
-#     assert r.json() is None
+    # READ ALL
+    r = client.get(
+        f"/tasks/{task.account_id}/{task.project_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
-#     utils.test_cleanup()
+    l: list[Task] = [Task(**x) for x in r.json()]
+
+    assert len(l) > 0
+
+    # UPDATE
+    r = client.put(
+        f"/tasks/{task.account_id}/{proj.project_id}/{task.task_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        content="""
+        {
+            "name": "dummy_proj1",
+            "description": "dummy Task descr UPDATED",
+            "status": "NEW",
+            "owned_by": "dummyadmin",
+            "tags": ["p1111", "p2222", "p2222"]
+        }""",
+    )
+
+    assert r.status_code == 200
+
+    upd_task = Task(**r.json())
+
+    assert upd_task == get_task(task.account_id, task.project_id, task.task_id, token)
+
+    # DELETE
+    del_task = delete_task(task.account_id, task.project_id, task.task_id, token)
+
+    assert del_task == upd_task
+
+    # a read returns null
+    assert get_task(task.account_id, task.project_id, task.task_id, token) is None
+
+    # a second delete return null
+    assert delete_task(task.account_id, task.project_id, task.task_id, token) is None
+
+    # finally, delete account
+    assert delete_project(task.account_id, task.project_id, token)
+    assert delete_account(task.account_id, token)

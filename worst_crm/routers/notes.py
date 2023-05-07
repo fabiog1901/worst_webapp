@@ -57,7 +57,6 @@ async def update_note(
     note_in_db = NoteInDB(
         **note.dict(exclude={"data"}),
         data=json.dumps(note.data),
-        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
 

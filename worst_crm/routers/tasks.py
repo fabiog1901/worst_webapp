@@ -57,7 +57,6 @@ async def update_task(
     task_in_db = TaskInDB(
         **task.dict(exclude={"data"}),
         data=json.dumps(task.data),
-        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
 
