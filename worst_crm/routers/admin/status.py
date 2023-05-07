@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Security
+from fastapi import APIRouter
 from worst_crm import db
 from worst_crm.models import Status
-import worst_crm.dependencies as dep
+
 
 router = APIRouter(
     prefix="/status",
-    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
-    tags=["status"],
+    tags=["admin/status"]
 )
 
 

@@ -49,7 +49,6 @@ async def update_account(
     acc_in_db = AccountInDB(
         **account.dict(exclude={"data"}),
         data=json.dumps(account.data),
-        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
     return db.update_account(account_id, acc_in_db)

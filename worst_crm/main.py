@@ -1,13 +1,12 @@
 from worst_crm import db
 from fastapi import FastAPI, Depends, HTTPException, Query, status
-import fastapi
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from worst_crm.models import UserInDB, Token, User, UpdatedUserInDB
 from worst_crm.routers import accounts, projects, notes, tasks
 import os
 import worst_crm.dependencies as dep
-from worst_crm.routers.admin import admin, status
+from worst_crm.routers.admin import admin
 
 app = FastAPI(
     title="WorstCRM API", docs_url="/api", openapi_url="/worst_crm.openapi.json"
@@ -37,7 +36,7 @@ async def update_password(
     user = db.get_user_with_hash(current_user.user_id)
     if not user or not dep.verify_password(old_password, user.hashed_password):
         raise HTTPException(
-            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
 
@@ -56,7 +55,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     )
     if not user:
         raise HTTPException(
-            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -71,7 +70,8 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 
 app.include_router(accounts.router)
 app.include_router(projects.router)
-app.include_router(notes.router)
 app.include_router(tasks.router)
-app.include_router(status.router)
-app.include_router(admin.router_admin)
+app.include_router(notes.router)
+
+# ADMIN
+app.include_router(admin.router)

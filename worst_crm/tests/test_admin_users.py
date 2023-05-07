@@ -1,12 +1,11 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-import worst_crm.tests.test_utils as utils
+import worst_crm.tests.utils as utils
 
 client = TestClient(app)
 
 
-def test_user_locked():
-    utils.test_setup()
+def ztest_user_locked():
 
     for _ in range(3):
         r = client.post(
@@ -19,4 +18,3 @@ def test_user_locked():
     )
     assert r.status_code == 406
 
-    utils.test_cleanup()

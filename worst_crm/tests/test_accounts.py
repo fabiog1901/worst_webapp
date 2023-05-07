@@ -1,25 +1,19 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Account
-import worst_crm.tests.test_utils as utils
+from  worst_crm.tests.utils import login, setup_test
+from uuid import UUID
 
 client = TestClient(app)
 
-
+# CREATE
 def test_get_accounts_non_auth():
     r = client.get("/accounts")
 
     assert r.status_code == 401
 
 
-def test_crud_account():
-    utils.test_setup()
-
-    token = utils.login()
-
-    assert token is not None
-
-    # CREATE
+def create_account(token: str) -> Account:
     r = client.post(
         "/accounts",
         headers={"Authorization": f"Bearer {token}"},
@@ -28,13 +22,32 @@ def test_crud_account():
             "name": "dummy_acc1",
             "description": "dummy descr",
             "status": "NEW",
-            "tags": ["t1", "t2", "t2"],
-            "data": {"k": "v"}
+            "owned_by": "dummyadmin",
+            "tags": ["t11", "t22", "t22"]
         }""",
     )
 
     assert r.status_code == 200
-    acc = Account(**r.json())
+
+    return Account(**r.json())
+
+
+def delete_account(account_id: UUID, token: str, ):
+    r = client.delete(
+        f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert r.status_code == 200
+    
+    return Account(**r.json())
+
+
+def test_crud_account(login, setup_test):
+
+    token = login
+
+    # CREATE
+    acc = create_account(token)
 
     # READ
     r = client.get(
@@ -76,11 +89,7 @@ def test_crud_account():
     assert upd_acc == Account(**r.json())
 
     # DELETE
-    r = client.delete(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
-
-    del_acc = Account(**r.json())
+    del_acc = delete_account(acc.account_id, token)
 
     assert del_acc == upd_acc
 
@@ -99,5 +108,3 @@ def test_crud_account():
 
     assert r.status_code == 200
     assert r.json() is None
-
-    utils.test_cleanup()

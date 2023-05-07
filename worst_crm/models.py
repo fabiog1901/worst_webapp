@@ -44,7 +44,7 @@ class UserInDB(User):
 # COMMON
 class Basic(BaseModel):
     name: str | None = Field(min_length=2, max_length=50)
-    owned_by: str | None = None
+    owned_by: str
     text: str | None = None
     status: str | None = None
 
@@ -60,8 +60,8 @@ class Basic2InDB(BaseModel):
 
 
 class CommonInDB(BaseModel):
-    created_by: str
-    updated_by: str
+    created_by: str | None = None
+    updated_by: str | None = None
 
 
 class DBComputed(BaseModel):

@@ -53,8 +53,8 @@ CREATE TABLE accounts (
     account_id UUID NOT NULL DEFAULT gen_random_uuid(),
     name STRING NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by STRING NOT NULL,
-    owned_by STRING NULL,
+    created_by STRING NULL,
+    owned_by STRING NOT NULL,
     due_date DATE NULL,
     text STRING NULL,
     status STRING NULL,
@@ -66,7 +66,7 @@ CREATE TABLE accounts (
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES account_status(name) ON DELETE SET NULL,
     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
-        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
         REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
@@ -82,7 +82,7 @@ CREATE TABLE projects (
     project_id UUID NOT NULL DEFAULT gen_random_uuid(),
     name STRING NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by STRING NOT NULL,
+    created_by STRING NULL,
     owned_by STRING NOT NULL,
     due_date DATE NULL,
     text STRING,
@@ -97,7 +97,7 @@ CREATE TABLE projects (
     CONSTRAINT fk_accounts FOREIGN KEY (account_id) 
         REFERENCES accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
-        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
         REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
@@ -161,6 +161,25 @@ CREATE TABLE notes (
 
 CREATE INVERTED INDEX notes_data_gin ON notes(data);
 CREATE INVERTED INDEX notes_tags_gin ON notes(tags);
+
+
+-- CREATE TABLE reminders (
+--     user_id STRING NOT NULL,
+--     name STRING NOT NULL,
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+--     created_by STRING NULL,
+--     due_date DATE NULL,
+--     text STRING,
+--     updated_by STRING NULL,
+--     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+--     CONSTRAINT pk PRIMARY KEY (user_idaccount_id, project_id, note_id),
+--     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
+--         REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,
+--     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+--         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+--     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+--         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+-- );
 
 -- INSERT INTO accounts
 --     (account_id, account_name, description, tags)

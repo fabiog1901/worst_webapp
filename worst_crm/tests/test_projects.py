@@ -1,103 +1,121 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Project
-import worst_crm.tests.test_utils as utils
+from worst_crm.tests.test_accounts import create_account, delete_account
+from uuid import UUID
+from worst_crm.tests.utils import login, setup_test
 
 client = TestClient(app)
 
 
+# CREATE
 def test_get_projects_non_auth():
     r = client.get("/projects/12345")
 
     assert r.status_code == 401
 
 
-def test_crud_project():
-    utils.test_setup()
+def get_project(account_id: UUID, project_id: UUID, token: str) -> Project | None:
+    r = client.get(
+        f"/projects/{account_id}/{project_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
-    token = utils.login()
+    assert r.status_code == 200
 
-    assert token is not None
+    if r.json():
+        return Project(**r.json())
+    return None
 
-    # CREATE
+
+def create_project(account_id: UUID, token: str) -> Project:
     r = client.post(
-        "/accounts",
+        f"/projects/{account_id}",
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_acc1",
-            "description": "dummy descr",
+            "name": "dummy_prpj1",
+            "description": "dummy project descr",
             "status": "NEW",
-            "tags": ["t1", "t2", "t2"],
-            "data": {"k": "v"}
+            "owned_by": "dummyadmin",
+            "tags": ["p1", "p2", "p2"],
+            "data": {"keyproj": "valproj"}
         }""",
     )
 
     assert r.status_code == 200
-    acc = Account(**r.json())
 
-    # READ
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+    return Project(**r.json())
 
-    assert acc == Account(**r.json())
 
-    r = client.get(
-        "/accounts",
+def delete_project(account_id: UUID, project_id: UUID, token: str) -> Project | None:
+    r = client.delete(
+        f"/projects/{account_id}/{project_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    l: list[Account] = [Account(**x) for x in r.json()]
+    assert r.status_code == 200
+
+    if r.json():
+        return Project(**r.json())
+    return None
+
+
+def test_crud_project(login, setup_test):
+    token = login
+
+    # CREATE
+    acc = create_account(token)
+
+    proj = create_project(acc.account_id, token)
+
+    # READ
+    r = client.get(
+        f"/projects/{proj.account_id}/{proj.project_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200
+    assert proj == Project(**r.json())
+
+    r = client.get(
+        f"/projects/{proj.account_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    l: list[Project] = [Project(**x) for x in r.json()]
 
     assert len(l) > 0
 
     # UPDATE
     r = client.put(
-        f"/accounts/{acc.account_id}",
+        f"/projects/{proj.account_id}/{proj.project_id}",
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_acc1",
-            "description": "dummy descr UPDATED",
+            "name": "dummy_proj1",
+            "description": "dummy project descr UPDATED",
             "status": "NEW",
             "owned_by": "dummyadmin",
-            "tags": ["t1", "t2", "t5555"],
-            "data": {"k": "v", "kk": "vv"}
+            "tags": ["p1111", "p2222", "p2222"]
         }""",
     )
 
-    upd_acc = Account(**r.json())
+    assert r.status_code == 200
 
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+    upd_proj = Project(**r.json())
 
-    assert upd_acc == Account(**r.json())
+    assert upd_proj == get_project(proj.account_id, proj.project_id, token)
 
     # DELETE
-    r = client.delete(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+    del_proj = delete_project(proj.account_id, proj.project_id, token)
 
-    del_acc = Account(**r.json())
-
-    assert del_acc == upd_acc
+    assert del_proj == upd_proj
 
     # a read returns null
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert r.status_code == 200
-    assert r.json() is None
+    assert get_project(proj.account_id, proj.project_id, token) is None
 
     # a second delete return null
-    r = client.delete(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+    assert delete_project(proj.account_id, proj.project_id, token) is None
 
-    assert r.status_code == 200
-    assert r.json() is None
-
-    utils.test_cleanup()
+    # finally, delete account
+    assert delete_account(proj.account_id, token)

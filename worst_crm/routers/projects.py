@@ -54,7 +54,6 @@ async def update_project(
     project_in_db = ProjectInDB(
         **project.dict(exclude={"data"}),
         data=json.dumps(project.data),
-        created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
 
