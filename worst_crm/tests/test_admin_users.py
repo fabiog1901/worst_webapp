@@ -6,7 +6,6 @@ client = TestClient(app)
 
 
 def ztest_user_locked():
-
     for _ in range(3):
         r = client.post(
             "/login", data={"username": "dummyadmin", "password": "wrong-password"}
@@ -17,4 +16,3 @@ def ztest_user_locked():
         "/login", data={"username": "dummyadmin", "password": "wrong-password"}
     )
     assert r.status_code == 406
-

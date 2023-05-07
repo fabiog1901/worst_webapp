@@ -3,10 +3,7 @@ from worst_crm import db
 from worst_crm.models import Status
 
 
-router = APIRouter(
-    prefix="/status",
-    tags=["admin/status"]
-)
+router = APIRouter(prefix="/status", tags=["admin/status"])
 
 
 # ACCOUNT

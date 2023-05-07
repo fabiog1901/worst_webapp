@@ -42,5 +42,3 @@ async def update_user(user_id: str, user: UpdatedUser) -> User | None:
 @router.delete("/{user_id}")
 async def delete_user(user_id: str) -> User | None:
     return db.delete_user(user_id)
-
-

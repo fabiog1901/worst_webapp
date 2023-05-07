@@ -1,10 +1,11 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Account
-from  worst_crm.tests.utils import login, setup_test
+from worst_crm.tests.utils import login, setup_test
 from uuid import UUID
 
 client = TestClient(app)
+
 
 # CREATE
 def test_get_accounts_non_auth():
@@ -32,18 +33,20 @@ def create_account(token: str) -> Account:
     return Account(**r.json())
 
 
-def delete_account(account_id: UUID, token: str, ):
+def delete_account(
+    account_id: UUID,
+    token: str,
+):
     r = client.delete(
         f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
     )
 
     assert r.status_code == 200
-    
+
     return Account(**r.json())
 
 
 def test_crud_account(login, setup_test):
-
     token = login
 
     # CREATE

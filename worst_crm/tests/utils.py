@@ -7,6 +7,7 @@ import pytest
 
 client = TestClient(app)
 
+
 @pytest.fixture
 def login(username: str = "dummyadmin", password: str = "dummyadmin") -> str:
     r = client.post("/login", data={"username": username, "password": password})
@@ -14,6 +15,7 @@ def login(username: str = "dummyadmin", password: str = "dummyadmin") -> str:
     assert r.status_code == 200
 
     return r.json()["access_token"]
+
 
 @pytest.fixture(scope="session")
 def setup_test():
