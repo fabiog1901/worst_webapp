@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Security
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
-from worst_crm.models import Note, NewNote, NoteInDB, User
+from worst_crm.models import Note, NewNote, UpdatedNote, NoteInDB, User
 import json
 import worst_crm.dependencies as dep
 
@@ -34,10 +34,7 @@ async def create_note(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Note | None:
     note_in_db = NoteInDB(
-        **note.dict(exclude={"data"}),
-        data=json.dumps(note.data),
-        created_by=current_user.user_id,
-        updated_by=current_user.user_id
+        **note.dict(), created_by=current_user.user_id, updated_by=current_user.user_id
     )
 
     return db.create_note(account_id, project_id, note_in_db)
@@ -51,7 +48,7 @@ async def update_note(
     account_id: UUID,
     project_id: UUID,
     note_id: int,
-    note: NewNote,
+    note: UpdatedNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Note | None:
     note_in_db = NoteInDB(

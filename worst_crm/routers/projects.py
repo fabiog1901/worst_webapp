@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Security
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
-from worst_crm.models import Project, NewProject, ProjectInDB, User
+from worst_crm.models import Project, NewProject, UpdatedProject, ProjectInDB, User
 import json
 import worst_crm.dependencies as dep
 
@@ -32,8 +32,7 @@ async def create_project(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **project.dict(exclude={"data"}),
-        data=json.dumps(project.data),
+        **project.dict(),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -48,7 +47,7 @@ async def create_project(
 async def update_project(
     account_id: UUID,
     project_id: UUID,
-    project: NewProject,
+    project: UpdatedProject,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Security
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
-from worst_crm.models import Account, NewAccount, AccountInDB, User
+from worst_crm.models import Account, NewAccount, UpdatedAccount, AccountInDB, User
 import json
 import worst_crm.dependencies as dep
 
@@ -25,12 +25,11 @@ async def get_account(account_id: UUID) -> Account | None:
 
 @router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def create_account(
-    account: NewAccount,
+    new_account: NewAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **account.dict(exclude={"data"}),
-        data=json.dumps(account.data),
+        **new_account.dict(),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -43,12 +42,12 @@ async def create_account(
 )
 async def update_account(
     account_id: UUID,
-    account: NewAccount,
+    updated_account: UpdatedAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **account.dict(exclude={"data"}),
-        data=json.dumps(account.data),
+        **updated_account.dict(exclude={"data"}),
+        data=json.dumps(updated_account.data),
         updated_by=current_user.user_id
     )
     return db.update_account(account_id, acc_in_db)

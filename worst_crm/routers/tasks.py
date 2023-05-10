@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Security
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
-from worst_crm.models import Task, NewTask, TaskInDB, User
+from worst_crm.models import Task, NewTask, UpdatedTask, TaskInDB, User
 import json
 import worst_crm.dependencies as dep
 
@@ -34,10 +34,7 @@ async def create_task(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
     task_in_db = TaskInDB(
-        **task.dict(exclude={"data"}),
-        data=json.dumps(task.data),
-        created_by=current_user.user_id,
-        updated_by=current_user.user_id
+        **task.dict(), created_by=current_user.user_id, updated_by=current_user.user_id
     )
 
     return db.create_task(account_id, project_id, task_in_db)
@@ -51,7 +48,7 @@ async def update_task(
     account_id: UUID,
     project_id: UUID,
     task_id: int,
-    task: NewTask,
+    task: UpdatedTask,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
     task_in_db = TaskInDB(

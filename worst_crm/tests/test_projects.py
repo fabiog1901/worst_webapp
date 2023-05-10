@@ -34,12 +34,7 @@ def create_project(account_id: UUID, token: str) -> Project:
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_prpj1",
-            "description": "dummy project descr",
-            "status": "NEW",
-            "owned_by": "dummyadmin",
-            "tags": ["p1", "p2", "p2"],
-            "data": {"keyproj": "valproj"}
+            "name": "dummy_prpj1"
         }""",
     )
 
@@ -94,8 +89,9 @@ def test_crud_project(login, setup_test):
         content="""
         {
             "name": "dummy_proj1",
-            "description": "dummy project descr UPDATED",
+            "text": "dummy project descr UPDATED",
             "status": "NEW",
+            "attachments" : ["gino", "pino", "lino"],
             "owned_by": "dummyadmin",
             "tags": ["p1111", "p2222", "p2222"]
         }""",

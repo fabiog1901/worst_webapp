@@ -43,9 +43,13 @@ class UserInDB(User):
 
 # COMMON
 class Basic(BaseModel):
-    name: str | None = Field(min_length=2, max_length=50)
-    owned_by: str
+    name: str = Field(min_length=2, max_length=50)
+
+
+class Basic1(Basic):
+    owned_by: str | None = None
     text: str | None = None
+    attachments: list[str] | None = None
     status: str | None = None
     due_date: dt.date | None = None
 
@@ -71,15 +75,15 @@ class DBComputed(BaseModel):
 
 
 # ACCOUNT
-class BaseAccount(Basic):
+class NewAccount(Basic):
     pass
 
 
-class NewAccount(BaseAccount, Basic2):
+class UpdatedAccount(NewAccount, Basic1, Basic2):
     pass
 
 
-class AccountInDB(BaseAccount, Basic2InDB, CommonInDB):
+class AccountInDB(NewAccount, Basic1, Basic2InDB, CommonInDB):
     pass
 
 
@@ -88,15 +92,15 @@ class Account(DBComputed, AccountInDB):
 
 
 # PROJECT
-class BaseProject(Basic):
+class NewProject(Basic):
     pass
 
 
-class NewProject(BaseProject, Basic2):
+class UpdatedProject(NewProject, Basic1, Basic2):
     pass
 
 
-class ProjectInDB(BaseProject, Basic2InDB, CommonInDB):
+class ProjectInDB(NewProject, Basic1, Basic2InDB, CommonInDB):
     pass
 
 
@@ -106,15 +110,15 @@ class Project(DBComputed, ProjectInDB):
 
 
 # TASK
-class BaseTask(Basic):
+class NewTask(Basic):
     pass
 
 
-class NewTask(BaseTask, Basic2):
+class UpdatedTask(NewTask, Basic1, Basic2):
     pass
 
 
-class TaskInDB(BaseTask, Basic2InDB, CommonInDB):
+class TaskInDB(NewTask, Basic1, Basic2InDB, CommonInDB):
     pass
 
 
@@ -125,16 +129,16 @@ class Task(DBComputed, TaskInDB):
 
 
 # NOTES
-class BaseNote(BaseModel):
-    name: str | None = Field(min_length=2, max_length=50)
-    text: str | None = None
-
-
-class NewNote(BaseNote, Basic2):
+class NewNote(Basic):
     pass
 
 
-class NoteInDB(BaseNote, Basic2InDB, CommonInDB):
+class UpdatedNote(NewNote, Basic2):
+    text: str | None = None
+    attachments: list[str] | None = None
+
+
+class NoteInDB(NewNote, Basic2InDB, CommonInDB):
     pass
 
 

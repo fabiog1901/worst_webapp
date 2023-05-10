@@ -20,11 +20,7 @@ def create_account(token: str) -> Account:
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_acc1",
-            "description": "dummy descr",
-            "status": "NEW",
-            "owned_by": "dummyadmin",
-            "tags": ["t11", "t22", "t22"]
+            "name": "dummy_acc1"
         }""",
     )
 
@@ -76,7 +72,7 @@ def test_crud_account(login, setup_test):
         content="""
         {
             "name": "dummy_acc1",
-            "description": "dummy descr UPDATED",
+            "text": "dummy descr UPDATED",
             "status": "NEW",
             "owned_by": "dummyadmin",
             "tags": ["t1", "t2", "t5555"],

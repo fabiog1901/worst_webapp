@@ -50,18 +50,23 @@ INSERT INTO task_status (name) VALUES ('NEW'), ('OPEN'), ('ON HOLD'), ('PENDING'
 
 
 CREATE TABLE accounts (
+    -- pk
     account_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    name STRING NOT NULL,
+    -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
-    owned_by STRING NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
+    -- fields not nullable
+    name STRING NOT NULL,
+    -- fields nullable
+    owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
+    attachments STRING[] NULL,
     status STRING NULL,
     data JSONB NULL,
     tags STRING [],
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
-    updated_by STRING NULL,
     CONSTRAINT pk PRIMARY KEY (account_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES account_status(name) ON DELETE SET NULL,
@@ -78,19 +83,24 @@ CREATE INVERTED INDEX accounts_data_gin ON accounts(data);
 CREATE INVERTED INDEX accounts_tags_gin ON accounts(tags);
 
 CREATE TABLE projects (
+    -- pk
     account_id UUID NOT NULL,
     project_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    name STRING NOT NULL,
+    -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
-    owned_by STRING NOT NULL,
-    due_date DATE NULL,
-    text STRING,
-    status STRING,
-    data JSONB NULL,
-    tags STRING [],
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
+    -- fields not nullable
+    name STRING NOT NULL,
+    -- fields nullable
+    owned_by STRING NULL,
+    due_date DATE NULL,
+    text STRING NULL,
+    attachments STRING[] NULL,
+    status STRING NULL,
+    data JSONB NULL,
+    tags STRING [],
     CONSTRAINT pk PRIMARY KEY (account_id, project_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES project_status(name) ON DELETE SET NULL,
@@ -108,20 +118,25 @@ CREATE INVERTED INDEX projects_data_gin ON projects(data);
 CREATE INVERTED INDEX projects_tags_gin ON projects(tags);
 
 CREATE TABLE tasks (
+    -- pk
     account_id UUID NOT NULL,
     project_id UUID NOT NULL,
     task_id INT8 NOT NULL DEFAULT now()::INT8,
-    name STRING NOT NULL,
+    -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
-    owned_by STRING NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
+    -- fields not nullable
+    name STRING NOT NULL,
+    -- fields nullable
+    owned_by STRING NULL,
     due_date DATE NULL,
-    text STRING,
-    status STRING,
+    text STRING NULL,
+    attachments STRING[] NULL,
+    status STRING NULL,
     data JSONB NULL,
     tags STRING [],
-    updated_by STRING NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, task_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES task_status(name) ON DELETE SET NULL,
@@ -139,17 +154,22 @@ CREATE INVERTED INDEX tasks_data_gin ON tasks(data);
 CREATE INVERTED INDEX tasks_tags_gin ON tasks(tags);
 
 CREATE TABLE notes (
+    -- pk
     account_id UUID NOT NULL,
     project_id UUID NOT NULL,
     note_id INT8 NOT NULL DEFAULT now()::INT8,
-    name STRING NOT NULL,
+    -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
-    text STRING,
-    data JSONB NULL,
-    tags STRING [],
-    updated_by STRING NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
+    -- fields not nullable
+    name STRING NOT NULL,
+    -- fields nullable
+    text STRING NULL,
+    attachments STRING[] NULL,
+    data JSONB NULL,
+    tags STRING [] NULL,
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, note_id),
     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
         REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,

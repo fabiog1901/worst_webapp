@@ -1,3 +1,4 @@
+from fastapi.responses import HTMLResponse, FileResponse
 from worst_crm import db
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -7,17 +8,67 @@ from worst_crm.routers import accounts, projects, notes, tasks
 import os
 import worst_crm.dependencies as dep
 from worst_crm.routers.admin import admin
+from fastapi.middleware.cors import CORSMiddleware
+import minio
 
 app = FastAPI(
     title="WorstCRM API", docs_url="/api", openapi_url="/worst_crm.openapi.json"
 )
 
+origins = [
+    "http://localhost",
+    "http://localhost:8000" "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS", 1800))
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
+S3_USE_SECURE_TLS = (
+    True
+    if os.getenv("S3_USE_SECURE_TLS", "True").lower()
+    in ["true", "1", "t", "y", "yes", "on"]
+    else False
+)
+S3_BUCKET = os.getenv("S3_BUCKET")
+
+
+minio_client = minio.Minio(
+    endpoint=S3_ENDPOINT_URL,
+    secure=S3_USE_SECURE_TLS,
+    access_key=S3_ACCESS_KEY,
+    secret_key=S3_SECRET_KEY,
+)
+
+
+@app.get("/presigned-get-url")
+def get_presigned_get_url(name: str):
+    data = minio_client.presigned_get_object(S3_BUCKET, name)
+    return HTMLResponse(content=data)
+
+
+@app.get("/presigned-put-url")
+def get_presigned_put_url(name: str):
+    data = minio_client.presigned_put_object(S3_BUCKET, name)
+    return HTMLResponse(content=data)
 
 
 @app.get("/healthcheck")
 async def healthcheck():
     return {}
+
+
+@app.get("/")
+async def home():
+    return FileResponse("web/index.html")
 
 
 @app.get("/me", dependencies=[Depends(dep.get_current_user)])

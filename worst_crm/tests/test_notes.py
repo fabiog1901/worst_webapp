@@ -11,7 +11,7 @@ client = TestClient(app)
 
 # CREATE
 def test_get_notes_non_auth():
-    r = client.get("/notes/dfads/asdgfads")
+    r = client.get("/notes/12345/12345")
 
     assert r.status_code == 401
 
@@ -38,7 +38,7 @@ def create_note(account_id: UUID, project_id: UUID, token: str) -> Note:
         content="""
         {
             "name": "dummy_note1",
-            "description": "dummy Note descr",
+            "text": "dummy Note descr",
             "status": "NEW",
             "tags": ["p1", "p2", "p2"],
             "data": {"key-note": "val-note"}

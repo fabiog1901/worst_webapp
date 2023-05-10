@@ -37,12 +37,7 @@ def create_task(account_id: UUID, project_id: UUID, token: str) -> Task:
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_task1",
-            "description": "dummy Task descr",
-            "status": "NEW",
-            "owned_by": "dummyadmin",
-            "tags": ["p1", "p2", "p2"],
-            "data": {"key-task": "val-task"}
+            "name": "dummy_task1"
         }""",
     )
 
