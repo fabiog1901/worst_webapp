@@ -63,10 +63,11 @@ CREATE TABLE accounts (
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
-    attachments STRING[] NULL,
     status STRING NULL,
     data JSONB NULL,
     tags STRING [],
+    -- not in models
+    attachments STRING[] NULL,
     CONSTRAINT pk PRIMARY KEY (account_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES account_status(name) ON DELETE SET NULL,
@@ -97,10 +98,11 @@ CREATE TABLE projects (
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
-    attachments STRING[] NULL,
     status STRING NULL,
     data JSONB NULL,
     tags STRING [],
+    -- not in models
+    attachments STRING[] NULL,
     CONSTRAINT pk PRIMARY KEY (account_id, project_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES project_status(name) ON DELETE SET NULL,
@@ -133,10 +135,11 @@ CREATE TABLE tasks (
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
-    attachments STRING[] NULL,
     status STRING NULL,
     data JSONB NULL,
     tags STRING [],
+    -- not in models
+    attachments STRING[] NULL,
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, task_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES task_status(name) ON DELETE SET NULL,
@@ -167,9 +170,10 @@ CREATE TABLE notes (
     name STRING NOT NULL,
     -- fields nullable
     text STRING NULL,
-    attachments STRING[] NULL,
     data JSONB NULL,
     tags STRING [] NULL,
+    -- not in models
+    attachments STRING[] NULL,
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, note_id),
     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
         REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,

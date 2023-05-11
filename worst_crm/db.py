@@ -222,6 +222,7 @@ def get_account(account_id: UUID) -> Account | None:
     )
 
 
+# TODO this should be just NewAccount + CommonInDB
 def create_account(account_in_db: AccountInDB) -> Account | None:
     return execute_stmt(
         f"""
@@ -265,6 +266,30 @@ def delete_account(account_id: UUID) -> Account | None:
         """,
         (account_id,),
         Account,
+    )
+
+
+def add_account_attachment(account_id: UUID, s3_object_name: str) -> None:
+    return execute_stmt(
+        """
+        UPDATE accounts SET
+            attachments = array_append(attachments, %s)
+        WHERE account_id = %s
+        """,
+        (s3_object_name, account_id),
+        returning_rs=False,
+    )
+
+
+def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
+    return execute_stmt(
+        """
+        UPDATE accounts SET
+            attachments = array_remove(attachments, %s)
+        WHERE account_id = %s
+        """,
+        (s3_object_name, account_id),
+        returning_rs=False,
     )
 
 
@@ -348,85 +373,31 @@ def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
     )
 
 
-# NOTES
-NOTES_COLS = get_fields(Note)
-NOTEINDB_COLS = get_fields(NoteInDB)
-NOTEINDB_PLACEHOLDERS = get_placeholders(NoteInDB)
-
-
-def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
+def add_project_attachment(
+    account_id: UUID, project_id: UUID, s3_object_name: str
+) -> None:
     return execute_stmt(
-        f"""
-        SELECT {NOTES_COLS} 
-        FROM notes
-        WHERE (account_id, project_id) =  (%s, %s)
-        ORDER BY note_id DESC
+        """
+        UPDATE projects SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, project_id) = (%s, %s)
         """,
-        (account_id, project_id),
-        Note,
-        True,
+        (s3_object_name, account_id, project_id),
+        returning_rs=False,
     )
 
 
-def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
+def remove_project_attachment(
+    account_id: UUID, project_id: UUID, s3_object_name: str
+) -> None:
     return execute_stmt(
-        f"""
-        SELECT {NOTES_COLS}
-        FROM notes 
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        """
+        UPDATE projects SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, project_id) = (%s, %s)
         """,
-        (account_id, project_id, note_id),
-        Note,
-    )
-
-
-def create_note(
-    account_id: UUID, project_id: UUID, note_in_db: NoteInDB
-) -> Note | None:
-    return execute_stmt(
-        f"""
-        INSERT INTO notes 
-            ({NOTEINDB_COLS}, account_id, project_id)
-        VALUES
-            ({NOTEINDB_PLACEHOLDERS}, %s, %s)
-        RETURNING {NOTES_COLS}
-        """,
-        (*tuple(note_in_db.dict().values()), account_id, project_id),
-        Note,
-    )
-
-
-def update_note(
-    account_id: UUID, project_id: UUID, note_id: int, note_in_db: NoteInDB
-) -> Note | None:
-    old_note = get_note(account_id, project_id, note_id)
-
-    if old_note:
-        old_note = NoteInDB(**old_note.dict())
-        update_data = note_in_db.dict(exclude_unset=True)
-        new_note = old_note.copy(update=update_data)
-
-        return execute_stmt(
-            f"""
-            UPDATE notes SET 
-                ({NOTEINDB_COLS}) = ({NOTEINDB_PLACEHOLDERS})
-            WHERE (account_id, project_id, note_id) = (%s, %s, %s)
-            RETURNING {NOTES_COLS}
-            """,
-            (*tuple(new_note.dict().values()), account_id, project_id, note_id),
-            Note,
-        )
-
-
-def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
-    return execute_stmt(
-        f"""
-        DELETE FROM notes
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
-        RETURNING {NOTES_COLS}
-        """,
-        (account_id, project_id, note_id),
-        Note,
+        (s3_object_name, account_id, project_id),
+        returning_rs=False,
     )
 
 
@@ -512,6 +483,145 @@ def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None
     )
 
 
+def add_task_attachment(
+    account_id: UUID, project_id: UUID, task_id: int, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE tasks SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, project_id, task_id),
+        returning_rs=False,
+    )
+
+
+def remove_task_attachment(
+    account_id: UUID, project_id: UUID, task_id: int, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE tasks SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, project_id, task_id),
+        returning_rs=False,
+    )
+
+
+# NOTES
+NOTES_COLS = get_fields(Note)
+NOTEINDB_COLS = get_fields(NoteInDB)
+NOTEINDB_PLACEHOLDERS = get_placeholders(NoteInDB)
+
+
+def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
+    return execute_stmt(
+        f"""
+        SELECT {NOTES_COLS} 
+        FROM notes
+        WHERE (account_id, project_id) =  (%s, %s)
+        ORDER BY note_id DESC
+        """,
+        (account_id, project_id),
+        Note,
+        True,
+    )
+
+
+def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
+    return execute_stmt(
+        f"""
+        SELECT {NOTES_COLS}
+        FROM notes 
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        """,
+        (account_id, project_id, note_id),
+        Note,
+    )
+
+
+def create_note(
+    account_id: UUID, project_id: UUID, note_in_db: NoteInDB
+) -> Note | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO notes 
+            ({NOTEINDB_COLS}, account_id, project_id)
+        VALUES
+            ({NOTEINDB_PLACEHOLDERS}, %s, %s)
+        RETURNING {NOTES_COLS}
+        """,
+        (*tuple(note_in_db.dict().values()), account_id, project_id),
+        Note,
+    )
+
+
+def update_note(
+    account_id: UUID, project_id: UUID, note_id: int, note_in_db: NoteInDB
+) -> Note | None:
+    old_note = get_note(account_id, project_id, note_id)
+
+    if old_note:
+        old_note = NoteInDB(**old_note.dict())
+        update_data = note_in_db.dict(exclude_unset=True)
+        new_note = old_note.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE notes SET 
+                ({NOTEINDB_COLS}) = ({NOTEINDB_PLACEHOLDERS})
+            WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+            RETURNING {NOTES_COLS}
+            """,
+            (*tuple(new_note.dict().values()), account_id, project_id, note_id),
+            Note,
+        )
+
+
+def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM notes
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        RETURNING {NOTES_COLS}
+        """,
+        (account_id, project_id, note_id),
+        Note,
+    )
+
+
+def add_note_attachment(
+    account_id: UUID, project_id: UUID, note_id: int, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE notes SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, project_id, note_id),
+        returning_rs=False,
+    )
+
+
+def remove_note_attachment(
+    account_id: UUID, project_id: UUID, note_id: int, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE notes SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, project_id, note_id),
+        returning_rs=False,
+    )
+
+
+# ==============================================================================================
 def execute_stmt(
     stmt: str,
     args: tuple = (),

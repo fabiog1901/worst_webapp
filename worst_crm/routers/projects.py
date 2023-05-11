@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Security
+from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
@@ -12,7 +13,7 @@ router = APIRouter(
     tags=["projects"],
 )
 
-
+# CRUD
 @router.get("/{account_id}")
 async def get_all_projects(account_id: UUID) -> list[Project]:
     return db.get_all_projects(account_id)
@@ -65,3 +66,36 @@ async def update_project(
 )
 async def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
     return db.delete_project(account_id, project_id)
+
+
+# Attachements
+@router.get(
+    "/{account_id}/{project_id}/presigned-get-url/{filename}",
+    name="Get pre-signed URL for downloading an attachment",
+)
+async def get_presigned_get_url(account_id: UUID, project_id: UUID, filename: str):
+    s3_object_name = str(account_id) + "/" + str(project_id) + "/" + filename
+    data = dep.get_presigned_get_url(s3_object_name)
+    return HTMLResponse(content=data)
+
+
+@router.get(
+    "/{account_id}/{project_id}/presigned-put-url/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    name="Get pre-signed URL for uploading an attachment",
+)
+async def get_presigned_put_url(account_id: UUID, project_id: UUID, filename: str):
+    s3_object_name = str(account_id) + "/" + str(project_id) + "/" + filename
+    db.add_project_attachment(account_id, project_id, filename)
+    data = dep.get_presigned_put_url(s3_object_name)
+    return HTMLResponse(content=data)
+
+
+@router.delete(
+    "/{account_id}/{project_id}/attachments/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+)
+async def delete_attachement(account_id: UUID, project_id: UUID, filename: str):
+    s3_object_name = str(account_id) + "/" + str(project_id) + "/" + filename
+    db.remove_project_attachment(account_id, project_id, filename)
+    dep.s3_remove_object(s3_object_name)

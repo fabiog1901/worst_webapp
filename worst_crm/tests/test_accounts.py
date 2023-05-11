@@ -1,8 +1,10 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import Account
-from worst_crm.tests.utils import login, setup_test
+from worst_crm.tests.utils import login, setup_test, s3_download, s3_upload
 from uuid import UUID
+import validators
+import hashlib
 
 client = TestClient(app)
 
@@ -72,7 +74,7 @@ def test_crud_account(login, setup_test):
         content="""
         {
             "name": "dummy_acc1",
-            "text": "dummy descr UPDATED",
+            "text": "some dummy text updated",
             "status": "NEW",
             "owned_by": "dummyadmin",
             "tags": ["t1", "t2", "t5555"],
@@ -108,3 +110,95 @@ def test_crud_account(login, setup_test):
 
     assert r.status_code == 200
     assert r.json() is None
+
+
+def test_attachment_upload_and_download(login, setup_test):
+    token = login
+
+    acc = create_account(token)
+
+    filename = "1MB with spaces.txt"
+
+    # uploading
+    r = client.get(
+        f"/accounts/{acc.account_id}/presigned-put-url/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200
+
+    assert validators.url(r.text)  # type: ignore
+
+    s3_upload(r.text, f".testdata/{filename}")
+
+    # Downloading
+    r = client.get(
+        f"/accounts/{acc.account_id}/presigned-get-url/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200
+
+    assert validators.url(r.text)  # type: ignore
+
+    s3_download(r.text, f".testdata/.{filename}")
+
+    # comparing for equality
+    with open(f".testdata/{filename}", "rb") as f:
+        digest1 = hashlib.file_digest(f, "sha256")
+
+    with open(f".testdata/.{filename}", "rb") as f:
+        digest2 = hashlib.file_digest(f, "sha256")
+
+    assert digest1.hexdigest() == digest2.hexdigest()
+
+    filename = "ss.png"
+
+    # uploading
+    r = client.get(
+        f"/accounts/{acc.account_id}/presigned-put-url/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200
+
+    assert validators.url(r.text)  # type: ignore
+
+    s3_upload(r.text, f".testdata/{filename}")
+
+    # Downloading
+    r = client.get(
+        f"/accounts/{acc.account_id}/presigned-get-url/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200
+
+    assert validators.url(r.text)  # type: ignore
+
+    s3_download(r.text, f".testdata/.{filename}")
+
+    # comparing for equality
+    with open(f".testdata/{filename}", "rb") as f:
+        digest1 = hashlib.file_digest(f, "sha256")
+
+    with open(f".testdata/.{filename}", "rb") as f:
+        digest2 = hashlib.file_digest(f, "sha256")
+
+    assert digest1.hexdigest() == digest2.hexdigest()
+
+    # deleting
+    r = client.delete(
+        f"accounts/{acc.account_id}/attachments/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200
+
+    # deleting twice
+    r = client.delete(
+        f"accounts/{acc.account_id}/attachments/{filename}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert r.status_code == 200

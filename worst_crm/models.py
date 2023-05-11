@@ -48,8 +48,7 @@ class Basic(BaseModel):
 
 class Basic1(Basic):
     owned_by: str | None = None
-    text: str | None = None
-    attachments: list[str] | None = None
+    text: str | None = Field(max_length=1000000)
     status: str | None = None
     due_date: dt.date | None = None
 
@@ -134,8 +133,7 @@ class NewNote(Basic):
 
 
 class UpdatedNote(NewNote, Basic2):
-    text: str | None = None
-    attachments: list[str] | None = None
+    text: str | None = Field(max_length=1000000)
 
 
 class NoteInDB(NewNote, Basic2InDB, CommonInDB):

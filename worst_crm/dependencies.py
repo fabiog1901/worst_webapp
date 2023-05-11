@@ -6,6 +6,8 @@ from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
+import minio
+import validators
 
 from worst_crm import db
 from worst_crm.models import UserInDB
@@ -23,6 +25,57 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="login", scopes={"rw": "rw", "admin": "admin"}
 )
+
+
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
+S3_USE_SECURE_TLS = (
+    True
+    if os.getenv("S3_USE_SECURE_TLS", "True").lower()
+    in ["true", "1", "t", "y", "yes", "on"]
+    else False
+)
+S3_BUCKET = os.getenv("S3_BUCKET")
+S3_PRESIGNED_URL_EXPIRY_SECONDS = int(os.getenv("S3_PRESIGNED_URL_EXPIRY_SECONDS", 5))
+
+minio_client = minio.Minio(
+    endpoint=S3_ENDPOINT_URL,
+    secure=S3_USE_SECURE_TLS,
+    access_key=S3_ACCESS_KEY,
+    secret_key=S3_SECRET_KEY,
+)
+
+
+def get_presigned_get_url(filename: str) -> str:
+    data = minio_client.presigned_get_object(
+        S3_BUCKET,
+        filename,
+        expires=dt.timedelta(seconds=S3_PRESIGNED_URL_EXPIRY_SECONDS),
+    )
+
+    if validators.url(data):  # type: ignore
+        return data
+    else:
+        raise ValueError(f"Could not generate presigned-get-url for {filename}")
+
+
+def get_presigned_put_url(filename: str):
+    data = minio_client.presigned_put_object(
+        S3_BUCKET,
+        filename,
+        expires=dt.timedelta(seconds=S3_PRESIGNED_URL_EXPIRY_SECONDS),
+    )
+
+    if validators.url(data):  # type: ignore
+        return data
+    else:
+        raise ValueError(f"Could not generate presigned-put-url for {filename}")
+
+
+def s3_remove_object(filename: str):
+
+    minio_client.remove_object(S3_BUCKET, filename)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
