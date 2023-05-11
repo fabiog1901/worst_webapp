@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Note
+from worst_crm.models import Note, NoteInfo, NoteInfoForProject
 from worst_crm.tests.test_accounts import create_account, delete_account
 from worst_crm.tests.test_projects import create_project, delete_project
 from uuid import UUID
@@ -87,11 +87,21 @@ def test_crud_note(login, setup_test):
 
     # READ ALL
     r = client.get(
+        f"/notes/{note.account_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    l: list[NoteInfo] = [NoteInfo(**x) for x in r.json()]
+
+    assert len(l) > 0
+
+    # READ ALL FOR project_id
+    r = client.get(
         f"/notes/{note.account_id}/{note.project_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    l: list[Note] = [Note(**x) for x in r.json()]
+    l: list[NoteInfoForProject] = [NoteInfoForProject(**x) for x in r.json()]
 
     assert len(l) > 0
 

@@ -65,9 +65,9 @@ CREATE TABLE accounts (
     text STRING NULL,
     status STRING NULL,
     data JSONB NULL,
-    tags STRING [],
+    tags STRING [] NULL DEFAULT ARRAY[],
     -- not in models
-    attachments STRING[] NULL,
+    attachments STRING[] NULL DEFAULT ARRAY[],
     CONSTRAINT pk PRIMARY KEY (account_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES account_status(name) ON DELETE SET NULL,
@@ -100,9 +100,9 @@ CREATE TABLE projects (
     text STRING NULL,
     status STRING NULL,
     data JSONB NULL,
-    tags STRING [],
+    tags STRING [] NULL DEFAULT ARRAY[],
     -- not in models
-    attachments STRING[] NULL,
+    attachments STRING[] NULL DEFAULT ARRAY[],
     CONSTRAINT pk PRIMARY KEY (account_id, project_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES project_status(name) ON DELETE SET NULL,
@@ -137,9 +137,9 @@ CREATE TABLE tasks (
     text STRING NULL,
     status STRING NULL,
     data JSONB NULL,
-    tags STRING [],
+    tags STRING [] NULL DEFAULT ARRAY[],
     -- not in models
-    attachments STRING[] NULL,
+    attachments STRING[] NULL DEFAULT ARRAY[],
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, task_id),
     CONSTRAINT status_in_status FOREIGN KEY (status)
         REFERENCES task_status(name) ON DELETE SET NULL,
@@ -171,9 +171,9 @@ CREATE TABLE notes (
     -- fields nullable
     text STRING NULL,
     data JSONB NULL,
-    tags STRING [] NULL,
+    tags STRING [] NULL DEFAULT ARRAY[],
     -- not in models
-    attachments STRING[] NULL,
+    attachments STRING[] NULL DEFAULT ARRAY[],
     CONSTRAINT pk PRIMARY KEY (account_id, project_id, note_id),
     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
         REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -187,39 +187,3 @@ CREATE INVERTED INDEX notes_data_gin ON notes(data);
 CREATE INVERTED INDEX notes_tags_gin ON notes(tags);
 
 
--- CREATE TABLE reminders (
---     user_id STRING NOT NULL,
---     name STRING NOT NULL,
---     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
---     created_by STRING NULL,
---     due_date DATE NULL,
---     text STRING,
---     updated_by STRING NULL,
---     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
---     CONSTRAINT pk PRIMARY KEY (user_idaccount_id, project_id, note_id),
---     CONSTRAINT fk_projects FOREIGN KEY (account_id, project_id) 
---         REFERENCES projects(account_id, project_id) ON DELETE CASCADE ON UPDATE CASCADE,
---     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
---         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
---     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
---         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
--- );
-
--- INSERT INTO accounts
---     (account_id, account_name, description, tags)
---     VALUES
---     ('3f08facf-960f-41f7-99d4-02cfe45adc54', 'BOSM', 'Bank of SuperMario. Saving accounts for kids.', ARRAY['tlc', 'sh']),
---     ('97e70557-bad0-47d5-ba96-2daaf40b3840', 'Tully', 'CI/CD SaaS providing full build automation', ARRAY['saas']),
---     ('fb7e42a2-33de-442f-a194-cc295aaf93d1', 'AirMars', 'Cheap flights to Mars', ARRAY['saas', 'prom'])
--- ;
-
--- INSERT INTO users 
---     (user_id, full_name, email, hashed_password, is_disabled, scopes)
---     VALUES 
---     ('admin', 'admin', 'admin', '$2b$12$RP/eiWXHSSHd8BL2tm4LquEflpXWMFNrGp5hcoVrKKBzmk63IzIym', -- worst_crm
---         False, ARRAY['admin', 'rw']),
---     ('fabio', 'fabio', 'fabio', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
---         False, ARRAY['rw']),
---     ('ro', 'readonly', 'ro', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- secret
---         False, ARRAY[])
--- ;

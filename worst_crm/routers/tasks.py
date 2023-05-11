@@ -3,7 +3,15 @@ from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
-from worst_crm.models import Task, NewTask, UpdatedTask, TaskInDB, User
+from worst_crm.models import (
+    Task,
+    NewTask,
+    UpdatedTask,
+    TaskInDB,
+    TaskInfo,
+    TaskInfoForProject,
+    User,
+)
 import json
 import worst_crm.dependencies as dep
 
@@ -14,9 +22,16 @@ router = APIRouter(
 )
 
 # CRUD
+@router.get("/{account_id}")
+async def get_all_tasks(account_id: UUID) -> list[TaskInfo]:
+    return db.get_all_tasks(account_id)
+
+
 @router.get("/{account_id}/{project_id}")
-async def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
-    return db.get_all_tasks(account_id, project_id)
+async def get_all_tasks_for_project_id(
+    account_id: UUID, project_id: UUID
+) -> list[TaskInfoForProject]:
+    return db.get_all_tasks_for_project_id(account_id, project_id)
 
 
 @router.get("/{account_id}/{project_id}/{task_id}")

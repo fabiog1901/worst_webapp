@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Project
+from worst_crm.models import Project, ProjectInfo, ProjectInfoForAccount
 from worst_crm.tests.test_accounts import create_account, delete_account
 from uuid import UUID
 from worst_crm.tests.utils import login, setup_test, s3_download, s3_upload
@@ -36,7 +36,7 @@ def create_project(account_id: UUID, token: str) -> Project:
         headers={"Authorization": f"Bearer {token}"},
         content="""
         {
-            "name": "dummy_prpj1"
+            "name": "dummy_project1"
         }""",
     )
 
@@ -74,13 +74,23 @@ def test_crud_project(login, setup_test):
     assert r.status_code == 200
     assert proj == Project(**r.json())
 
-    # READ ALL
+    # READ ALL PROJECTS
+    r = client.get(
+        f"/projects/",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    l: list[ProjectInfo] = [ProjectInfo(**x) for x in r.json()]
+
+    assert len(l) > 0
+
+    # READ ALL PROJECTS FOR account_id
     r = client.get(
         f"/projects/{proj.account_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    l: list[Project] = [Project(**x) for x in r.json()]
+    l: list[ProjectInfoForAccount] = [ProjectInfoForAccount(**x) for x in r.json()]
 
     assert len(l) > 0
 

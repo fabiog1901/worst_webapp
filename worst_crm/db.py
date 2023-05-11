@@ -7,14 +7,21 @@ from uuid import UUID
 
 from worst_crm.models import (
     Account,
+    AccountInfo,
     AccountInDB,
-    ProjectInDB,
+    NoteInfoForProject,
     Project,
+    ProjectInfo,
+    ProjectInDB,
     NoteInDB,
     Note,
+    NoteInfo,
+    ProjectInfoForAccount,
     TaskInDB,
     Task,
+    TaskInfo,
     Status,
+    TaskInfoForProject,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -192,20 +199,21 @@ def delete_user(user_id: str) -> User | None:
 
 
 # ACCOUNTS
-ACCOUNTINDB_COLS = get_fields(AccountInDB)
-ACCOUNTINDB_PLACEHOLDERS = get_placeholders(AccountInDB)
+ACCOUNT_IN_DB_COLS = get_fields(AccountInDB)
+ACCOUNT_IN_DB_PLACEHOLDERS = get_placeholders(AccountInDB)
+ACCOUNT_INFO_COLS = get_fields(AccountInfo)
 ACCOUNTS_COLS = get_fields(Account)
 
 
-def get_all_accounts() -> list[Account]:
+def get_all_accounts() -> list[AccountInfo]:
     return execute_stmt(
         f"""
-        SELECT {ACCOUNTS_COLS}
+        SELECT {ACCOUNT_INFO_COLS}
         FROM accounts
         ORDER BY name
         """,
         (),
-        Account,
+        AccountInfo,
         True,
     )
 
@@ -227,9 +235,9 @@ def create_account(account_in_db: AccountInDB) -> Account | None:
     return execute_stmt(
         f"""
         INSERT INTO accounts 
-            ({ACCOUNTINDB_COLS})
+            ({ACCOUNT_IN_DB_COLS})
         VALUES
-            ({ACCOUNTINDB_PLACEHOLDERS})
+            ({ACCOUNT_IN_DB_PLACEHOLDERS})
         RETURNING {ACCOUNTS_COLS}
         """,
         tuple(account_in_db.dict().values()),
@@ -248,7 +256,7 @@ def update_account(account_id: UUID, account: AccountInDB) -> Account | None:
         return execute_stmt(
             f"""
             UPDATE accounts SET 
-                ({ACCOUNTINDB_COLS}) = ({ACCOUNTINDB_PLACEHOLDERS})
+                ({ACCOUNT_IN_DB_COLS}) = ({ACCOUNT_IN_DB_PLACEHOLDERS})
             WHERE account_id = %s
             RETURNING {ACCOUNTS_COLS}
             """,
@@ -294,21 +302,38 @@ def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
 
 
 # PROJECTS
+PROJECT_IN_DB_COLS = get_fields(ProjectInDB)
+PROJECT_IN_DB_PLACEHOLDERS = get_placeholders(ProjectInDB)
+PROJECT_INFO_COLS = get_fields(ProjectInfo)
+PROJECT_INFO_FOR_ACCOUNT_COLS = get_fields(ProjectInfoForAccount)
 PROJECTS_COLS = get_fields(Project)
-PROJECTINDB_COLS = get_fields(ProjectInDB)
-PROJECTINDB_PLACEHOLDERS = get_placeholders(ProjectInDB)
 
 
-def get_all_projects(account_id: UUID) -> list[Project]:
+def get_all_projects() -> list[ProjectInfo]:
+    fully_qualified = ", ".join([f"projects.{x}" for x in PROJECTS_COLS.split(", ")])
     return execute_stmt(
         f"""
-        SELECT {PROJECTS_COLS}
+        SELECT {fully_qualified}, accounts.name AS account_name
+        FROM projects JOIN accounts
+            ON projects.account_id = accounts.account_id
+        ORDER BY account_name, projects.name
+        """,
+        (),
+        ProjectInfo,
+        True,
+    )
+
+
+def get_all_projects_for_account_id(account_id: UUID) -> list[ProjectInfoForAccount]:
+    return execute_stmt(
+        f"""
+        SELECT {PROJECT_INFO_FOR_ACCOUNT_COLS}
         FROM projects
         WHERE account_id = %s
         ORDER BY name
         """,
         (account_id,),
-        Project,
+        ProjectInfoForAccount,
         True,
     )
 
@@ -329,9 +354,9 @@ def create_project(account_id: UUID, project_in_db: ProjectInDB) -> Project | No
     return execute_stmt(
         f"""
         INSERT INTO projects 
-            ({PROJECTINDB_COLS}, account_id)
+            ({PROJECT_IN_DB_COLS}, account_id)
         VALUES
-            ({PROJECTINDB_PLACEHOLDERS}, %s)
+            ({PROJECT_IN_DB_PLACEHOLDERS}, %s)
         RETURNING {PROJECTS_COLS}
         """,
         (*tuple(project_in_db.dict().values()), account_id),
@@ -352,7 +377,7 @@ def update_project(
         return execute_stmt(
             f"""
             UPDATE projects SET 
-                ({PROJECTINDB_COLS}) = ({PROJECTINDB_PLACEHOLDERS})
+                ({PROJECT_IN_DB_COLS}) = ({PROJECT_IN_DB_PLACEHOLDERS})
             WHERE (account_id, project_id) = (%s, %s)
             RETURNING {PROJECTS_COLS}
             """,
@@ -402,21 +427,43 @@ def remove_project_attachment(
 
 
 # TASKS
+TASK_IN_DB_COLS = get_fields(TaskInDB)
+TASK_IN_DB_PLACEHOLDERS = get_placeholders(TaskInDB)
+TASK_INFO_COLS = get_fields(TaskInfo)
+TASK_INFO_FOR_PROJECT_COLS = get_fields(TaskInfoForProject)
 TASKS_COLS = get_fields(Task)
-TASKSINDB_COLS = get_fields(TaskInDB)
-TASKINDB_PLACEHOLDERS = get_placeholders(TaskInDB)
 
 
-def get_all_tasks(account_id: UUID, project_id: UUID) -> list[Task]:
+def get_all_tasks(account_id: UUID) -> list[TaskInfo]:
+
+    fully_qualified = ", ".join([f"tasks.{x}" for x in TASKS_COLS.split(", ")])
+
     return execute_stmt(
         f"""
-        SELECT {TASKS_COLS}
+        SELECT {fully_qualified}, projects.name AS project_name
+        FROM tasks JOIN projects
+            on tasks.project_id = projects.project_id
+        WHERE tasks.account_id = %s
+        ORDER BY project_name, task_id DESC
+        """,
+        (account_id,),
+        TaskInfo,
+        True,
+    )
+
+
+def get_all_tasks_for_project_id(
+    account_id: UUID, project_id: UUID
+) -> list[TaskInfoForProject]:
+    return execute_stmt(
+        f"""
+        SELECT {TASK_INFO_FOR_PROJECT_COLS}
         FROM tasks
         WHERE (account_id, project_id) =  (%s, %s)
         ORDER BY task_id DESC
         """,
         (account_id, project_id),
-        Task,
+        TaskInfoForProject,
         True,
     )
 
@@ -439,9 +486,9 @@ def create_task(
     return execute_stmt(
         f"""
         INSERT INTO tasks 
-            ({TASKSINDB_COLS}, account_id, project_id)
+            ({TASK_IN_DB_COLS}, account_id, project_id)
         VALUES
-            ({TASKINDB_PLACEHOLDERS}, %s, %s)
+            ({TASK_IN_DB_PLACEHOLDERS}, %s, %s)
         RETURNING {TASKS_COLS}
         """,
         (*tuple(task_in_db.dict().values()), account_id, project_id),
@@ -462,7 +509,7 @@ def update_task(
         return execute_stmt(
             f"""
             UPDATE tasks SET 
-                ({TASKSINDB_COLS}) = ({TASKINDB_PLACEHOLDERS})
+                ({TASK_IN_DB_COLS}) = ({TASK_IN_DB_PLACEHOLDERS})
             WHERE (account_id, project_id, task_id) = (%s, %s, %s)
             RETURNING {TASKS_COLS}
             """,
@@ -512,21 +559,43 @@ def remove_task_attachment(
 
 
 # NOTES
+NOTE_IN_DB_COLS = get_fields(NoteInDB)
+NOTE_IN_DB_PLACEHOLDERS = get_placeholders(NoteInDB)
+NOTE_INFO_COLS = get_fields(NoteInfo)
+NOTE_INFO_FOR_PROJECT_COLS = get_fields(NoteInfoForProject)
 NOTES_COLS = get_fields(Note)
-NOTEINDB_COLS = get_fields(NoteInDB)
-NOTEINDB_PLACEHOLDERS = get_placeholders(NoteInDB)
 
 
-def get_all_notes(account_id: UUID, project_id: UUID) -> list[Note]:
+def get_all_notes(account_id: UUID) -> list[NoteInfo]:
+
+    fully_qualified = ", ".join([f"notes.{x}" for x in NOTES_COLS.split(", ")])
+
     return execute_stmt(
         f"""
-        SELECT {NOTES_COLS} 
+        SELECT {fully_qualified}, projects.name AS project_name 
+        FROM notes JOIN projects
+            ON notes.project_id = projects.project_id
+        WHERE notes.account_id = %s
+        ORDER BY project_name, note_id DESC
+        """,
+        (account_id,),
+        NoteInfo,
+        True,
+    )
+
+
+def get_all_notes_for_project_id(
+    account_id: UUID, project_id: UUID
+) -> list[NoteInfoForProject]:
+    return execute_stmt(
+        f"""
+        SELECT {NOTE_INFO_FOR_PROJECT_COLS}
         FROM notes
         WHERE (account_id, project_id) =  (%s, %s)
         ORDER BY note_id DESC
         """,
         (account_id, project_id),
-        Note,
+        NoteInfoForProject,
         True,
     )
 
@@ -549,9 +618,9 @@ def create_note(
     return execute_stmt(
         f"""
         INSERT INTO notes 
-            ({NOTEINDB_COLS}, account_id, project_id)
+            ({NOTE_IN_DB_COLS}, account_id, project_id)
         VALUES
-            ({NOTEINDB_PLACEHOLDERS}, %s, %s)
+            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s)
         RETURNING {NOTES_COLS}
         """,
         (*tuple(note_in_db.dict().values()), account_id, project_id),
@@ -572,7 +641,7 @@ def update_note(
         return execute_stmt(
             f"""
             UPDATE notes SET 
-                ({NOTEINDB_COLS}) = ({NOTEINDB_PLACEHOLDERS})
+                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
             WHERE (account_id, project_id, note_id) = (%s, %s, %s)
             RETURNING {NOTES_COLS}
             """,

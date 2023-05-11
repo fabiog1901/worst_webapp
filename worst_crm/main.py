@@ -30,14 +30,16 @@ app.add_middleware(
 )
 
 
-@app.get("/healthcheck")
-async def healthcheck():
-    return {}
-
-
-@app.get("/")
-async def home():
+@app.get(
+    "/",
+)
+async def home() -> FileResponse:
     return FileResponse("web/index.html")
+
+
+@app.get("/healthcheck")
+async def healthcheck() -> dict:
+    return {}
 
 
 @app.get("/me", dependencies=[Depends(dep.get_current_user)])

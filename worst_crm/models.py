@@ -48,7 +48,6 @@ class Basic(BaseModel):
 
 class Basic1(Basic):
     owned_by: str | None = None
-    text: str | None = Field(max_length=1000000)
     status: str | None = None
     due_date: dt.date | None = None
 
@@ -61,6 +60,10 @@ class Basic2(BaseModel):
 class Basic2InDB(BaseModel):
     data: Any | None = None
     tags: list[str] | None = None
+
+
+class Text(BaseModel):
+    text: str | None = Field(max_length=1000000)
 
 
 class CommonInDB(BaseModel):
@@ -78,15 +81,20 @@ class NewAccount(Basic):
     pass
 
 
-class UpdatedAccount(NewAccount, Basic1, Basic2):
+class UpdatedAccount(NewAccount, Basic1, Text, Basic2):
     pass
 
 
-class AccountInDB(NewAccount, Basic1, Basic2InDB, CommonInDB):
+class AccountInDB(NewAccount, Basic1, Text, Basic2InDB, CommonInDB):
     pass
 
 
 class Account(DBComputed, AccountInDB):
+    account_id: UUID
+    attachments: list[str]
+
+
+class AccountInfo(NewAccount, Basic1, CommonInDB, DBComputed):
     account_id: UUID
 
 
@@ -95,15 +103,27 @@ class NewProject(Basic):
     pass
 
 
-class UpdatedProject(NewProject, Basic1, Basic2):
+class UpdatedProject(NewProject, Basic1, Text, Basic2):
     pass
 
 
-class ProjectInDB(NewProject, Basic1, Basic2InDB, CommonInDB):
+class ProjectInDB(NewProject, Basic1, Text, Basic2InDB, CommonInDB):
     pass
 
 
 class Project(DBComputed, ProjectInDB):
+    account_id: UUID
+    project_id: UUID
+    attachments: list[str]
+
+
+class ProjectInfo(NewProject, Basic1, CommonInDB, DBComputed):
+    account_id: UUID
+    project_id: UUID
+    account_name: str
+
+
+class ProjectInfoForAccount(NewProject, Basic1, CommonInDB, DBComputed):
     account_id: UUID
     project_id: UUID
 
@@ -113,15 +133,29 @@ class NewTask(Basic):
     pass
 
 
-class UpdatedTask(NewTask, Basic1, Basic2):
+class UpdatedTask(NewTask, Basic1, Text, Basic2):
     pass
 
 
-class TaskInDB(NewTask, Basic1, Basic2InDB, CommonInDB):
+class TaskInDB(NewTask, Basic1, Text, Basic2InDB, CommonInDB):
     pass
 
 
 class Task(DBComputed, TaskInDB):
+    account_id: UUID
+    project_id: UUID
+    task_id: int
+    attachments: list[str]
+
+
+class TaskInfo(NewTask, Basic1, CommonInDB, DBComputed):
+    account_id: UUID
+    project_id: UUID
+    task_id: int
+    project_name: str
+
+
+class TaskInfoForProject(NewTask, Basic1, CommonInDB, DBComputed):
     account_id: UUID
     project_id: UUID
     task_id: int
@@ -132,15 +166,29 @@ class NewNote(Basic):
     pass
 
 
-class UpdatedNote(NewNote, Basic2):
-    text: str | None = Field(max_length=1000000)
+class UpdatedNote(NewNote, Text, Basic2):
+    pass
 
 
-class NoteInDB(NewNote, Basic2InDB, CommonInDB):
+class NoteInDB(NewNote, Text, Basic2InDB, CommonInDB):
     pass
 
 
 class Note(DBComputed, NoteInDB):
+    account_id: UUID
+    project_id: UUID
+    note_id: int
+    attachments: list[str]
+
+
+class NoteInfo(NewNote, CommonInDB, DBComputed):
+    account_id: UUID
+    project_id: UUID
+    note_id: int
+    project_name: str
+
+
+class NoteInfoForProject(NewNote, CommonInDB, DBComputed):
     account_id: UUID
     project_id: UUID
     note_id: int
