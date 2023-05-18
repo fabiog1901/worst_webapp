@@ -2,26 +2,31 @@ from typing import Any
 from psycopg_pool import ConnectionPool
 from pydantic import PyObject
 import os
+import datetime as dt
 
 from uuid import UUID
 
 from worst_crm.models import (
     Account,
-    AccountInfo,
+    AccountFilters,
     AccountInDB,
-    NoteInfoForProject,
-    Project,
-    ProjectInfo,
-    ProjectInDB,
-    NoteInDB,
+    AccountOverview,
     Note,
-    NoteInfo,
-    ProjectInfoForAccount,
-    TaskInDB,
-    Task,
-    TaskInfo,
+    NoteFilters,
+    NoteInDB,
+    NoteOverview,
+    NoteOverviewWithProjectName,
+    Project,
+    ProjectFilters,
+    ProjectInDB,
+    ProjectOverview,
+    ProjectOverviewWithAccountName,
     Status,
-    TaskInfoForProject,
+    Task,
+    TaskFilters,
+    TaskInDB,
+    TaskOverview,
+    TaskOverviewWithProjectName,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -198,22 +203,59 @@ def delete_user(user_id: str) -> User | None:
     )
 
 
+def __get_where_clause(
+    filters, table_name: str, include_where: bool = True
+) -> tuple[str, tuple]:
+    where: list[str] = []
+    bind_params: list[Any] = []
+
+    filters_iter = iter(filters)
+
+    for k, v in filters_iter:
+        if v:
+            # handling special case 'tags'
+            if k == "tags":
+                where.append(f"{table_name}.{k} @> %s")
+                bind_params.append(v)
+            elif k[-5:] == "_from":
+                where.append(f"{table_name}.{k[:-5]} >= %s")
+                bind_params.append(v)
+            elif k[-3:] == "_to":
+                where.append(f"{table_name}.{k[:-3]} <= %s")
+                bind_params.append(v)
+            else:
+                where.append(f'{table_name}.{k} IN ({ ("%s, " * len(v))[:-2] })')
+                bind_params += v
+
+    where_clause: str = ""
+    if where and include_where:
+        where_clause = "WHERE "
+
+    for x in where:
+        where_clause += x + " AND "
+
+    return (where_clause[:-4], tuple(bind_params))
+
+
 # ACCOUNTS
 ACCOUNT_IN_DB_COLS = get_fields(AccountInDB)
 ACCOUNT_IN_DB_PLACEHOLDERS = get_placeholders(AccountInDB)
-ACCOUNT_INFO_COLS = get_fields(AccountInfo)
+ACCOUNT_OVERVIEW_COLS = get_fields(AccountOverview)
 ACCOUNTS_COLS = get_fields(Account)
 
 
-def get_all_accounts() -> list[AccountInfo]:
+def get_all_accounts(account_filters: AccountFilters) -> list[AccountOverview]:
+    where_clause, bind_params = __get_where_clause(account_filters, "accounts")
+
     return execute_stmt(
         f"""
-        SELECT {ACCOUNT_INFO_COLS}
+        SELECT {ACCOUNT_OVERVIEW_COLS}
         FROM accounts
+        {where_clause} 
         ORDER BY name
         """,
-        (),
-        AccountInfo,
+        bind_params,
+        AccountOverview,
         True,
     )
 
@@ -304,36 +346,45 @@ def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
 # PROJECTS
 PROJECT_IN_DB_COLS = get_fields(ProjectInDB)
 PROJECT_IN_DB_PLACEHOLDERS = get_placeholders(ProjectInDB)
-PROJECT_INFO_COLS = get_fields(ProjectInfo)
-PROJECT_INFO_FOR_ACCOUNT_COLS = get_fields(ProjectInfoForAccount)
+PROJECT_OVERVIEW_COLS = get_fields(ProjectOverview)
 PROJECTS_COLS = get_fields(Project)
 
 
-def get_all_projects() -> list[ProjectInfo]:
-    fully_qualified = ", ".join([f"projects.{x}" for x in PROJECTS_COLS.split(", ")])
+def get_all_projects(
+    project_filters: ProjectFilters,
+) -> list[ProjectOverviewWithAccountName]:
+    where_clause, bind_params = __get_where_clause(
+        project_filters, table_name="projects"
+    )
+
+    fully_qualified = ", ".join(
+        [f"projects.{x}" for x in ProjectOverview.__fields__.keys()]
+    )
+
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, accounts.name AS account_name
         FROM projects JOIN accounts
             ON projects.account_id = accounts.account_id
+        {where_clause}
         ORDER BY account_name, projects.name
         """,
-        (),
-        ProjectInfo,
+        bind_params,
+        ProjectOverviewWithAccountName,
         True,
     )
 
 
-def get_all_projects_for_account_id(account_id: UUID) -> list[ProjectInfoForAccount]:
+def get_all_projects_for_account_id(account_id: UUID) -> list[ProjectOverview]:
     return execute_stmt(
         f"""
-        SELECT {PROJECT_INFO_FOR_ACCOUNT_COLS}
+        SELECT {PROJECT_OVERVIEW_COLS}
         FROM projects
         WHERE account_id = %s
         ORDER BY name
         """,
         (account_id,),
-        ProjectInfoForAccount,
+        ProjectOverview,
         True,
     )
 
@@ -429,14 +480,18 @@ def remove_project_attachment(
 # TASKS
 TASK_IN_DB_COLS = get_fields(TaskInDB)
 TASK_IN_DB_PLACEHOLDERS = get_placeholders(TaskInDB)
-TASK_INFO_COLS = get_fields(TaskInfo)
-TASK_INFO_FOR_PROJECT_COLS = get_fields(TaskInfoForProject)
+TASK_OVERVIEW_COLS = get_fields(TaskOverview)
 TASKS_COLS = get_fields(Task)
 
 
-def get_all_tasks(account_id: UUID) -> list[TaskInfo]:
+def get_all_tasks_for_account_id(
+    account_id: UUID, task_filters: TaskFilters
+) -> list[TaskOverviewWithProjectName]:
+    where_clause, bind_params = __get_where_clause(
+        task_filters, table_name="tasks", include_where=False
+    )
 
-    fully_qualified = ", ".join([f"tasks.{x}" for x in TASKS_COLS.split(", ")])
+    fully_qualified = ", ".join([f"tasks.{x}" for x in TaskOverview.__fields__.keys()])
 
     return execute_stmt(
         f"""
@@ -444,26 +499,27 @@ def get_all_tasks(account_id: UUID) -> list[TaskInfo]:
         FROM tasks JOIN projects
             on tasks.project_id = projects.project_id
         WHERE tasks.account_id = %s
+        {' AND ' if where_clause else ''} {where_clause}
         ORDER BY project_name, task_id DESC
         """,
-        (account_id,),
-        TaskInfo,
+        (account_id,) + bind_params,
+        TaskOverviewWithProjectName,
         True,
     )
 
 
 def get_all_tasks_for_project_id(
     account_id: UUID, project_id: UUID
-) -> list[TaskInfoForProject]:
+) -> list[TaskOverview]:
     return execute_stmt(
         f"""
-        SELECT {TASK_INFO_FOR_PROJECT_COLS}
+        SELECT {TASK_OVERVIEW_COLS}
         FROM tasks
         WHERE (account_id, project_id) =  (%s, %s)
         ORDER BY task_id DESC
         """,
         (account_id, project_id),
-        TaskInfoForProject,
+        TaskOverview,
         True,
     )
 
@@ -561,41 +617,46 @@ def remove_task_attachment(
 # NOTES
 NOTE_IN_DB_COLS = get_fields(NoteInDB)
 NOTE_IN_DB_PLACEHOLDERS = get_placeholders(NoteInDB)
-NOTE_INFO_COLS = get_fields(NoteInfo)
-NOTE_INFO_FOR_PROJECT_COLS = get_fields(NoteInfoForProject)
+NOTE_OVERVIEW_COLS = get_fields(NoteOverview)
 NOTES_COLS = get_fields(Note)
 
 
-def get_all_notes(account_id: UUID) -> list[NoteInfo]:
+def get_all_notes(
+    account_id: UUID, note_filters: NoteFilters
+) -> list[NoteOverviewWithProjectName]:
+    where_clause, bind_params = __get_where_clause(
+        note_filters, table_name="notes", include_where=False
+    )
 
-    fully_qualified = ", ".join([f"notes.{x}" for x in NOTES_COLS.split(", ")])
+    fully_qualified = ", ".join([f"notes.{x}" for x in NoteOverview.__fields__.keys()])
 
     return execute_stmt(
         f"""
-        SELECT {fully_qualified}, projects.name AS project_name 
+        SELECT {fully_qualified}, projects.name AS project_name
         FROM notes JOIN projects
             ON notes.project_id = projects.project_id
         WHERE notes.account_id = %s
+        {' AND ' if where_clause else ''} {where_clause}
         ORDER BY project_name, note_id DESC
         """,
-        (account_id,),
-        NoteInfo,
+        (account_id,) + bind_params,
+        NoteOverviewWithProjectName,
         True,
     )
 
 
 def get_all_notes_for_project_id(
     account_id: UUID, project_id: UUID
-) -> list[NoteInfoForProject]:
+) -> list[NoteOverview]:
     return execute_stmt(
         f"""
-        SELECT {NOTE_INFO_FOR_PROJECT_COLS}
+        SELECT {NOTE_OVERVIEW_COLS}
         FROM notes
         WHERE (account_id, project_id) =  (%s, %s)
         ORDER BY note_id DESC
         """,
         (account_id, project_id),
-        NoteInfoForProject,
+        NoteOverview,
         True,
     )
 
@@ -700,7 +761,7 @@ def execute_stmt(
 ) -> Any:
     def get_col_names():
         if not cur.description:
-            raise ValueError("Couldn't fetch column names from ResultSet")
+            raise ValueError("Could not fetch column names from ResultSet")
 
         return [desc[0] for desc in cur.description]
 

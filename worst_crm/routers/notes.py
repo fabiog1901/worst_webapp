@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
+import datetime as dt
 from worst_crm.models import (
     Note,
-    NewNote,
-    NoteInfo,
-    NoteInfoForProject,
+    NoteOverview,
+    NoteOverviewWithProjectName,
     UpdatedNote,
     NoteInDB,
+    NoteFilters,
     User,
 )
 import json
@@ -26,14 +27,46 @@ router = APIRouter(
 @router.get("/{account_id}")
 async def get_all_notes(
     account_id: UUID,
-) -> list[NoteInfo]:
-    return db.get_all_notes(account_id)
+    name: Annotated[list[str], Query()] = [],
+    tags: Annotated[list[str], Query()] = [],
+    attachments: Annotated[list[str], Query()] = [],
+    created_at_from: dt.date | None = None,
+    created_at_to: dt.date | None = None,
+    created_by: Annotated[list[str], Query()] = [],
+    updated_at_from: dt.date | None = None,
+    updated_at_to: dt.date | None = None,
+    updated_by: Annotated[list[str], Query()] = [],
+) -> list[NoteOverviewWithProjectName]:
+    # TODO possibly using elasticsearch for text/data columns?
+
+    note_filters = NoteFilters()
+
+    if name:
+        note_filters.name = name
+    if tags:
+        note_filters.tags = tags
+    if attachments:
+        note_filters.attachments = attachments
+    if created_at_from:
+        note_filters.created_at_from = created_at_from
+    if created_at_to:
+        note_filters.created_at_to = created_at_to
+    if created_by:
+        note_filters.created_by = created_by
+    if updated_at_from:
+        note_filters.updated_at_from = updated_at_from
+    if updated_at_to:
+        note_filters.updated_at_to = updated_at_to
+    if updated_by:
+        note_filters.updated_by = updated_by
+
+    return db.get_all_notes(account_id, note_filters)
 
 
 @router.get("/{account_id}/{project_id}")
 async def get_all_notes_for_project_id(
     account_id: UUID, project_id: UUID
-) -> list[NoteInfoForProject]:
+) -> list[NoteOverview]:
     return db.get_all_notes_for_project_id(account_id, project_id)
 
 
@@ -49,12 +82,11 @@ async def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | N
 async def create_note(
     account_id: UUID,
     project_id: UUID,
-    note: NewNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Note | None:
     note_in_db = NoteInDB(
-        **note.dict(), created_by=current_user.user_id, updated_by=current_user.user_id
-    )
+        created_by=current_user.user_id, updated_by=current_user.user_id
+    )  # type: ignore
 
     return db.create_note(account_id, project_id, note_in_db)
 

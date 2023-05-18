@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
 from worst_crm import db
+import datetime as dt
 from worst_crm.models import (
     Project,
-    NewProject,
-    ProjectInfoForAccount,
-    UpdatedProject,
+    ProjectFilters,
     ProjectInDB,
-    ProjectInfo,
+    ProjectOverview,
+    ProjectOverviewWithAccountName,
+    UpdatedProject,
     User,
 )
 import json
@@ -24,14 +25,59 @@ router = APIRouter(
 
 # CRUD
 @router.get("")
-async def get_all_projects() -> list[ProjectInfo]:
-    return db.get_all_projects()
+async def get_all_projects(
+    name: Annotated[list[str], Query()] = [],
+    owned_by: Annotated[list[str], Query()] = [],
+    due_date_from: dt.date | None = None,
+    due_date_to: dt.date | None = None,
+    status: Annotated[list[str], Query()] = [],
+    tags: Annotated[list[str], Query()] = [],
+    attachments: Annotated[list[str], Query()] = [],
+    created_at_from: dt.date | None = None,
+    created_at_to: dt.date | None = None,
+    created_by: Annotated[list[str], Query()] = [],
+    updated_at_from: dt.date | None = None,
+    updated_at_to: dt.date | None = None,
+    updated_by: Annotated[list[str], Query()] = [],
+) -> list[ProjectOverviewWithAccountName]:
+    # TODO possibly using elasticsearch for text/data columns?
+
+    project_filters = ProjectFilters()
+
+    if name:
+        project_filters.name = name
+    if owned_by:
+        project_filters.owned_by = owned_by
+    if due_date_from:
+        project_filters.due_date_from = due_date_from
+    if due_date_to:
+        project_filters.due_date_to = due_date_to
+    if status:
+        project_filters.status = status
+    if tags:
+        project_filters.tags = tags
+    if attachments:
+        project_filters.attachments = attachments
+    if created_at_from:
+        project_filters.created_at_from = created_at_from
+    if created_at_to:
+        project_filters.created_at_to = created_at_to
+    if created_by:
+        project_filters.created_by = created_by
+    if updated_at_from:
+        project_filters.updated_at_from = updated_at_from
+    if updated_at_to:
+        project_filters.updated_at_to = updated_at_to
+    if updated_by:
+        project_filters.updated_by = updated_by
+
+    return db.get_all_projects(project_filters)
 
 
 @router.get("/{account_id}")
 async def get_all_projects_for_account_id(
     account_id: UUID,
-) -> list[ProjectInfoForAccount]:
+) -> list[ProjectOverview]:
     return db.get_all_projects_for_account_id(account_id)
 
 
@@ -45,14 +91,11 @@ async def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 )
 async def create_project(
     account_id: UUID,
-    project: NewProject,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **project.dict(),
-        created_by=current_user.user_id,
-        updated_by=current_user.user_id
-    )
+        created_by=current_user.user_id, updated_by=current_user.user_id
+    )  # type: ignore
 
     return db.create_project(account_id, project_in_db)
 
@@ -68,7 +111,7 @@ async def update_project(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **project.dict(exclude={"data"}),
+        **project.dict(exclude_unset=True, exclude={"data"}),
         data=json.dumps(project.data),
         updated_by=current_user.user_id
     )

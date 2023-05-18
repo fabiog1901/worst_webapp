@@ -1,166 +1,102 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Project, ProjectInfo, ProjectInfoForAccount
-from worst_crm.tests.test_accounts import create_account, delete_account
-from uuid import UUID
-from worst_crm.tests.utils import login, setup_test, s3_download, s3_upload
+from worst_crm.models import Project, ProjectOverview, ProjectOverviewWithAccountName
+from worst_crm.tests import utils
+from worst_crm.tests.utils import login, setup_test
 import hashlib
 import validators
 
 client = TestClient(app)
 
+proj: Project
 
-# CREATE
+
 def test_get_projects_non_auth():
-    r = client.get("/projects/12345")
+    r = client.get("/projects")
 
     assert r.status_code == 401
 
 
-def get_project(account_id: UUID, project_id: UUID, token: str) -> Project | None:
+def test_create_project(login, setup_test):
+    acc = utils.create_account(login)
+
+    global proj
+    proj = utils.create_project(acc.account_id, login)
+
+    assert isinstance(proj, Project)
+
+
+def test_update_project(login, setup_test):
+    global proj
+
+    upd_proj = utils.update_project(proj.account_id, proj.project_id, login)
+
+    assert isinstance(upd_proj, Project)
+    assert upd_proj == utils.get_project(proj.account_id, proj.project_id, login)
+
+    proj = upd_proj
+
+
+def test_read_all_projects(login, setup_test):
+    for _ in range(50):
+        utils.create_project(proj.account_id, login)
+
     r = client.get(
-        f"/projects/{account_id}/{project_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        "/projects/",
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
-
-    if r.json():
-        return Project(**r.json())
-    return None
-
-
-def create_project(account_id: UUID, token: str) -> Project:
-    r = client.post(
-        f"/projects/{account_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_project1"
-        }""",
-    )
-
-    assert r.status_code == 200
-
-    return Project(**r.json())
+    l: list[ProjectOverviewWithAccountName] = [
+        ProjectOverviewWithAccountName(**x) for x in r.json()
+    ]
+    assert len(l) >= 50
 
 
-def delete_project(account_id: UUID, project_id: UUID, token: str) -> Project | None:
-    r = client.delete(
-        f"/projects/{account_id}/{project_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert r.status_code == 200
-
-    if r.json():
-        return Project(**r.json())
-    return None
-
-
-def test_crud_project(login, setup_test):
-    token = login
-
-    # CREATE
-    acc = create_account(token)
-
-    proj = create_project(acc.account_id, token)
-
-    # READ
+def test_read_all_projects_with_filters(login, setup_test):
     r = client.get(
-        f"/projects/{proj.account_id}/{proj.project_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        "/projects/",
+        headers={"Authorization": f"Bearer {login}"},
+        params={"status": ["ON HOLD"]},
     )
     assert r.status_code == 200
-    assert proj == Project(**r.json())
+    l: list[ProjectOverviewWithAccountName] = [
+        ProjectOverviewWithAccountName(**x) for x in r.json()
+    ]
+    assert len(l) == 1
 
-    # READ ALL PROJECTS
-    r = client.get(
-        f"/projects/",
-        headers={"Authorization": f"Bearer {token}"},
-    )
 
-    l: list[ProjectInfo] = [ProjectInfo(**x) for x in r.json()]
-
-    assert len(l) > 0
-
-    # READ ALL PROJECTS FOR account_id
+def test_read_all_projects_for_account_id(login, setup_test):
     r = client.get(
         f"/projects/{proj.account_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
-    l: list[ProjectInfoForAccount] = [ProjectInfoForAccount(**x) for x in r.json()]
-
-    assert len(l) > 0
-
-    # UPDATE
-    r = client.put(
-        f"/projects/{proj.account_id}/{proj.project_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_proj1",
-            "text": "dummy project descr UPDATED",
-            "status": "NEW",
-            "attachments" : ["gino", "pino", "lino"],
-            "owned_by": "dummyadmin",
-            "tags": ["p1111", "p2222", "p2222"]
-        }""",
-    )
-
     assert r.status_code == 200
-
-    upd_proj = Project(**r.json())
-
-    assert upd_proj == get_project(proj.account_id, proj.project_id, token)
-
-    # DELETE
-    del_proj = delete_project(proj.account_id, proj.project_id, token)
-
-    assert del_proj == upd_proj
-
-    # a read returns null
-    assert get_project(proj.account_id, proj.project_id, token) is None
-
-    # a second delete return null
-    assert delete_project(proj.account_id, proj.project_id, token) is None
-
-    # finally, delete account
-    assert delete_account(proj.account_id, token)
+    l: list[ProjectOverview] = [ProjectOverview(**x) for x in r.json()]
+    assert len(l) >= 50
 
 
 def test_attachment_upload_and_download(login, setup_test):
-    token = login
-
-    acc = create_account(token)
-    proj = create_project(acc.account_id, token)
+    global proj
 
     filename = "1MB with spaces.txt"
 
-    # uploading
+    # Uploading
     r = client.get(
         f"/projects/{proj.account_id}/{proj.project_id}/presigned-put-url/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
-
     assert validators.url(r.text)  # type: ignore
-
-    s3_upload(r.text, f".testdata/{filename}")
+    utils.s3_upload(r.text, f".testdata/{filename}")
 
     # Downloading
     r = client.get(
         f"/projects/{proj.account_id}/{proj.project_id}/presigned-get-url/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
-
     assert validators.url(r.text)  # type: ignore
-
-    s3_download(r.text, f".testdata/.{filename}")
+    utils.s3_download(r.text, f".testdata/.{filename}")
 
     # comparing for equality
     with open(f".testdata/{filename}", "rb") as f:
@@ -174,7 +110,26 @@ def test_attachment_upload_and_download(login, setup_test):
     # deleting
     r = client.delete(
         f"projects/{proj.account_id}/{proj.project_id}/attachments/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
+
+    proj_with_attachments = utils.get_project(proj.account_id, proj.project_id, login)
+
+    if proj_with_attachments:
+        proj = proj_with_attachments
+
+
+def test_delete_project(login, setup_test):
+    del_proj = utils.delete_project(proj.account_id, proj.project_id, login)
+
+    assert del_proj == proj
+
+    # a read returns null
+    assert utils.get_project(proj.account_id, proj.project_id, login) is None
+
+    # a second delete return null
+    assert utils.delete_project(proj.account_id, proj.project_id, login) is None
+
+    # finally, delete account
+    assert utils.delete_account(proj.account_id, login)

@@ -1,177 +1,109 @@
+import time
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Note, NoteInfo, NoteInfoForProject
-from worst_crm.tests.test_accounts import create_account, delete_account
-from worst_crm.tests.test_projects import create_project, delete_project
-from uuid import UUID
-from worst_crm.tests.utils import login, setup_test, s3_download, s3_upload
+from worst_crm.models import Note, NoteOverviewWithProjectName, NoteOverview
+from worst_crm.tests import utils
+from worst_crm.tests.utils import login, setup_test
 import hashlib
 import validators
 
 client = TestClient(app)
 
+note: Note
+
 
 # CREATE
 def test_get_notes_non_auth():
-    r = client.get("/notes/12345/12345")
+    r = client.get("/notes/123456")
 
     assert r.status_code == 401
 
 
-def get_note(
-    account_id: UUID, project_id: UUID, note_id: int, token: str
-) -> Note | None:
-    r = client.get(
-        f"/notes/{account_id}/{project_id}/{note_id}",
-        headers={"Authorization": f"Bearer {token}"},
+def test_create_note(login, setup_test):
+    acc = utils.create_account(login)
+    proj = utils.create_project(acc.account_id, login)
+
+    global note
+
+    note = utils.create_note(proj.account_id, proj.project_id, login)
+
+    assert isinstance(note, Note)
+
+
+def test_update_note(login, setup_test):
+    global note
+
+    upd_note = utils.update_note(note.account_id, note.project_id, note.note_id, login)
+
+    assert isinstance(upd_note, Note)
+    assert upd_note == utils.get_note(
+        note.account_id, note.project_id, note.note_id, login
     )
 
-    assert r.status_code == 200
-
-    if r.json():
-        return Note(**r.json())
-    return None
+    note = upd_note
 
 
-def create_note(account_id: UUID, project_id: UUID, token: str) -> Note:
-    r = client.post(
-        f"/notes/{account_id}/{project_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_note1",
-            "text": "dummy Note descr",
-            "status": "NEW",
-            "tags": ["p1", "p2", "p2"],
-            "data": {"key-note": "val-note"}
-        }""",
-    )
+def test_read_all_notes_for_account_id(login, setup_test):
+    for _ in range(20):
+        time.sleep(1)
+        utils.create_note(note.account_id, note.project_id, login)
 
-    assert r.status_code == 200
-
-    return Note(**r.json())
-
-
-def delete_note(
-    account_id: UUID, project_id: UUID, note_id: int, token: str
-) -> Note | None:
-    r = client.delete(
-        f"/notes/{account_id}/{project_id}/{note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert r.status_code == 200
-
-    if r.json():
-        return Note(**r.json())
-    return None
-
-
-def test_crud_note(login, setup_test):
-    token = login
-
-    # CREATE
-    acc = create_account(token)
-
-    proj = create_project(acc.account_id, token)
-
-    note = create_note(proj.account_id, proj.project_id, token)
-
-    # READ
-    r = client.get(
-        f"/notes/{note.account_id}/{note.project_id}/{note.note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200
-    assert note == Note(**r.json())
-
-    # READ ALL
     r = client.get(
         f"/notes/{note.account_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
+    assert r.status_code == 200
+    l: list[NoteOverviewWithProjectName] = [
+        NoteOverviewWithProjectName(**x) for x in r.json()
+    ]
+    assert len(l) >= 20
 
-    l: list[NoteInfo] = [NoteInfo(**x) for x in r.json()]
 
-    assert len(l) > 0
+def test_read_all_notes_for_account_id_with_filters(login, setup_test):
+    r = client.get(
+        f"/notes/{note.account_id}",
+        headers={"Authorization": f"Bearer {login}"},
+        params={"name": ["NOTE-000001"]},
+    )
+    assert r.status_code == 200
+    l: list[NoteOverviewWithProjectName] = [
+        NoteOverviewWithProjectName(**x) for x in r.json()
+    ]
+    assert len(l) == 1
 
-    # READ ALL FOR project_id
+
+def test_read_all_notes_for_project_id(login, setup_test):
     r = client.get(
         f"/notes/{note.account_id}/{note.project_id}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
-    l: list[NoteInfoForProject] = [NoteInfoForProject(**x) for x in r.json()]
-
-    assert len(l) > 0
-
-    # UPDATE
-    r = client.put(
-        f"/notes/{note.account_id}/{proj.project_id}/{note.note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_proj1",
-            "description": "dummy Note descr UPDATED",
-            "status": "NEW",
-            "tags": ["p1111", "p2222", "p2222"]
-        }""",
-    )
-
     assert r.status_code == 200
-
-    upd_note = Note(**r.json())
-
-    assert upd_note == get_note(note.account_id, note.project_id, note.note_id, token)
-
-    # DELETE
-    del_note = delete_note(note.account_id, note.project_id, note.note_id, token)
-
-    assert del_note == upd_note
-
-    # a read returns null
-    assert get_note(note.account_id, note.project_id, note.note_id, token) is None
-
-    # a second delete return null
-    assert delete_note(note.account_id, note.project_id, note.note_id, token) is None
-
-    # finally, delete account
-    assert delete_project(note.account_id, note.project_id, token)
-    assert delete_account(note.account_id, token)
+    l: list[NoteOverview] = [NoteOverview(**x) for x in r.json()]
+    assert len(l) >= 1
 
 
 def test_attachment_upload_and_download(login, setup_test):
-    token = login
-
-    acc = create_account(token)
-    proj = create_project(acc.account_id, token)
-    note = create_note(proj.account_id, proj.project_id, token)
+    global note
 
     filename = "1MB with spaces.txt"
 
     # uploading
     r = client.get(
         f"/notes/{note.account_id}/{note.project_id}/{note.note_id}/presigned-put-url/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
-
     assert validators.url(r.text)  # type: ignore
-
-    s3_upload(r.text, f".testdata/{filename}")
+    utils.s3_upload(r.text, f".testdata/{filename}")
 
     # Downloading
     r = client.get(
         f"/notes/{note.account_id}/{note.project_id}/{note.note_id}/presigned-get-url/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
-
     assert r.status_code == 200
-
     assert validators.url(r.text)  # type: ignore
-
-    s3_download(r.text, f".testdata/.{filename}")
+    utils.s3_download(r.text, f".testdata/.{filename}")
 
     # comparing for equality
     with open(f".testdata/{filename}", "rb") as f:
@@ -185,7 +117,31 @@ def test_attachment_upload_and_download(login, setup_test):
     # deleting
     r = client.delete(
         f"notes/{note.account_id}/{note.project_id}/{note.note_id}/attachments/{filename}",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
+    )
+    assert r.status_code == 200
+
+    note_with_attachments = utils.get_note(
+        note.account_id, note.project_id, note.note_id, login
     )
 
-    assert r.status_code == 200
+    if note_with_attachments:
+        note = note_with_attachments
+
+
+def test_delete_note(login, setup_test):
+    del_note = utils.delete_note(note.account_id, note.project_id, note.note_id, login)
+
+    assert del_note == note
+
+    # a read returns null
+    assert utils.get_note(note.account_id, note.project_id, note.note_id, login) is None
+
+    # a second delete return null
+    assert (
+        utils.delete_note(note.account_id, note.project_id, note.note_id, login) is None
+    )
+
+    # finally, delete account
+    assert utils.delete_project(note.account_id, note.project_id, login)
+    assert utils.delete_account(note.account_id, login)

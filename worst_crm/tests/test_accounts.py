@@ -1,147 +1,95 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Account, AccountInfo
-from worst_crm.tests.utils import login, setup_test, s3_download, s3_upload
-from uuid import UUID
-import validators
+from worst_crm.models import Account, AccountOverview
+from worst_crm.tests import utils
+from worst_crm.tests.utils import login, setup_test
 import hashlib
+import validators
+
 
 client = TestClient(app)
 
+acc: Account
 
-# CREATE
-def test_get_accounts_non_auth():
+
+def test_get_accounts_non_auth(login, setup_test):
     r = client.get("/accounts")
 
     assert r.status_code == 401
 
 
-def create_account(token: str) -> Account:
-    r = client.post(
-        "/accounts",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_acc1"
-        }""",
-    )
+def test_create_account(login, setup_test):
+    global acc
+    acc = utils.create_account(login)
 
-    assert r.status_code == 200
-
-    return Account(**r.json())
+    assert isinstance(acc, Account)
 
 
-def delete_account(
-    account_id: UUID,
-    token: str,
-):
-    r = client.delete(
-        f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+def test_update_account(login, setup_test):
+    global acc
+    upd_acc = utils.update_account(acc.account_id, login)
+    assert isinstance(upd_acc, Account)
+    assert upd_acc == utils.get_account(acc.account_id, login)
 
-    assert r.status_code == 200
-
-    return Account(**r.json())
+    acc = upd_acc
 
 
-def test_crud_account(login, setup_test):
-    token = login
-
-    # CREATE
-    acc = create_account(token)
-
-    # READ
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert acc == Account(**r.json())
+def test_read_all_accounts(login, setup_test):
+    for _ in range(50):
+        utils.create_account(login)
 
     # READ ALL
     r = client.get(
         "/accounts",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": f"Bearer {login}"},
     )
 
-    l: list[AccountInfo] = [AccountInfo(**x) for x in r.json()]
-
-    assert len(l) > 0
-
-    # UPDATE
-    r = client.put(
-        f"/accounts/{acc.account_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        content="""
-        {
-            "name": "dummy_acc1",
-            "text": "some dummy text updated",
-            "status": "NEW",
-            "owned_by": "dummyadmin",
-            "tags": ["t1", "t2", "t5555"],
-            "data": {"k": "v", "kk": "vv"}
-        }""",
-    )
-
-    upd_acc = Account(**r.json())
-
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert upd_acc == Account(**r.json())
-
-    # DELETE
-    del_acc = delete_account(acc.account_id, token)
-
-    assert del_acc == upd_acc
-
-    # a read returns null
-    r = client.get(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+    l: list[AccountOverview] = [AccountOverview(**x) for x in r.json()]
 
     assert r.status_code == 200
-    assert r.json() is None
+    assert len(l) >= 50
 
-    # a second delete return null
-    r = client.delete(
-        f"/accounts/{acc.account_id}", headers={"Authorization": f"Bearer {token}"}
+
+def test_read_all_accounts_with_filters(login, setup_test):
+    r = client.get(
+        "/accounts",
+        headers={"Authorization": f"Bearer {login}"},
+        params={
+            "name": [acc.name],
+        },
     )
-
     assert r.status_code == 200
-    assert r.json() is None
+    l: list[AccountOverview] = [AccountOverview(**x) for x in r.json()]
+    assert len(l) == 1
 
 
 def test_attachment_upload_and_download(login, setup_test):
-    token = login
-
-    acc = create_account(token)
+    global acc
 
     for filename in ["1MB with spaces.txt", "ss.png"]:
-
         # uploading
         r = client.get(
             f"/accounts/{acc.account_id}/presigned-put-url/{filename}",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {login}"},
         )
 
         assert r.status_code == 200
 
         assert validators.url(r.text)  # type: ignore
 
-        s3_upload(r.text, f".testdata/{filename}")
+        utils.s3_upload(r.text, f".testdata/{filename}")
 
         # Downloading
         r = client.get(
             f"/accounts/{acc.account_id}/presigned-get-url/{filename}",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {login}"},
         )
 
         assert r.status_code == 200
 
         assert validators.url(r.text)  # type: ignore
 
-        s3_download(r.text, f".testdata/.{filename}")
+        utils.s3_download(r.text, f".testdata/.{filename}")
 
         # comparing for equality
         with open(f".testdata/{filename}", "rb") as f:
@@ -152,18 +100,35 @@ def test_attachment_upload_and_download(login, setup_test):
 
         assert digest1.hexdigest() == digest2.hexdigest()
 
-        # deleting
+        # deleting attachment
         r = client.delete(
             f"accounts/{acc.account_id}/attachments/{filename}",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {login}"},
         )
 
         assert r.status_code == 200
 
-        # deleting twice
+        # deleting attachment twice
         r = client.delete(
             f"accounts/{acc.account_id}/attachments/{filename}",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {login}"},
         )
 
         assert r.status_code == 200
+
+    acc_with_attachments = utils.get_account(acc.account_id, login)
+
+    if acc_with_attachments:
+        acc = acc_with_attachments
+
+
+def test_delete_account(login):
+    del_acc = utils.delete_account(acc.account_id, login)
+
+    assert del_acc == acc
+
+    # a read returns null
+    assert utils.get_account(acc.account_id, login) is None
+
+    # a second delete return null
+    assert utils.delete_account(acc.account_id, login) is None

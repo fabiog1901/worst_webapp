@@ -58,8 +58,8 @@ CREATE TABLE accounts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields not nullable
-    name STRING NOT NULL,
     -- fields nullable
+    name STRING NULL,
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
@@ -93,8 +93,8 @@ CREATE TABLE projects (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields not nullable
-    name STRING NOT NULL,
     -- fields nullable
+    name STRING NULL,
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
@@ -130,8 +130,8 @@ CREATE TABLE tasks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields not nullable
-    name STRING NOT NULL,
     -- fields nullable
+    name STRING NULL,
     owned_by STRING NULL,
     due_date DATE NULL,
     text STRING NULL,
@@ -167,8 +167,8 @@ CREATE TABLE notes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields not nullable
-    name STRING NOT NULL,
     -- fields nullable
+    name STRING NULL,
     text STRING NULL,
     data JSONB NULL,
     tags STRING [] NULL DEFAULT ARRAY[],

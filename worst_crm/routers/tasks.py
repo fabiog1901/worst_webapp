@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
+import datetime as dt
 from worst_crm import db
 from worst_crm.models import (
     Task,
-    NewTask,
+    TaskFilters,
     UpdatedTask,
     TaskInDB,
-    TaskInfo,
-    TaskInfoForProject,
+    TaskOverview,
+    TaskOverviewWithProjectName,
     User,
 )
 import json
@@ -21,16 +22,63 @@ router = APIRouter(
     tags=["tasks"],
 )
 
+
 # CRUD
 @router.get("/{account_id}")
-async def get_all_tasks(account_id: UUID) -> list[TaskInfo]:
-    return db.get_all_tasks(account_id)
+async def get_all_tasks_for_account_id(
+    account_id: UUID,
+    name: Annotated[list[str], Query()] = [],
+    owned_by: Annotated[list[str], Query()] = [],
+    due_date_from: dt.date | None = None,
+    due_date_to: dt.date | None = None,
+    status: Annotated[list[str], Query()] = [],
+    tags: Annotated[list[str], Query()] = [],
+    attachments: Annotated[list[str], Query()] = [],
+    created_at_from: dt.date | None = None,
+    created_at_to: dt.date | None = None,
+    created_by: Annotated[list[str], Query()] = [],
+    updated_at_from: dt.date | None = None,
+    updated_at_to: dt.date | None = None,
+    updated_by: Annotated[list[str], Query()] = [],
+) -> list[TaskOverviewWithProjectName]:
+    # TODO possibly using elasticsearch for text/data columns?
+
+    task_filters = TaskFilters()
+
+    if name:
+        task_filters.name = name
+    if owned_by:
+        task_filters.owned_by = owned_by
+    if due_date_from:
+        task_filters.due_date_from = due_date_from
+    if due_date_to:
+        task_filters.due_date_to = due_date_to
+    if status:
+        task_filters.status = status
+    if tags:
+        task_filters.tags = tags
+    if attachments:
+        task_filters.attachments = attachments
+    if created_at_from:
+        task_filters.created_at_from = created_at_from
+    if created_at_to:
+        task_filters.created_at_to = created_at_to
+    if created_by:
+        task_filters.created_by = created_by
+    if updated_at_from:
+        task_filters.updated_at_from = updated_at_from
+    if updated_at_to:
+        task_filters.updated_at_to = updated_at_to
+    if updated_by:
+        task_filters.updated_by = updated_by
+
+    return db.get_all_tasks_for_account_id(account_id, task_filters)
 
 
 @router.get("/{account_id}/{project_id}")
 async def get_all_tasks_for_project_id(
     account_id: UUID, project_id: UUID
-) -> list[TaskInfoForProject]:
+) -> list[TaskOverview]:
     return db.get_all_tasks_for_project_id(account_id, project_id)
 
 
@@ -46,12 +94,11 @@ async def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | N
 async def create_task(
     account_id: UUID,
     project_id: UUID,
-    task: NewTask,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
     task_in_db = TaskInDB(
-        **task.dict(), created_by=current_user.user_id, updated_by=current_user.user_id
-    )
+        created_by=current_user.user_id, updated_by=current_user.user_id
+    )  # type: ignore
 
     return db.create_task(account_id, project_id, task_in_db)
 

@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, Security
+from typing import Annotated
+from fastapi import APIRouter, Depends, Security, Request, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
+import datetime as dt
 from worst_crm import db
 from worst_crm.models import (
     Account,
-    NewAccount,
     UpdatedAccount,
     AccountInDB,
-    AccountInfo,
+    AccountOverview,
+    AccountFilters,
     User,
 )
 import json
@@ -20,10 +22,57 @@ router = APIRouter(
     tags=["accounts"],
 )
 
+
 # CRUD
+# TODO missing data and text
 @router.get("")
-async def get_all_accounts() -> list[AccountInfo]:
-    return db.get_all_accounts()
+async def get_all_accounts(
+    name: Annotated[list[str], Query()] = [],
+    owned_by: Annotated[list[str], Query()] = [],
+    due_date_from: dt.date | None = None,
+    due_date_to: dt.date | None = None,
+    status: Annotated[list[str], Query()] = [],
+    tags: Annotated[list[str], Query()] = [],
+    attachments: Annotated[list[str], Query()] = [],
+    created_at_from: dt.date | None = None,
+    created_at_to: dt.date | None = None,
+    created_by: Annotated[list[str], Query()] = [],
+    updated_at_from: dt.date | None = None,
+    updated_at_to: dt.date | None = None,
+    updated_by: Annotated[list[str], Query()] = [],
+) -> list[AccountOverview]:
+    # TODO possibly using elasticsearch for text/data columns?
+
+    account_filters = AccountFilters()
+
+    if name:
+        account_filters.name = name
+    if owned_by:
+        account_filters.owned_by = owned_by
+    if due_date_from:
+        account_filters.due_date_from = due_date_from
+    if due_date_to:
+        account_filters.due_date_to = due_date_to
+    if status:
+        account_filters.status = status
+    if tags:
+        account_filters.tags = tags
+    if attachments:
+        account_filters.attachments = attachments
+    if created_at_from:
+        account_filters.created_at_from = created_at_from
+    if created_at_to:
+        account_filters.created_at_to = created_at_to
+    if created_by:
+        account_filters.created_by = created_by
+    if updated_at_from:
+        account_filters.updated_at_from = updated_at_from
+    if updated_at_to:
+        account_filters.updated_at_to = updated_at_to
+    if updated_by:
+        account_filters.updated_by = updated_by
+
+    return db.get_all_accounts(account_filters)
 
 
 @router.get("/{account_id}")
@@ -33,14 +82,11 @@ async def get_account(account_id: UUID) -> Account | None:
 
 @router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def create_account(
-    new_account: NewAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **new_account.dict(),
-        created_by=current_user.user_id,
-        updated_by=current_user.user_id
-    )
+        created_by=current_user.user_id, updated_by=current_user.user_id
+    )  # type: ignore
 
     return db.create_account(acc_in_db)
 
@@ -54,7 +100,7 @@ async def update_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **updated_account.dict(exclude={"data"}),
+        **updated_account.dict(exclude_unset=True, exclude={"data"}),
         data=json.dumps(updated_account.data),
         updated_by=current_user.user_id
     )

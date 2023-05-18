@@ -74,7 +74,6 @@ def get_presigned_put_url(filename: str):
 
 
 def s3_remove_object(filename: str):
-
     minio_client.remove_object(S3_BUCKET, filename)
 
 
