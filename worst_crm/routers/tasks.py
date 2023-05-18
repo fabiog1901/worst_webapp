@@ -6,6 +6,7 @@ import datetime as dt
 from worst_crm import db
 from worst_crm.models import (
     Task,
+    NewTask,
     TaskFilters,
     UpdatedTask,
     TaskInDB,
@@ -95,7 +96,7 @@ async def create_task(
     account_id: UUID,
     project_id: UUID,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> Task | None:
+) -> NewTask | None:
     task_in_db = TaskInDB(
         created_by=current_user.user_id, updated_by=current_user.user_id
     )  # type: ignore

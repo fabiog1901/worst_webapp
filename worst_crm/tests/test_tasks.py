@@ -1,7 +1,7 @@
 import time
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Task, TaskOverviewWithProjectName, TaskOverview
+from worst_crm.models import Task, NewTask, TaskOverviewWithProjectName, TaskOverview
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
 import hashlib
@@ -9,6 +9,7 @@ import validators
 
 client = TestClient(app)
 
+new_task: NewTask
 task: Task
 
 
@@ -23,21 +24,24 @@ def test_create_task(login, setup_test):
     acc = utils.create_account(login)
     proj = utils.create_project(acc.account_id, login)
 
-    global task
+    global new_task
 
-    task = utils.create_task(proj.account_id, proj.project_id, login)
+    new_task = utils.create_task(proj.account_id, proj.project_id, login)
 
-    assert isinstance(task, Task)
+    assert isinstance(new_task, NewTask)
 
 
 def test_update_task(login, setup_test):
     global task
+    global new_task
 
-    upd_task = utils.update_task(task.account_id, task.project_id, task.task_id, login)
+    upd_task = utils.update_task(
+        new_task.account_id, new_task.project_id, new_task.task_id, login
+    )
 
     assert isinstance(upd_task, Task)
     assert upd_task == utils.get_task(
-        task.account_id, task.project_id, task.task_id, login
+        new_task.account_id, new_task.project_id, new_task.task_id, login
     )
 
     task = upd_task
@@ -45,8 +49,8 @@ def test_update_task(login, setup_test):
 
 def test_read_all_tasks_for_account_id(login, setup_test):
     for _ in range(20):
-        utils.create_task(task.account_id, task.project_id, login)
         time.sleep(1)
+        utils.create_task(task.account_id, task.project_id, login)
 
     r = client.get(
         f"/tasks/{task.account_id}",

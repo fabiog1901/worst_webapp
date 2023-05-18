@@ -1,6 +1,16 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import UserInDB, Account, Project, Task, Note
+from worst_crm.models import (
+    UserInDB,
+    NewAccount,
+    Account,
+    Project,
+    NewProject,
+    Task,
+    NewTask,
+    Note,
+    NewNote,
+)
 import worst_crm.db as db
 import worst_crm.dependencies as dep
 import pytest
@@ -27,11 +37,11 @@ def get_account(account_id: UUID, token) -> Account | None:
     return None
 
 
-def create_account(token) -> Account:
+def create_account(token) -> NewAccount:
     r = client.post("/accounts", headers={"Authorization": f"Bearer {token}"})
 
     assert r.status_code == 200
-    return Account(**r.json())
+    return NewAccount(**r.json())
 
 
 def update_account(account_id: UUID, token) -> Account:
@@ -74,12 +84,12 @@ def get_project(account_id: UUID, project_id: UUID, token: str) -> Project | Non
     return None
 
 
-def create_project(account_id: UUID, token: str) -> Project:
+def create_project(account_id: UUID, token: str) -> NewProject:
     r = client.post(
         f"/projects/{account_id}", headers={"Authorization": f"Bearer {token}"}
     )
     assert r.status_code == 200
-    return Project(**r.json())
+    return NewProject(**r.json())
 
 
 def update_project(account_id: UUID, project_id: UUID, token: str) -> Project:
@@ -124,13 +134,13 @@ def get_task(
     return None
 
 
-def create_task(account_id: UUID, project_id: UUID, token: str) -> Task:
+def create_task(account_id: UUID, project_id: UUID, token: str) -> NewTask:
     r = client.post(
         f"/tasks/{account_id}/{project_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 200
-    return Task(**r.json())
+    return NewTask(**r.json())
 
 
 def update_task(account_id: UUID, project_id: UUID, task_id: int, token: str) -> Task:
@@ -176,13 +186,13 @@ def get_note(
     return None
 
 
-def create_note(account_id: UUID, project_id: UUID, token: str) -> Note:
+def create_note(account_id: UUID, project_id: UUID, token: str) -> NewNote:
     r = client.post(
         f"/notes/{account_id}/{project_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 200
-    return Note(**r.json())
+    return NewNote(**r.json())
 
 
 def update_note(account_id: UUID, project_id: UUID, note_id: int, token: str) -> Note:

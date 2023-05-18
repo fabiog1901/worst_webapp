@@ -1,7 +1,7 @@
 import time
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Note, NoteOverviewWithProjectName, NoteOverview
+from worst_crm.models import Note, NewNote, NoteOverviewWithProjectName, NoteOverview
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
 import hashlib
@@ -9,6 +9,7 @@ import validators
 
 client = TestClient(app)
 
+new_note: NewNote
 note: Note
 
 
@@ -23,21 +24,24 @@ def test_create_note(login, setup_test):
     acc = utils.create_account(login)
     proj = utils.create_project(acc.account_id, login)
 
-    global note
+    global new_note
 
-    note = utils.create_note(proj.account_id, proj.project_id, login)
+    new_note = utils.create_note(proj.account_id, proj.project_id, login)
 
-    assert isinstance(note, Note)
+    assert isinstance(new_note, NewNote)
 
 
 def test_update_note(login, setup_test):
     global note
+    global new_note
 
-    upd_note = utils.update_note(note.account_id, note.project_id, note.note_id, login)
+    upd_note = utils.update_note(
+        new_note.account_id, new_note.project_id, new_note.note_id, login
+    )
 
     assert isinstance(upd_note, Note)
     assert upd_note == utils.get_note(
-        note.account_id, note.project_id, note.note_id, login
+        new_note.account_id, new_note.project_id, new_note.note_id, login
     )
 
     note = upd_note

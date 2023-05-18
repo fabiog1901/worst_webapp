@@ -6,6 +6,7 @@ from uuid import UUID
 import datetime as dt
 from worst_crm import db
 from worst_crm.models import (
+    NewAccount,
     Account,
     UpdatedAccount,
     AccountInDB,
@@ -83,7 +84,7 @@ async def get_account(account_id: UUID) -> Account | None:
 @router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def create_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> Account | None:
+) -> NewAccount | None:
     acc_in_db = AccountInDB(
         created_by=current_user.user_id, updated_by=current_user.user_id
     )  # type: ignore

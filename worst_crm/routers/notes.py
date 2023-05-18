@@ -6,6 +6,7 @@ from worst_crm import db
 import datetime as dt
 from worst_crm.models import (
     Note,
+    NewNote,
     NoteOverview,
     NoteOverviewWithProjectName,
     UpdatedNote,
@@ -83,7 +84,7 @@ async def create_note(
     account_id: UUID,
     project_id: UUID,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> Note | None:
+) -> NewNote | None:
     note_in_db = NoteInDB(
         created_by=current_user.user_id, updated_by=current_user.user_id
     )  # type: ignore

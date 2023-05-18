@@ -1,6 +1,11 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Project, ProjectOverview, ProjectOverviewWithAccountName
+from worst_crm.models import (
+    Project,
+    NewProject,
+    ProjectOverview,
+    ProjectOverviewWithAccountName,
+)
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
 import hashlib
@@ -8,6 +13,7 @@ import validators
 
 client = TestClient(app)
 
+new_proj: NewProject
 proj: Project
 
 
@@ -20,19 +26,21 @@ def test_get_projects_non_auth():
 def test_create_project(login, setup_test):
     acc = utils.create_account(login)
 
-    global proj
-    proj = utils.create_project(acc.account_id, login)
+    global new_proj
+    new_proj = utils.create_project(acc.account_id, login)
 
-    assert isinstance(proj, Project)
+    assert isinstance(new_proj, NewProject)
 
 
 def test_update_project(login, setup_test):
+    global new_proj
     global proj
-
-    upd_proj = utils.update_project(proj.account_id, proj.project_id, login)
+    upd_proj = utils.update_project(new_proj.account_id, new_proj.project_id, login)
 
     assert isinstance(upd_proj, Project)
-    assert upd_proj == utils.get_project(proj.account_id, proj.project_id, login)
+    assert upd_proj == utils.get_project(
+        new_proj.account_id, new_proj.project_id, login
+    )
 
     proj = upd_proj
 

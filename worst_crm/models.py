@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field, EmailStr, Json
+from pydantic import BaseModel, Field, EmailStr
+from typing import Any
 from uuid import UUID
 import datetime as dt
-from typing import Any
 
 
 # ADMIN OBJECTS
@@ -98,6 +98,10 @@ class Status(BaseModel):
 
 
 # ACCOUNT
+class NewAccount(BaseModel):
+    account_id: UUID
+
+
 class UpdatedAccount(Basic1, Text, Basic2):
     pass
 
@@ -122,6 +126,11 @@ class AccountFilters(BasicFilters):
 
 
 # PROJECT
+class NewProject(BaseModel):
+    account_id: UUID
+    project_id: UUID
+
+
 class UpdatedProject(Basic1, Text, Basic2):
     pass
 
@@ -151,6 +160,12 @@ class ProjectFilters(BasicFilters):
 
 
 # TASK
+class NewTask(BaseModel):
+    account_id: UUID
+    project_id: UUID
+    task_id: int
+
+
 class UpdatedTask(Basic1, Text, Basic2):
     pass
 
@@ -181,6 +196,12 @@ class TaskFilters(BasicFilters):
 
 
 # NOTES
+class NewNote(BaseModel):
+    account_id: UUID
+    project_id: UUID
+    note_id: int
+
+
 class UpdatedNote(Name, Text, Basic2):
     pass
 

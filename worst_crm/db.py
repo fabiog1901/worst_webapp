@@ -11,12 +11,16 @@ from worst_crm.models import (
     AccountFilters,
     AccountInDB,
     AccountOverview,
+    NewAccount,
+    NewNote,
+    NewTask,
     Note,
     NoteFilters,
     NoteInDB,
     NoteOverview,
     NoteOverviewWithProjectName,
     Project,
+    NewProject,
     ProjectFilters,
     ProjectInDB,
     ProjectOverview,
@@ -272,18 +276,17 @@ def get_account(account_id: UUID) -> Account | None:
     )
 
 
-# TODO this should be just NewAccount + CommonInDB
-def create_account(account_in_db: AccountInDB) -> Account | None:
+def create_account(account_in_db: AccountInDB) -> NewAccount:
     return execute_stmt(
         f"""
         INSERT INTO accounts 
             ({ACCOUNT_IN_DB_COLS})
         VALUES
             ({ACCOUNT_IN_DB_PLACEHOLDERS})
-        RETURNING {ACCOUNTS_COLS}
+        RETURNING account_id
         """,
         tuple(account_in_db.dict().values()),
-        Account,
+        NewAccount,
     )
 
 
@@ -401,17 +404,17 @@ def get_project(account_id: UUID, project_id: UUID) -> Project | None:
     )
 
 
-def create_project(account_id: UUID, project_in_db: ProjectInDB) -> Project | None:
+def create_project(account_id: UUID, project_in_db: ProjectInDB) -> NewProject | None:
     return execute_stmt(
         f"""
         INSERT INTO projects 
             ({PROJECT_IN_DB_COLS}, account_id)
         VALUES
             ({PROJECT_IN_DB_PLACEHOLDERS}, %s)
-        RETURNING {PROJECTS_COLS}
+        RETURNING account_id, project_id
         """,
         (*tuple(project_in_db.dict().values()), account_id),
-        Project,
+        NewProject,
     )
 
 
@@ -538,17 +541,17 @@ def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
 
 def create_task(
     account_id: UUID, project_id: UUID, task_in_db: TaskInDB
-) -> Task | None:
+) -> NewTask | None:
     return execute_stmt(
         f"""
         INSERT INTO tasks 
             ({TASK_IN_DB_COLS}, account_id, project_id)
         VALUES
             ({TASK_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING {TASKS_COLS}
+        RETURNING account_id, project_id, task_id
         """,
         (*tuple(task_in_db.dict().values()), account_id, project_id),
-        Task,
+        NewTask,
     )
 
 
@@ -675,17 +678,17 @@ def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
 
 def create_note(
     account_id: UUID, project_id: UUID, note_in_db: NoteInDB
-) -> Note | None:
+) -> NewNote | None:
     return execute_stmt(
         f"""
         INSERT INTO notes 
             ({NOTE_IN_DB_COLS}, account_id, project_id)
         VALUES
             ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING {NOTES_COLS}
+        RETURNING account_id, project_id, note_id
         """,
         (*tuple(note_in_db.dict().values()), account_id, project_id),
-        Note,
+        NewNote,
     )
 
 
@@ -759,34 +762,25 @@ def execute_stmt(
     is_list: bool = False,
     returning_rs: bool = True,
 ) -> Any:
-    def get_col_names():
-        if not cur.description:
-            raise ValueError("Could not fetch column names from ResultSet")
-
-        return [desc[0] for desc in cur.description]
-
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute(stmt, args)  # type: ignore
 
+            if not returning_rs:
+                return
+
+            if not cur.description:
+                raise ValueError("Could not fetch column names from ResultSet")
+            col_names = [desc[0] for desc in cur.description]
+
             if is_list:
-                if not returning_rs:
-                    return
-
                 rsl = cur.fetchall()
-
-                col_names = get_col_names()
                 return [
                     model(**{k: rs[i] for i, k in enumerate(col_names)}) for rs in rsl
                 ]
-
             else:
-                if not returning_rs:
-                    return
-
                 rs = cur.fetchone()
-
                 if rs:
-                    return model(**{k: rs[i] for i, k in enumerate(get_col_names())})
+                    return model(**{k: rs[i] for i, k in enumerate(col_names)})
                 else:
                     return None

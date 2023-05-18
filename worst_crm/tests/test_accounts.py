@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
-from worst_crm.models import Account, AccountOverview
+from worst_crm.models import NewAccount, Account, AccountOverview
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
 import hashlib
@@ -9,6 +9,7 @@ import validators
 
 client = TestClient(app)
 
+new_acc: NewAccount
 acc: Account
 
 
@@ -19,17 +20,17 @@ def test_get_accounts_non_auth(login, setup_test):
 
 
 def test_create_account(login, setup_test):
-    global acc
-    acc = utils.create_account(login)
+    global new_acc
+    new_acc = utils.create_account(login)
 
-    assert isinstance(acc, Account)
+    assert isinstance(new_acc, NewAccount)
 
 
 def test_update_account(login, setup_test):
     global acc
-    upd_acc = utils.update_account(acc.account_id, login)
+    upd_acc = utils.update_account(new_acc.account_id, login)
     assert isinstance(upd_acc, Account)
-    assert upd_acc == utils.get_account(acc.account_id, login)
+    assert upd_acc == utils.get_account(new_acc.account_id, login)
 
     acc = upd_acc
 

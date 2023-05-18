@@ -6,6 +6,7 @@ from worst_crm import db
 import datetime as dt
 from worst_crm.models import (
     Project,
+    NewProject,
     ProjectFilters,
     ProjectInDB,
     ProjectOverview,
@@ -92,7 +93,7 @@ async def get_project(account_id: UUID, project_id: UUID) -> Project | None:
 async def create_project(
     account_id: UUID,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> Project | None:
+) -> NewProject | None:
     project_in_db = ProjectInDB(
         created_by=current_user.user_id, updated_by=current_user.user_id
     )  # type: ignore
