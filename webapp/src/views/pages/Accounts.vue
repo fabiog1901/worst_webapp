@@ -1,21 +1,16 @@
 <script setup>
 import { FilterMatchMode, FilterOperator } from 'primevue/api';
-import CustomerService from '@/service/CustomerService';
-import ProductService from '@/service/ProductService';
+import ApiClient from '@/service/ApiClient';
 import { ref, onBeforeMount } from 'vue';
 
 const accounts = ref(null);
 const filters1 = ref(null);
 const loading1 = ref(null);
-const products = ref(null);
 
-
-const customerService = new CustomerService();
-const productService = new ProductService();
+const api_client = new ApiClient();
 
 onBeforeMount(() => {
-    productService.getProductsWithOrdersSmall().then((data) => (products.value = data));
-    customerService.getAccountSummary().then((data) => {
+    api_client.getAccountSummary().then((data) => {
         accounts.value = data;
         loading1.value = false;
         accounts.value.forEach((customer) => (customer.due_date = new Date(customer.due_date)));
@@ -82,7 +77,7 @@ const formatDate = (value) => {
                             <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Search by name" />
                         </template>
                     </Column>
-                    
+
                     <Column field="name" header="Name" style="min-width: 12rem">
                         <template #body="{ data }">
                             {{ data.name }}
@@ -126,7 +121,6 @@ const formatDate = (value) => {
                             </Dropdown>
                         </template>
                     </Column> -->
-
                 </DataTable>
             </div>
         </div>

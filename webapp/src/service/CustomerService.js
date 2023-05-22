@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export default class CustomerService {
     getCustomersSmall() {
         return fetch('demo/data/customers-small.json')
@@ -30,15 +32,19 @@ export default class CustomerService {
         return fetch('https://www.primefaces.org//demo/data/customers?' + queryParams).then((res) => res.json());
     }
 
-    getAccountSummary1() {
-        return fetch('demo/data/account-summary.json')
-            .then((res) => res.json())
-            .then((d) => d.data);
-    }
-
     getAccountSummary() {
-        return fetch('http://localhost:8000/accounts')
-            .then((res) => res.json());
+        return axios
+            .get('http://localhost:8000/accounts', {
+                params: {
+                    hh: 12345
+                }
+            })
+            .then((response) => response.data)
+            .catch(function (error) {
+                console.log(error);
+            })
+            .finally(function () {
+                // always executed
+            });
     }
-
 }
