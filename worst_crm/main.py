@@ -39,7 +39,7 @@ app.add_middleware(
     "/",
 )
 async def home() -> FileResponse:
-    return FileResponse("frontend/dist/index.html")
+    return FileResponse("webapp/dist/index.html")
 
 
 # @app.exception_handler(404)
