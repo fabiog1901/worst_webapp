@@ -19,7 +19,7 @@ app = FastAPI(
 )
 
 # app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/static", StaticFiles(directory='webapp/dist'), name='static')
+app.mount("/static", StaticFiles(directory="webapp/dist"), name="static")
 
 origins = [
     "http://localhost",
@@ -39,7 +39,7 @@ app.add_middleware(
     "/",
 )
 async def home() -> FileResponse:
-    return FileResponse('frontend/dist/index.html')
+    return FileResponse("frontend/dist/index.html")
 
 
 # @app.exception_handler(404)

@@ -19,7 +19,7 @@ import worst_crm.dependencies as dep
 
 router = APIRouter(
     prefix="/accounts",
-    dependencies=[Depends(dep.get_current_user)],
+    # dependencies=[Depends(dep.get_current_user)],
     tags=["accounts"],
 )
 

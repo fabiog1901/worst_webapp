@@ -14,6 +14,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/Dashboard.vue')
                 },
                 {
+                    path: '/accounts',
+                    name: 'accounts',
+                    component: () => import('@/views/pages/Accounts.vue')
+                },
+                {
                     path: '/uikit/formlayout',
                     name: 'formlayout',
                     component: () => import('@/views/uikit/FormLayout.vue')
@@ -157,17 +162,17 @@ const router = createRouter({
         {
             path: '/auth/login',
             name: 'login',
-            component: () => import('@/views/pages/auth/Login.vue')
+            component: () => import('@/views/auth/Login.vue')
         },
         {
             path: '/auth/access',
             name: 'accessDenied',
-            component: () => import('@/views/pages/auth/Access.vue')
+            component: () => import('@/views/auth/Access.vue')
         },
         {
             path: '/auth/error',
             name: 'error',
-            component: () => import('@/views/pages/auth/Error.vue')
+            component: () => import('@/views/auth/Error.vue')
         }
     ]
 });
