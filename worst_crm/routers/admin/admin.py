@@ -4,8 +4,8 @@ from worst_crm import dependencies as dep
 from . import users, status
 
 router = APIRouter(
-    prefix="/admin",
-    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
+    prefix='/admin',
+    dependencies=[Security(dep.get_current_user, scopes=['admin'])],
 )
 
 

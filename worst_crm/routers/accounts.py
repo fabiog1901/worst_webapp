@@ -17,70 +17,26 @@ from worst_crm.models import (
 import worst_crm.dependencies as dep
 
 router = APIRouter(
-    prefix="/accounts",
+    prefix='/accounts',
     dependencies=[Depends(dep.get_current_user)],
-    tags=["accounts"],
+    tags=['accounts'],
 )
 
 
 # CRUD
-@router.get("")
-# async def get_all_accounts(
-#     name: Annotated[list[str], Query()] = [],
-#     owned_by: Annotated[list[str], Query()] = [],
-#     due_date_from: dt.date | None = None,
-#     due_date_to: dt.date | None = None,
-#     status: Annotated[list[str], Query()] = [],
-#     tags: Annotated[list[str], Query()] = [],
-#     attachments: Annotated[list[str], Query()] = [],
-#     created_at_from: dt.date | None = None,
-#     created_at_to: dt.date | None = None,
-#     created_by: Annotated[list[str], Query()] = [],
-#     updated_at_from: dt.date | None = None,
-#     updated_at_to: dt.date | None = None,
-#     updated_by: Annotated[list[str], Query()] = [],
-# ) -> list[AccountOverview]:
-#     account_filters = AccountFilters()
+@router.get('')
 async def get_all_accounts(
     account_filters: AccountFilters | None = None,
 ) -> list[AccountOverview]:
-    # account_filters = AccountFilters()
-    # if name:
-    #     account_filters.name = name
-    # if owned_by:
-    #     account_filters.owned_by = owned_by
-    # if due_date_from:
-    #     account_filters.due_date_from = due_date_from
-    # if due_date_to:
-    #     account_filters.due_date_to = due_date_to
-    # if status:
-    #     account_filters.status = status
-    # if tags:
-    #     account_filters.tags = tags
-    # if attachments:
-    #     account_filters.attachments = attachments
-    # if created_at_from:
-    #     account_filters.created_at_from = created_at_from
-    # if created_at_to:
-    #     account_filters.created_at_to = created_at_to
-    # if created_by:
-    #     account_filters.created_by = created_by
-    # if updated_at_from:
-    #     account_filters.updated_at_from = updated_at_from
-    # if updated_at_to:
-    #     account_filters.updated_at_to = updated_at_to
-    # if updated_by:
-    #     account_filters.updated_by = updated_by
-
     return db.get_all_accounts(account_filters)
 
 
-@router.get("/{account_id}")
+@router.get('/{account_id}')
 async def get_account(account_id: UUID) -> Account | None:
     return db.get_account(account_id)
 
 
-@router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
+@router.post('', dependencies=[Security(dep.get_current_user, scopes=['rw'])])
 async def create_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> NewAccount | None:
@@ -92,7 +48,7 @@ async def create_account(
 
 
 @router.put(
-    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
+    '/{account_id}', dependencies=[Security(dep.get_current_user, scopes=['rw'])]
 )
 async def update_account(
     account_id: UUID,
@@ -106,7 +62,7 @@ async def update_account(
 
 
 @router.delete(
-    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
+    '/{account_id}', dependencies=[Security(dep.get_current_user, scopes=['rw'])]
 )
 async def delete_account(account_id: UUID) -> Account | None:
     return db.delete_account(account_id)
@@ -114,32 +70,32 @@ async def delete_account(account_id: UUID) -> Account | None:
 
 # Attachements
 @router.get(
-    "/{account_id}/presigned-get-url/{filename}",
-    name="Get pre-signed URL for downloading an attachment",
+    '/{account_id}/presigned-get-url/{filename}',
+    name='Get pre-signed URL for downloading an attachment',
 )
 async def get_presigned_get_url(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + "/" + filename
+    s3_object_name = str(account_id) + '/' + filename
     data = dep.get_presigned_get_url(s3_object_name)
     return HTMLResponse(content=data)
 
 
 @router.get(
-    "/{account_id}/presigned-put-url/{filename}",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
-    name="Get pre-signed URL for uploading an attachment",
+    '/{account_id}/presigned-put-url/{filename}',
+    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    name='Get pre-signed URL for uploading an attachment',
 )
 async def get_presigned_put_url(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + "/" + filename
+    s3_object_name = str(account_id) + '/' + filename
     db.add_account_attachment(account_id, filename)
     data = dep.get_presigned_put_url(s3_object_name)
     return HTMLResponse(content=data)
 
 
 @router.delete(
-    "/{account_id}/attachments/{filename}",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    '/{account_id}/attachments/{filename}',
+    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
 )
 async def delete_attachement(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + "/" + filename
+    s3_object_name = str(account_id) + '/' + filename
     db.remove_account_attachment(account_id, filename)
     dep.s3_remove_object(s3_object_name)

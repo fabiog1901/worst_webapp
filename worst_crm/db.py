@@ -12,19 +12,23 @@ from worst_crm.models import (
     AccountInDB,
     AccountOverview,
     NewOpportunity,
+    NewOpportunityNote,
+    NewProjectNote,
     Opportunity,
     OpportunityFilters,
     OpportunityInDB,
+    OpportunityNote,
     OpportunityOverview,
     OpportunityOverviewWithAccountName,
     NewTask,
+    ProjectNote,
     Task,
     TaskFilters,
     TaskInDB,
     TaskOverview,
     TaskOverviewWithProjectName,
-    NewNote,
-    Note,
+    NewAccountNote,
+    AccountNote,
     NoteFilters,
     NoteInDB,
     NoteOverview,
@@ -34,6 +38,7 @@ from worst_crm.models import (
     ProjectFilters,
     ProjectInDB,
     ProjectOverview,
+    ProjectOverviewWithAccountName,
     ProjectOverviewWithOpportunityName,
     Status,
 )
@@ -428,7 +433,7 @@ def create_opportunity(
 def update_opportunity(
     account_id: UUID, opportunity_id: UUID, opportunity_in_db: OpportunityInDB
 ) -> Opportunity | None:
-    old_opp = get_project(account_id, opportunity_id)
+    old_opp = get_opportunity(account_id, opportunity_id)
 
     if old_opp:
         old_opp = OpportunityInDB(**old_opp.dict())
@@ -495,10 +500,42 @@ PROJECTS_COLS = get_fields(Project)
 
 
 def get_all_projects(
-    project_filters: ProjectFilters,
+    project_filters: ProjectFilters | None,
+) -> list[ProjectOverviewWithAccountName]:
+    where_clause, bind_params = __get_where_clause(
+        project_filters, table_name="projects", include_where=False
+    )
+
+    fully_qualified = ", ".join(
+        [f"projects.{x}" for x in ProjectOverview.__fields__.keys()]
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT
+            {fully_qualified}, 
+            accounts.name as account_name, 
+            opportunities.name AS opportunity_name
+        FROM accounts a 
+            JOIN opportunities o 
+                ON a.account_id = o.account_id 
+            JOIN projects p 
+                ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id)
+        {where_clause}
+        ORDER BY account_name, opportunity_name, projects.name
+        """,
+        bind_params,
+        ProjectOverviewWithAccountName,
+        True,
+    )
+
+
+def get_all_projects_for_account_id(
+    account_id: UUID,
+    project_filters: ProjectFilters | None,
 ) -> list[ProjectOverviewWithOpportunityName]:
     where_clause, bind_params = __get_where_clause(
-        project_filters, table_name="projects"
+        project_filters, table_name="projects", include_where=False
     )
 
     fully_qualified = ", ".join(
@@ -508,61 +545,67 @@ def get_all_projects(
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, opportunities.name AS opportunity_name
-        FROM projects JOIN opportunities
-            ON projects.opportunity_id = opportunities.opportunity_id
-        {where_clause}
+        FROM projects p JOIN opportunities o
+            ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id) 
+        WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
         ORDER BY opportunity_name, projects.name
         """,
-        bind_params,
+        (account_id,) + bind_params,
         ProjectOverviewWithOpportunityName,
         True,
     )
 
 
-def get_all_projects_for_account_id(account_id: UUID) -> list[ProjectOverview]:
+def get_all_projects_for_opportunity_id(
+    account_id: UUID, opportunity_id: UUID
+) -> list[ProjectOverview]:
     return execute_stmt(
         f"""
         SELECT {PROJECT_OVERVIEW_COLS}
         FROM projects
-        WHERE account_id = %s
+        WHERE (account_id, opportunity_id) = (%s, %s)
         ORDER BY name
         """,
-        (account_id,),
+        (account_id, opportunity_id),
         ProjectOverview,
         True,
     )
 
 
-def get_project(account_id: UUID, project_id: UUID) -> Project | None:
+def get_project(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID
+) -> Project | None:
     return execute_stmt(
         f"""
         SELECT {PROJECTS_COLS}
         FROM projects 
-        WHERE (account_id, project_id) = (%s, %s)
+        WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
         """,
-        (account_id, project_id),
+        (account_id, opportunity_id, project_id),
         Project,
     )
 
 
-def create_project(account_id: UUID, project_in_db: ProjectInDB) -> NewProject | None:
+def create_project(
+    account_id: UUID, opportunity_id: UUID, project_in_db: ProjectInDB
+) -> NewProject | None:
     return execute_stmt(
         f"""
         INSERT INTO projects 
-            ({PROJECT_IN_DB_COLS}, account_id)
+            ({PROJECT_IN_DB_COLS}, account_id, opportunity_id)
         VALUES
-            ({PROJECT_IN_DB_PLACEHOLDERS}, %s)
-        RETURNING account_id, project_id
+            ({PROJECT_IN_DB_PLACEHOLDERS}, %s, %s)
+        RETURNING account_id, opportunity_id, project_id
         """,
-        (*tuple(project_in_db.dict().values()), account_id),
+        (*tuple(project_in_db.dict().values()), account_id, opportunity_id),
         NewProject,
     )
 
 
 def update_project(
-    account_id: UUID, project_id: UUID, project_in_db: ProjectInDB
+    account_id: UUID, project_id: UUID, opportunity_id: UUID, project_in_db: ProjectInDB
 ) -> Project | None:
-    old_proj = get_project(account_id, project_id)
+    old_proj = get_project(account_id, opportunity_id, project_id)
 
     if old_proj:
         old_proj = ProjectInDB(**old_proj.dict())
@@ -573,50 +616,52 @@ def update_project(
             f"""
             UPDATE projects SET 
                 ({PROJECT_IN_DB_COLS}) = ({PROJECT_IN_DB_PLACEHOLDERS})
-            WHERE (account_id, project_id) = (%s, %s)
+            WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
             RETURNING {PROJECTS_COLS}
             """,
-            (*tuple(new_proj.dict().values()), account_id, project_id),
+            (*tuple(new_proj.dict().values()), account_id, opportunity_id, project_id),
             Project,
         )
 
 
-def delete_project(account_id: UUID, project_id: UUID) -> Project | None:
+def delete_project(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID
+) -> Project | None:
     return execute_stmt(
         f"""
         DELETE FROM projects
-        WHERE (account_id, project_id) = (%s, %s)
+        WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
         RETURNING {PROJECTS_COLS}
         """,
-        (account_id, project_id),
+        (account_id, opportunity_id, project_id),
         Project,
     )
 
 
 def add_project_attachment(
-    account_id: UUID, project_id: UUID, s3_object_name: str
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, s3_object_name: str
 ) -> None:
     return execute_stmt(
         """
         UPDATE projects SET
             attachments = array_append(attachments, %s)
-        WHERE (account_id, project_id) = (%s, %s)
+        WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
         """,
-        (s3_object_name, account_id, project_id),
+        (s3_object_name, account_id, opportunity_id, project_id),
         returning_rs=False,
     )
 
 
 def remove_project_attachment(
-    account_id: UUID, project_id: UUID, s3_object_name: str
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, s3_object_name: str
 ) -> None:
     return execute_stmt(
         """
         UPDATE projects SET
             attachments = array_remove(attachments, %s)
-        WHERE (account_id, project_id) = (%s, %s)
+        WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
         """,
-        (s3_object_name, account_id, project_id),
+        (s3_object_name, account_id, opportunity_id, project_id),
         returning_rs=False,
     )
 
@@ -628,8 +673,8 @@ TASK_OVERVIEW_COLS = get_fields(TaskOverview)
 TASKS_COLS = get_fields(Task)
 
 
-def get_all_tasks_for_account_id(
-    account_id: UUID, task_filters: TaskFilters
+def get_all_tasks_for_opportunity_id(
+    account_id: UUID, opportunity_id: UUID, task_filters: TaskFilters | None = None
 ) -> list[TaskOverviewWithProjectName]:
     where_clause, bind_params = __get_where_clause(
         task_filters, table_name="tasks", include_where=False
@@ -640,8 +685,8 @@ def get_all_tasks_for_account_id(
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, projects.name AS project_name
-        FROM tasks JOIN projects
-            on tasks.project_id = projects.project_id
+        FROM tasks t JOIN projects p
+            ON (t.account_id, t.project_id) = (p.account_id, p.project_id)
         WHERE tasks.account_id = %s
         {' AND ' if where_clause else ''} {where_clause}
         ORDER BY project_name, task_id DESC
@@ -653,53 +698,59 @@ def get_all_tasks_for_account_id(
 
 
 def get_all_tasks_for_project_id(
-    account_id: UUID, project_id: UUID
+    account_id: UUID, opportunity_id: UUID, project_id: UUID
 ) -> list[TaskOverview]:
     return execute_stmt(
         f"""
         SELECT {TASK_OVERVIEW_COLS}
         FROM tasks
-        WHERE (account_id, project_id) =  (%s, %s)
+        WHERE (account_id, opportunity_id, project_id) =  (%s, %s, %s)
         ORDER BY task_id DESC
         """,
-        (account_id, project_id),
+        (account_id, opportunity_id, project_id),
         TaskOverview,
         True,
     )
 
 
-def get_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
+def get_task(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_id: UUID
+) -> Task | None:
     return execute_stmt(
         f"""
         SELECT {TASKS_COLS}
         FROM tasks 
-        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        WHERE (account_id, opportunity_id, project_id, task_id) = (%s, %s, %s, %s)
         """,
-        (account_id, project_id, task_id),
+        (account_id, opportunity_id, project_id, task_id),
         Task,
     )
 
 
 def create_task(
-    account_id: UUID, project_id: UUID, task_in_db: TaskInDB
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_in_db: TaskInDB
 ) -> NewTask | None:
     return execute_stmt(
         f"""
         INSERT INTO tasks 
-            ({TASK_IN_DB_COLS}, account_id, project_id)
+            ({TASK_IN_DB_COLS}, account_id, opportunity_id, project_id)
         VALUES
-            ({TASK_IN_DB_PLACEHOLDERS}, %s, %s)
+            ({TASK_IN_DB_PLACEHOLDERS}, %s, %s, %s)
         RETURNING account_id, project_id, task_id
         """,
-        (*tuple(task_in_db.dict().values()), account_id, project_id),
+        (*tuple(task_in_db.dict().values()), account_id, opportunity_id, project_id),
         NewTask,
     )
 
 
 def update_task(
-    account_id: UUID, project_id: UUID, task_id: int, task_in_db: TaskInDB
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
+    task_in_db: TaskInDB,
 ) -> Task | None:
-    old_task = get_task(account_id, project_id, task_id)
+    old_task = get_task(account_id, opportunity_id, project_id, task_id)
 
     if old_task:
         old_task = TaskInDB(**old_task.dict())
@@ -710,50 +761,66 @@ def update_task(
             f"""
             UPDATE tasks SET 
                 ({TASK_IN_DB_COLS}) = ({TASK_IN_DB_PLACEHOLDERS})
-            WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+            WHERE (account_id, opportunity_id, project_id, task_id) = (%s, %s, %s, %s)
             RETURNING {TASKS_COLS}
             """,
-            (*tuple(new_task.dict().values()), account_id, project_id, task_id),
+            (
+                *tuple(new_task.dict().values()),
+                account_id,
+                opportunity_id,
+                project_id,
+                task_id,
+            ),
             Task,
         )
 
 
-def delete_task(account_id: UUID, project_id: UUID, task_id: int) -> Task | None:
+def delete_task(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_id: UUID
+) -> Task | None:
     return execute_stmt(
         f"""
         DELETE FROM tasks
-        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        WHERE (account_id, opportunity_id, project_id, task_id) = (%s, %s, %s, %s)
         RETURNING {TASKS_COLS}
         """,
-        (account_id, project_id, task_id),
+        (account_id, opportunity_id, project_id, task_id),
         Task,
     )
 
 
 def add_task_attachment(
-    account_id: UUID, project_id: UUID, task_id: int, s3_object_name: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
+    s3_object_name: str,
 ) -> None:
     return execute_stmt(
         """
         UPDATE tasks SET
             attachments = array_append(attachments, %s)
-        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        WHERE (account_id, opportunity_id, project_id, task_id) = (%s, %s, %s, %s)
         """,
-        (s3_object_name, account_id, project_id, task_id),
+        (s3_object_name, account_id, opportunity_id, project_id, task_id),
         returning_rs=False,
     )
 
 
 def remove_task_attachment(
-    account_id: UUID, project_id: UUID, task_id: int, s3_object_name: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
+    s3_object_name: str,
 ) -> None:
     return execute_stmt(
         """
         UPDATE tasks SET
             attachments = array_remove(attachments, %s)
-        WHERE (account_id, project_id, task_id) = (%s, %s, %s)
+        WHERE (account_id, opportunity_id, project_id, task_id) = (%s, %s, %s, %s)
         """,
-        (s3_object_name, account_id, project_id, task_id),
+        (s3_object_name, account_id, opportunity_id, project_id, task_id),
         returning_rs=False,
     )
 
@@ -762,81 +829,83 @@ def remove_task_attachment(
 NOTE_IN_DB_COLS = get_fields(NoteInDB)
 NOTE_IN_DB_PLACEHOLDERS = get_placeholders(NoteInDB)
 NOTE_OVERVIEW_COLS = get_fields(NoteOverview)
-NOTES_COLS = get_fields(Note)
+ACCOUNT_NOTES_COLS = get_fields(AccountNote)
+OPPORTUNITY_NOTES_COLS = get_fields(OpportunityNote)
+PROJECT_NOTES_COLS = get_fields(ProjectNote)
 
 
-def get_all_notes(
-    account_id: UUID, note_filters: NoteFilters
-) -> list[NoteOverviewWithProjectName]:
-    where_clause, bind_params = __get_where_clause(
-        note_filters, table_name="notes", include_where=False
-    )
+# def get_all_notes(
+#     account_id: UUID, note_filters: NoteFilters
+# ) -> list[NoteOverviewWithProjectName]:
+#     where_clause, bind_params = __get_where_clause(
+#         note_filters, table_name="notes", include_where=False
+#     )
 
-    fully_qualified = ", ".join([f"notes.{x}" for x in NoteOverview.__fields__.keys()])
+#     fully_qualified = ", ".join([f"notes.{x}" for x in NoteOverview.__fields__.keys()])
 
+#     return execute_stmt(
+#         f"""
+#         SELECT {fully_qualified}, projects.name AS project_name
+#         FROM notes JOIN projects
+#             ON notes.project_id = projects.project_id
+#         WHERE notes.account_id = %s
+#         {' AND ' if where_clause else ''} {where_clause}
+#         ORDER BY project_name, note_id DESC
+#         """,
+#         (account_id,) + bind_params,
+#         NoteOverviewWithProjectName,
+#         True,
+#     )
+
+
+# def get_all_notes_for_project_id(
+#     account_id: UUID, project_id: UUID
+# ) -> list[NoteOverview]:
+#     return execute_stmt(
+#         f"""
+#         SELECT {NOTE_OVERVIEW_COLS}
+#         FROM notes
+#         WHERE (account_id, project_id) =  (%s, %s)
+#         ORDER BY note_id DESC
+#         """,
+#         (account_id, project_id),
+#         NoteOverview,
+#         True,
+#     )
+
+# ACCOUNT_NOTES
+def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     return execute_stmt(
         f"""
-        SELECT {fully_qualified}, projects.name AS project_name
-        FROM notes JOIN projects
-            ON notes.project_id = projects.project_id
-        WHERE notes.account_id = %s
-        {' AND ' if where_clause else ''} {where_clause}
-        ORDER BY project_name, note_id DESC
+        SELECT {ACCOUNT_NOTES_COLS}
+        FROM account_notes 
+        WHERE (account_id, note_id) = (%s, %s)
         """,
-        (account_id,) + bind_params,
-        NoteOverviewWithProjectName,
-        True,
+        (account_id, note_id),
+        AccountNote,
     )
 
 
-def get_all_notes_for_project_id(
-    account_id: UUID, project_id: UUID
-) -> list[NoteOverview]:
+def create_account_note(
+    account_id: UUID, note_in_db: NoteInDB
+) -> NewAccountNote | None:
     return execute_stmt(
         f"""
-        SELECT {NOTE_OVERVIEW_COLS}
-        FROM notes
-        WHERE (account_id, project_id) =  (%s, %s)
-        ORDER BY note_id DESC
-        """,
-        (account_id, project_id),
-        NoteOverview,
-        True,
-    )
-
-
-def get_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
-    return execute_stmt(
-        f"""
-        SELECT {NOTES_COLS}
-        FROM notes 
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
-        """,
-        (account_id, project_id, note_id),
-        Note,
-    )
-
-
-def create_note(
-    account_id: UUID, project_id: UUID, note_in_db: NoteInDB
-) -> NewNote | None:
-    return execute_stmt(
-        f"""
-        INSERT INTO notes 
-            ({NOTE_IN_DB_COLS}, account_id, project_id)
+        INSERT INTO account_notes 
+            ({NOTE_IN_DB_COLS}, account_id)
         VALUES
-            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING account_id, project_id, note_id
+            ({NOTE_IN_DB_PLACEHOLDERS}, %s)
+        RETURNING account_id, note_id
         """,
-        (*tuple(note_in_db.dict().values()), account_id, project_id),
-        NewNote,
+        (*tuple(note_in_db.dict().values()), account_id),
+        NewAccountNote,
     )
 
 
-def update_note(
-    account_id: UUID, project_id: UUID, note_id: int, note_in_db: NoteInDB
-) -> Note | None:
-    old_note = get_note(account_id, project_id, note_id)
+def update_account_note(
+    account_id: UUID, note_id: UUID, note_in_db: NoteInDB
+) -> AccountNote | None:
+    old_note = get_account_note(account_id, note_id)
 
     if old_note:
         old_note = NoteInDB(**old_note.dict())
@@ -845,52 +914,260 @@ def update_note(
 
         return execute_stmt(
             f"""
-            UPDATE notes SET 
+            UPDATE account_notes SET 
                 ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
-            WHERE (account_id, project_id, note_id) = (%s, %s, %s)
-            RETURNING {NOTES_COLS}
+            WHERE (account_id, note_id) = (%s, %s)
+            RETURNING {ACCOUNT_NOTES_COLS}
             """,
-            (*tuple(new_note.dict().values()), account_id, project_id, note_id),
-            Note,
+            (*tuple(new_note.dict().values()), account_id, note_id),
+            AccountNote,
         )
 
 
-def delete_note(account_id: UUID, project_id: UUID, note_id: int) -> Note | None:
+def delete_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     return execute_stmt(
         f"""
-        DELETE FROM notes
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
-        RETURNING {NOTES_COLS}
+        DELETE FROM account_notes
+        WHERE (account_id, note_id) = (%s, %s)
+        RETURNING {ACCOUNT_NOTES_COLS}
         """,
-        (account_id, project_id, note_id),
-        Note,
+        (account_id, note_id),
+        AccountNote,
     )
 
 
-def add_note_attachment(
-    account_id: UUID, project_id: UUID, note_id: int, s3_object_name: str
+def add_account_note_attachment(
+    account_id: UUID, note_id: UUID, s3_object_name: str
 ) -> None:
     return execute_stmt(
         """
-        UPDATE notes SET
+        UPDATE account_notes SET
             attachments = array_append(attachments, %s)
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        WHERE (account_id, note_id) = (%s, %s)
         """,
-        (s3_object_name, account_id, project_id, note_id),
+        (s3_object_name, account_id, note_id),
         returning_rs=False,
     )
 
 
-def remove_note_attachment(
-    account_id: UUID, project_id: UUID, note_id: int, s3_object_name: str
+def remove_account_note_attachment(
+    account_id: UUID, note_id: UUID, s3_object_name: str
 ) -> None:
     return execute_stmt(
         """
-        UPDATE notes SET
+        UPDATE account_notes SET
             attachments = array_remove(attachments, %s)
-        WHERE (account_id, project_id, note_id) = (%s, %s, %s)
+        WHERE (account_id, note_id) = (%s, %s)
         """,
-        (s3_object_name, account_id, project_id, note_id),
+        (s3_object_name, account_id, note_id),
+        returning_rs=False,
+    )
+
+
+# OPPORTUNITY_NOTE
+def get_opportunity_note(
+    account_id: UUID, opportunity_id: UUID, note_id: UUID
+) -> OpportunityNote | None:
+    return execute_stmt(
+        f"""
+        SELECT {OPPORTUNITY_NOTES_COLS}
+        FROM opportunity_notes 
+        WHERE (account_id, opportunity_id, note_id) = (%s, $s, %s)
+        """,
+        (account_id, opportunity_id, note_id),
+        OpportunityNote,
+    )
+
+
+def create_opportunity_note(
+    account_id: UUID, opportunity_id: UUID, note_in_db: NoteInDB
+) -> NewOpportunityNote | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO opportunity_notes 
+            ({NOTE_IN_DB_COLS}, account_id, opportunity_id)
+        VALUES
+            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s)
+        RETURNING account_id, opportunity_id, note_id
+        """,
+        (*tuple(note_in_db.dict().values()), account_id, opportunity_id),
+        NewOpportunityNote,
+    )
+
+
+def update_opportunity_note(
+    account_id: UUID, opportunity_id: UUID, note_id: UUID, note_in_db: NoteInDB
+) -> OpportunityNote | None:
+    old_note = get_opportunity_note(account_id, opportunity_id, note_id)
+
+    if old_note:
+        old_note = NoteInDB(**old_note.dict())
+        update_data = note_in_db.dict(exclude_unset=True)
+        new_note = old_note.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE opportunity_notes SET 
+                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
+            WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
+            RETURNING {OPPORTUNITY_NOTES_COLS}
+            """,
+            (*tuple(new_note.dict().values()), account_id, opportunity_id, note_id),
+            OpportunityNote,
+        )
+
+
+def delete_opportunity_note(
+    account_id: UUID, opportunity_id: UUID, note_id: UUID
+) -> OpportunityNote | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM opportunity_notes
+        WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
+        RETURNING {OPPORTUNITY_NOTES_COLS}
+        """,
+        (account_id, opportunity_id, note_id),
+        OpportunityNote,
+    )
+
+
+def add_opportunity_note_attachment(
+    account_id: UUID, opportunity_id: UUID, note_id: UUID, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE opportunity_notes SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id, note_id),
+        returning_rs=False,
+    )
+
+
+def remove_opportunity_note_attachment(
+    account_id: UUID, opportunity_id: UUID, note_id: UUID, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE opportunity_notes SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id, note_id),
+        returning_rs=False,
+    )
+
+
+# PROJECT_NOTE
+def get_project_note(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID
+) -> ProjectNote | None:
+    return execute_stmt(
+        f"""
+        SELECT {PROJECT_NOTES_COLS}
+        FROM project_notes 
+        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, $s, %s, %s)
+        """,
+        (account_id, opportunity_id, project_id, note_id),
+        ProjectNote,
+    )
+
+
+def create_project_note(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_in_db: NoteInDB
+) -> NewProjectNote | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO project_notes 
+            ({NOTE_IN_DB_COLS}, account_id, opportunity_id, project_id)
+        VALUES
+            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s, %s)
+        RETURNING account_id, opportunity_id, note_id
+        """,
+        (*tuple(note_in_db.dict().values()), account_id, opportunity_id, project_id),
+        NewProjectNote,
+    )
+
+
+def update_project_note(
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    note_in_db: NoteInDB,
+) -> ProjectNote | None:
+    old_note = get_project_note(account_id, opportunity_id, project_id, note_id)
+
+    if old_note:
+        old_note = NoteInDB(**old_note.dict())
+        update_data = note_in_db.dict(exclude_unset=True)
+        new_note = old_note.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE project_notes SET 
+                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
+            WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
+            RETURNING {PROJECT_NOTES_COLS}
+            """,
+            (
+                *tuple(new_note.dict().values()),
+                account_id,
+                opportunity_id,
+                project_id,
+                note_id,
+            ),
+            ProjectNote,
+        )
+
+
+def delete_project_note(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID
+) -> ProjectNote | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM project_notes
+        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
+        RETURNING {PROJECT_NOTES_COLS}
+        """,
+        (account_id, opportunity_id, project_id, note_id),
+        ProjectNote,
+    )
+
+
+def add_project_note_attachment(
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    s3_object_name: str,
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE project_notes SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id, project_id, note_id),
+        returning_rs=False,
+    )
+
+
+def remove_project_note_attachment(
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    s3_object_name: str,
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE project_notes SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id, project_id, note_id),
         returning_rs=False,
     )
 

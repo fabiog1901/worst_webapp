@@ -194,6 +194,7 @@ class OpportunityFilters(BasicFilters):
 
 Opportunity = dict_model("Opportunity", Opportunity, accounts)  # type: ignore
 OpportunityOverview = dict_model("OpportunityOverview", OpportunityOverview, accounts)  # type: ignore
+OpportunityOverviewWithAccountName = dict_model("OpportunityOverviewWithAccountName", OpportunityOverviewWithAccountName, accounts)  # type: ignore
 UpdatedOpportunity = dict_model("UpdatedOpportunity", UpdatedOpportunity, accounts)  # type: ignore
 OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
 
@@ -225,6 +226,11 @@ class ProjectOverview(Basic1, CommonInDB, DBComputed):
     project_id: UUID
 
 
+class ProjectOverviewWithAccountName(ProjectOverview):
+    account_name: str | None = None
+    opportunity_name: str | None = None
+
+
 class ProjectOverviewWithOpportunityName(ProjectOverview):
     opportunity_name: str | None = None
 
@@ -235,6 +241,8 @@ class ProjectFilters(BasicFilters):
 
 Project = dict_model("Project", Project, accounts)  # type: ignore
 ProjectOverview = dict_model("ProjectOverview", ProjectOverview, accounts)  # type: ignore
+ProjectOverviewWithAccountName = dict_model("ProjectOverviewWithAccountName", ProjectOverviewWithAccountName, accounts)  # type: ignore
+ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
 UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
 ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
 
@@ -243,7 +251,7 @@ ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # typ
 class NewTask(BaseModel):
     account_id: UUID
     project_id: UUID
-    task_id: int
+    task_id: UUID
 
 
 class UpdatedTask(Basic1, Text):
@@ -257,14 +265,14 @@ class TaskInDB(Basic1, Text, CommonInDB):
 class Task(DBComputed, TaskInDB):
     account_id: UUID
     project_id: UUID
-    task_id: int
+    task_id: UUID
     attachments: list[str]
 
 
 class TaskOverview(Basic1, CommonInDB, DBComputed):
     account_id: UUID
     project_id: UUID
-    task_id: int
+    task_id: UUID
 
 
 class TaskOverviewWithProjectName(TaskOverview):
@@ -276,10 +284,17 @@ class TaskFilters(BasicFilters):
 
 
 # NOTES
-class NewNote(BaseModel):
+class NewAccountNote(BaseModel):
     account_id: UUID
+    note_id: UUID
+
+
+class NewOpportunityNote(NewAccountNote):
+    opportunity_id: UUID
+
+
+class NewProjectNote(NewOpportunityNote):
     project_id: UUID
-    note_id: int
 
 
 class UpdatedNote(Name, Text):
@@ -290,17 +305,25 @@ class NoteInDB(Name, Text, CommonInDB):
     pass
 
 
-class Note(DBComputed, NoteInDB):
+class AccountNote(DBComputed, NoteInDB):
     account_id: UUID
-    project_id: UUID
-    note_id: int
+    note_id: UUID
     attachments: list[str]
+
+
+class OpportunityNote(AccountNote):
+    opportunity_id: UUID
+
+
+class ProjectNote(OpportunityNote):
+    project_id: UUID
 
 
 class NoteOverview(Name, CommonInDB, DBComputed):
     account_id: UUID
+    opportunity_id: UUID
     project_id: UUID
-    note_id: int
+    note_id: UUID
 
 
 class NoteOverviewWithProjectName(NoteOverview):
