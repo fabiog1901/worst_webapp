@@ -1,10 +1,44 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import create_model, BaseModel, Field, EmailStr
 from typing import Any
 from uuid import UUID
 import datetime as dt
 
+# utility functions
 
-# ADMIN OBJECTS
+# this dict will come from the database
+accounts = {
+    # "ticker": (str | None, None),
+    # "industry": (str | None, Field(min_length=3, max_length=20)),
+}
+
+
+def dict_model(name: str, base, dict_def: dict):
+    fields = {}
+    for field_name, value in dict_def.items():
+        if isinstance(value, tuple):
+            fields[field_name] = value
+        elif isinstance(value, dict):
+            fields[field_name] = (dict_model(f"{name}_{field_name}", base, value), ...)
+        else:
+            raise ValueError(f"Field {field_name}:{value} has invalid syntax")
+    return create_model(name, __base__=base, **fields)
+
+
+def filter_model(name: str, base, dict_def: dict):
+    fields = {}
+    for field_name, value in dict_def.items():
+        if isinstance(value, tuple):
+            fields[field_name] = (list[value[0]], value[1])  # type: ignore
+        elif isinstance(value, dict):
+            fields[field_name] = (dict_model(f"{name}_{field_name}", base, value), ...)
+        else:
+            raise ValueError(f"Field {field_name}:{value} has invalid syntax")
+    return create_model(name, __base__=base, **fields)
+
+
+###################
+#  ADMIN OBJECTS  #
+###################
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -38,32 +72,25 @@ class UserInDB(User):
     failed_attempts: int = 0
 
 
-# DATA OBJECTS
+###################
+#  MODEL OBJECTS  #
+###################
 
 
 # COMMON
 class Name(BaseModel):
-    name: str | None = Field(min_length=2, max_length=50)
+    name: str | None = Field(default="", max_length=50)
 
 
 class Basic1(Name):
     owned_by: str | None = None
     status: str | None = None
     due_date: dt.date | None = None
-
-
-class Basic2(BaseModel):
-    data: dict | None = None
     tags: set[str] | None = None
 
 
-class Basic2InDB(BaseModel):
-    data: Any | None = None
-    tags: list[str] | None = None
-
-
 class Text(BaseModel):
-    text: str | None = Field(max_length=1000000)
+    text: str | None = Field(default="", max_length=1000000)
 
 
 class CommonInDB(BaseModel):
@@ -102,11 +129,11 @@ class NewAccount(BaseModel):
     account_id: UUID
 
 
-class UpdatedAccount(Basic1, Text, Basic2):
+class UpdatedAccount(Basic1, Text):
     pass
 
 
-class AccountInDB(Basic1, Text, Basic2InDB, CommonInDB):
+class AccountInDB(Basic1, Text, CommonInDB):
     pass
 
 
@@ -115,8 +142,6 @@ class Account(DBComputed, AccountInDB):
     attachments: list[str]
 
 
-# TODO should add tags
-# model similar to account, minus data, text, tags, attachments
 class AccountOverview(Basic1, CommonInDB, DBComputed):
     account_id: UUID
 
@@ -125,22 +150,72 @@ class AccountFilters(BasicFilters):
     pass
 
 
-# PROJECT
-class NewProject(BaseModel):
+# extending the Model dynamically
+# if I don't previously declare Account as a class, here Account will be a variable
+# and a variable gives problem elsewhere where it is imported
+Account = dict_model("Account", Account, accounts)  # type: ignore
+AccountOverview = dict_model("AccountOverview", AccountOverview, accounts)  # type: ignore
+UpdatedAccount = dict_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
+AccountFilters = filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
+
+
+# OPPORTUNITY
+class NewOpportunity(BaseModel):
     account_id: UUID
-    project_id: UUID
+    opportunity_id: UUID
 
 
-class UpdatedProject(Basic1, Text, Basic2):
+class UpdatedOpportunity(Basic1, Text):
     pass
 
 
-class ProjectInDB(Basic1, Text, Basic2InDB, CommonInDB):
+class OpportunityInDB(Basic1, Text, CommonInDB):
+    pass
+
+
+class Opportunity(DBComputed, OpportunityInDB):
+    account_id: UUID
+    opportunity_id: UUID
+    attachments: list[str]
+
+
+class OpportunityOverview(Basic1, CommonInDB, DBComputed):
+    account_id: UUID
+    opportunity_id: UUID
+
+
+class OpportunityOverviewWithAccountName(OpportunityOverview):
+    account_name: str | None = None
+
+
+class OpportunityFilters(BasicFilters):
+    pass
+
+
+Opportunity = dict_model("Opportunity", Opportunity, accounts)  # type: ignore
+OpportunityOverview = dict_model("OpportunityOverview", OpportunityOverview, accounts)  # type: ignore
+UpdatedOpportunity = dict_model("UpdatedOpportunity", UpdatedOpportunity, accounts)  # type: ignore
+OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
+
+
+# PROJECT
+class NewProject(BaseModel):
+    account_id: UUID
+    opportunity_id: UUID
+    project_id: UUID
+
+
+class UpdatedProject(Basic1, Text):
+    pass
+
+
+class ProjectInDB(Basic1, Text, CommonInDB):
     pass
 
 
 class Project(DBComputed, ProjectInDB):
     account_id: UUID
+    opportunity_id: UUID
     project_id: UUID
     attachments: list[str]
 
@@ -150,12 +225,18 @@ class ProjectOverview(Basic1, CommonInDB, DBComputed):
     project_id: UUID
 
 
-class ProjectOverviewWithAccountName(ProjectOverview):
-    account_name: str | None = None
+class ProjectOverviewWithOpportunityName(ProjectOverview):
+    opportunity_name: str | None = None
 
 
 class ProjectFilters(BasicFilters):
     pass
+
+
+Project = dict_model("Project", Project, accounts)  # type: ignore
+ProjectOverview = dict_model("ProjectOverview", ProjectOverview, accounts)  # type: ignore
+UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
+ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
 
 
 # TASK
@@ -165,11 +246,11 @@ class NewTask(BaseModel):
     task_id: int
 
 
-class UpdatedTask(Basic1, Text, Basic2):
+class UpdatedTask(Basic1, Text):
     pass
 
 
-class TaskInDB(Basic1, Text, Basic2InDB, CommonInDB):
+class TaskInDB(Basic1, Text, CommonInDB):
     pass
 
 
@@ -201,11 +282,11 @@ class NewNote(BaseModel):
     note_id: int
 
 
-class UpdatedNote(Name, Text, Basic2):
+class UpdatedNote(Name, Text):
     pass
 
 
-class NoteInDB(Name, Text, Basic2InDB, CommonInDB):
+class NoteInDB(Name, Text, CommonInDB):
     pass
 
 

@@ -4,7 +4,7 @@ from worst_crm.models import (
     Project,
     NewProject,
     ProjectOverview,
-    ProjectOverviewWithAccountName,
+    ProjectOverviewWithOpportunityName,
 )
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
@@ -54,8 +54,8 @@ def test_read_all_projects(login, setup_test):
         headers={"Authorization": f"Bearer {login}"},
     )
     assert r.status_code == 200
-    l: list[ProjectOverviewWithAccountName] = [
-        ProjectOverviewWithAccountName(**x) for x in r.json()
+    l: list[ProjectOverviewWithOpportunityName] = [
+        ProjectOverviewWithOpportunityName(**x) for x in r.json()
     ]
     assert len(l) >= 50
 
@@ -67,8 +67,8 @@ def test_read_all_projects_with_filters(login, setup_test):
         params={"status": ["ON HOLD"]},
     )
     assert r.status_code == 200
-    l: list[ProjectOverviewWithAccountName] = [
-        ProjectOverviewWithAccountName(**x) for x in r.json()
+    l: list[ProjectOverviewWithOpportunityName] = [
+        ProjectOverviewWithOpportunityName(**x) for x in r.json()
     ]
     assert len(l) == 1
 

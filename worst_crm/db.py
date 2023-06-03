@@ -6,30 +6,36 @@ import datetime as dt
 import os
 
 from worst_crm.models import (
+    NewAccount,
     Account,
     AccountFilters,
     AccountInDB,
     AccountOverview,
-    NewAccount,
-    NewNote,
+    NewOpportunity,
+    Opportunity,
+    OpportunityFilters,
+    OpportunityInDB,
+    OpportunityOverview,
+    OpportunityOverviewWithAccountName,
     NewTask,
-    Note,
-    NoteFilters,
-    NoteInDB,
-    NoteOverview,
-    NoteOverviewWithProjectName,
-    Project,
-    NewProject,
-    ProjectFilters,
-    ProjectInDB,
-    ProjectOverview,
-    ProjectOverviewWithAccountName,
-    Status,
     Task,
     TaskFilters,
     TaskInDB,
     TaskOverview,
     TaskOverviewWithProjectName,
+    NewNote,
+    Note,
+    NoteFilters,
+    NoteInDB,
+    NoteOverview,
+    NoteOverviewWithProjectName,
+    NewProject,
+    Project,
+    ProjectFilters,
+    ProjectInDB,
+    ProjectOverview,
+    ProjectOverviewWithOpportunityName,
+    Status,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -247,7 +253,7 @@ ACCOUNT_OVERVIEW_COLS = get_fields(AccountOverview)
 ACCOUNTS_COLS = get_fields(Account)
 
 
-def get_all_accounts(account_filters: AccountFilters) -> list[AccountOverview]:
+def get_all_accounts(account_filters: AccountFilters | None) -> list[AccountOverview]:
     where_clause, bind_params = __get_where_clause(account_filters, "accounts")
 
     return execute_stmt(
@@ -345,6 +351,142 @@ def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
     )
 
 
+# OPPORTUNITIES
+OPPORTUNITY_IN_DB_COLS = get_fields(ProjectInDB)
+OPPORTUNITY_IN_DB_PLACEHOLDERS = get_placeholders(ProjectInDB)
+OPPORTUNITY_OVERVIEW_COLS = get_fields(ProjectOverview)
+OPPORTUNITIES_COLS = get_fields(Project)
+
+
+def get_all_opportunities(
+    opportunity_filters: OpportunityFilters | None,
+) -> list[OpportunityOverviewWithAccountName]:
+    where_clause, bind_params = __get_where_clause(
+        opportunity_filters, table_name="opportunities"
+    )
+
+    fully_qualified = ", ".join(
+        [f"opportunities.{x}" for x in OpportunityOverview.__fields__.keys()]
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT {fully_qualified}, opportunities.name AS opportunity_name
+        FROM projects JOIN opportunities
+            ON projects.opportunity_id = opportunities.opportunity_id
+        {where_clause}
+        ORDER BY opportunity_name, projects.name
+        """,
+        bind_params,
+        OpportunityOverviewWithAccountName,
+        True,
+    )
+
+
+def get_all_opportunities_for_account_id(account_id: UUID) -> list[OpportunityOverview]:
+    return execute_stmt(
+        f"""
+        SELECT {OPPORTUNITY_OVERVIEW_COLS}
+        FROM opportunities
+        WHERE account_id = %s
+        ORDER BY name
+        """,
+        (account_id,),
+        OpportunityOverview,
+        True,
+    )
+
+
+def get_opportunity(account_id: UUID, opportunity_id: UUID) -> Opportunity | None:
+    return execute_stmt(
+        f"""
+        SELECT {OPPORTUNITIES_COLS}
+        FROM opportunities 
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        """,
+        (account_id, opportunity_id),
+        Opportunity,
+    )
+
+
+def create_opportunity(
+    account_id: UUID, opportunity_in_db: OpportunityInDB
+) -> NewOpportunity | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO opportunities 
+            ({OPPORTUNITY_IN_DB_COLS}, account_id)
+        VALUES
+            ({OPPORTUNITY_IN_DB_PLACEHOLDERS}, %s)
+        RETURNING account_id, opportunity_id
+        """,
+        (*tuple(opportunity_in_db.dict().values()), account_id),
+        NewProject,
+    )
+
+
+def update_opportunity(
+    account_id: UUID, opportunity_id: UUID, opportunity_in_db: OpportunityInDB
+) -> Opportunity | None:
+    old_opp = get_project(account_id, opportunity_id)
+
+    if old_opp:
+        old_opp = OpportunityInDB(**old_opp.dict())
+        update_data = opportunity_in_db.dict(exclude_unset=True)
+        new_opp = old_opp.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE opportunities SET 
+                ({OPPORTUNITY_IN_DB_COLS}) = ({OPPORTUNITY_IN_DB_PLACEHOLDERS})
+            WHERE (account_id, opportunity_id) = (%s, %s)
+            RETURNING {OPPORTUNITIES_COLS}
+            """,
+            (*tuple(new_opp.dict().values()), account_id, opportunity_id),
+            Opportunity,
+        )
+
+
+def delete_opportunity(account_id: UUID, opportunity_id: UUID) -> Opportunity | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM opportunities
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        RETURNING {OPPORTUNITIES_COLS}
+        """,
+        (account_id, opportunity_id),
+        Project,
+    )
+
+
+def add_opportunity_attachment(
+    account_id: UUID, opportunity_id: UUID, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE opportunities SET
+            attachments = array_append(attachments, %s)
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id),
+        returning_rs=False,
+    )
+
+
+def remove_opportunity_attachment(
+    account_id: UUID, opportunity_id: UUID, s3_object_name: str
+) -> None:
+    return execute_stmt(
+        """
+        UPDATE opportunities SET
+            attachments = array_remove(attachments, %s)
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        """,
+        (s3_object_name, account_id, opportunity_id),
+        returning_rs=False,
+    )
+
+
 # PROJECTS
 PROJECT_IN_DB_COLS = get_fields(ProjectInDB)
 PROJECT_IN_DB_PLACEHOLDERS = get_placeholders(ProjectInDB)
@@ -354,7 +496,7 @@ PROJECTS_COLS = get_fields(Project)
 
 def get_all_projects(
     project_filters: ProjectFilters,
-) -> list[ProjectOverviewWithAccountName]:
+) -> list[ProjectOverviewWithOpportunityName]:
     where_clause, bind_params = __get_where_clause(
         project_filters, table_name="projects"
     )
@@ -365,14 +507,14 @@ def get_all_projects(
 
     return execute_stmt(
         f"""
-        SELECT {fully_qualified}, accounts.name AS account_name
-        FROM projects JOIN accounts
-            ON projects.account_id = accounts.account_id
+        SELECT {fully_qualified}, opportunities.name AS opportunity_name
+        FROM projects JOIN opportunities
+            ON projects.opportunity_id = opportunities.opportunity_id
         {where_clause}
-        ORDER BY account_name, projects.name
+        ORDER BY opportunity_name, projects.name
         """,
         bind_params,
-        ProjectOverviewWithAccountName,
+        ProjectOverviewWithOpportunityName,
         True,
     )
 

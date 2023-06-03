@@ -1,10 +1,10 @@
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse
 from worst_crm import db
-from fastapi import FastAPI, Depends, HTTPException, Query, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from worst_crm.models import UserInDB, Token, User, UpdatedUserInDB
-from worst_crm.routers import accounts, projects, notes, tasks
+from worst_crm.routers import accounts, opportunities, projects, notes, tasks
 import os
 import worst_crm.dependencies as dep
 from worst_crm.routers.admin import admin
@@ -18,7 +18,6 @@ app = FastAPI(
     title="WorstCRM API", docs_url="/api", openapi_url="/worst_crm.openapi.json"
 )
 
-# app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/static", StaticFiles(directory="webapp/dist"), name="static")
 
 origins = [
@@ -40,11 +39,6 @@ app.add_middleware(
 )
 async def home() -> FileResponse:
     return FileResponse("webapp/dist/index.html")
-
-
-# @app.exception_handler(404)
-# async def not_found_exception_handler(request: Request, exc: HTTPException):
-#     return RedirectResponse('/')
 
 
 @app.get("/healthcheck")
@@ -101,6 +95,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 
 
 app.include_router(accounts.router)
+app.include_router(opportunities.router)
 app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(notes.router)

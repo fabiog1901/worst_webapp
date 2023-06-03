@@ -10,11 +10,10 @@ from worst_crm.models import (
     ProjectFilters,
     ProjectInDB,
     ProjectOverview,
-    ProjectOverviewWithAccountName,
+    ProjectOverviewWithOpportunityName,
     UpdatedProject,
     User,
 )
-import json
 import worst_crm.dependencies as dep
 
 router = APIRouter(
@@ -40,7 +39,7 @@ async def get_all_projects(
     updated_at_from: dt.date | None = None,
     updated_at_to: dt.date | None = None,
     updated_by: Annotated[list[str], Query()] = [],
-) -> list[ProjectOverviewWithAccountName]:
+) -> list[ProjectOverviewWithOpportunityName]:
     # TODO possibly using elasticsearch for text/data columns?
 
     project_filters = ProjectFilters()
@@ -112,9 +111,7 @@ async def update_project(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **project.dict(exclude_unset=True, exclude={"data"}),
-        data=json.dumps(project.data),
-        updated_by=current_user.user_id
+        **project.dict(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_project(account_id, project_id, project_in_db)
