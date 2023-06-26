@@ -100,5 +100,6 @@ app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(notes.router)
 
+
 # ADMIN
 app.include_router(admin.router)

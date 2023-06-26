@@ -5,16 +5,17 @@ from uuid import UUID
 from worst_crm import db
 from worst_crm.models import (
     AccountNote,
+    AccountNoteOverview,
     NewAccountNote,
     NewOpportunityNote,
     NewProjectNote,
-    NoteOverview,
-    NoteOverviewWithProjectName,
-    OpportunityNote,
-    ProjectNote,
-    UpdatedNote,
-    NoteInDB,
     NoteFilters,
+    NoteInDB,
+    OpportunityNote,
+    OpportunityNoteOverview,
+    ProjectNote,
+    ProjectNoteOverview,
+    UpdatedNote,
     User,
 )
 import worst_crm.dependencies as dep
@@ -26,22 +27,14 @@ router = APIRouter(
 )
 
 
-# GET LISTS
-@router.get("/{account_id}")
-async def get_all_notes(
-    account_id: UUID, note_filters: NoteFilters | None = None
-) -> list[NoteOverviewWithProjectName]:
-    return db.get_all_notes(account_id, note_filters)
-
-
-@router.get("/{account_id}/{project_id}")
-async def get_all_notes_for_project_id(
-    account_id: UUID, project_id: UUID
-) -> list[NoteOverview]:
-    return db.get_all_notes_for_project_id(account_id, project_id)
-
-
 # ACCOUNT_NOTE
+@router.get("/{account_id}")
+async def get_all_account_notes(
+    account_id: UUID, note_filters: NoteFilters | None = None
+) -> list[AccountNoteOverview]:
+    return db.get_all_account_notes(account_id, note_filters)
+
+
 @router.get("/{account_id}/{note_id}")
 async def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     return db.get_account_note(account_id, note_id)
@@ -122,6 +115,13 @@ async def delete_attachement_from_account_note(
 
 
 # OPPORTUNITY_NOTE
+@router.get("/{account_id}/{opportunity_id}")
+async def get_all_opportunity_notes(
+    account_id: UUID, opportunity_id: UUID, note_filters: NoteFilters | None = None
+) -> list[OpportunityNoteOverview]:
+    return db.get_all_opportunity_notes(account_id, opportunity_id, note_filters)
+
+
 @router.get("/{account_id}/{opportunity_id}/{note_id}")
 async def get_opportunity_note(
     account_id: UUID, opportunity_id: UUID, note_id: UUID
@@ -232,6 +232,13 @@ async def delete_attachement_from_opportunity_note(
 
 
 # PROJECT_NOTE
+@router.get("/{account_id}/{opportunity_id}/{project_id}")
+async def get_all_project_notes(
+    account_id: UUID, opportunity_id: UUID, project_id: UUID
+) -> list[ProjectNoteOverview]:
+    return db.get_all_project_notes(account_id, opportunity_id, project_id)
+
+
 @router.get("/{account_id}/{opportunity_id}/{project_id}/{note_id}")
 async def get_project_note(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID
@@ -289,7 +296,11 @@ async def delete_project_note(
     "/{account_id}/{opportunity_id}/{project_id}/{note_id}/presigned-get-url/{filename}",
 )
 async def get_presigned_get_url_for_project_note(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID, filename: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    filename: str,
 ) -> HTMLResponse:
     s3_object_name = (
         str(account_id)
@@ -297,7 +308,7 @@ async def get_presigned_get_url_for_project_note(
         + str(opportunity_id)
         + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + str(note_id)
         + "/"
         + filename
@@ -311,7 +322,11 @@ async def get_presigned_get_url_for_project_note(
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def get_presigned_put_url_for_project_note(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID, filename: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    filename: str,
 ) -> HTMLResponse:
     s3_object_name = (
         str(account_id)
@@ -319,12 +334,14 @@ async def get_presigned_put_url_for_project_note(
         + str(opportunity_id)
         + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + str(note_id)
         + "/"
         + filename
     )
-    db.add_project_note_attachment(account_id, opportunity_id, project_id, note_id, filename)
+    db.add_project_note_attachment(
+        account_id, opportunity_id, project_id, note_id, filename
+    )
     data = dep.get_presigned_put_url(s3_object_name)
     return HTMLResponse(content=data)
 
@@ -334,7 +351,11 @@ async def get_presigned_put_url_for_project_note(
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement_from_project_note(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID, filename: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_id: UUID,
+    filename: str,
 ) -> None:
     s3_object_name = (
         str(account_id)
@@ -342,10 +363,12 @@ async def delete_attachement_from_project_note(
         + str(opportunity_id)
         + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + str(note_id)
         + "/"
         + filename
     )
-    db.remove_project_note_attachment(account_id, opportunity_id, project_id, note_id, filename)
+    db.remove_project_note_attachment(
+        account_id, opportunity_id, project_id, note_id, filename
+    )
     dep.s3_remove_object(s3_object_name)

@@ -6,31 +6,57 @@ import datetime as dt
 # utility functions
 
 # this dict will come from the database
-accounts = {
-    # "ticker": (str | None, None),
-    # "industry": (str | None, Field(min_length=3, max_length=20)),
-}
+# accounts = {
+#     "ticker": (str | None, None),
+#     "industry": (str | None, Field(min_length=3, max_length=20)),
+# }
 
 
-def dict_model(name: str, base, dict_def: dict):
+def update_account(d):
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def update_model(name: str, base, dict_def: dict):
     fields = {}
     for field_name, value in dict_def.items():
         if isinstance(value, tuple):
             fields[field_name] = value
         elif isinstance(value, dict):
-            fields[field_name] = (dict_model(f"{name}_{field_name}", base, value), ...)
+            fields[field_name] = (
+                update_model(f"{name}_{field_name}", base, value),
+                ...,
+            )
         else:
             raise ValueError(f"Field {field_name}:{value} has invalid syntax")
     return create_model(name, __base__=base, **fields)
 
 
-def filter_model(name: str, base, dict_def: dict):
+def update_filter_model(name: str, base, dict_def: dict):
     fields = {}
     for field_name, value in dict_def.items():
         if isinstance(value, tuple):
             fields[field_name] = (list[value[0]], value[1])  # type: ignore
         elif isinstance(value, dict):
-            fields[field_name] = (dict_model(f"{name}_{field_name}", base, value), ...)
+            fields[field_name] = (
+                update_filter_model(f"{name}_{field_name}", base, value),
+                ...,
+            )
         else:
             raise ValueError(f"Field {field_name}:{value} has invalid syntax")
     return create_model(name, __base__=base, **fields)
@@ -153,10 +179,10 @@ class AccountFilters(BasicFilters):
 # extending the Model dynamically
 # if I don't previously declare Account as a class, here Account will be a variable
 # and a variable gives problem elsewhere where it is imported
-Account = dict_model("Account", Account, accounts)  # type: ignore
-AccountOverview = dict_model("AccountOverview", AccountOverview, accounts)  # type: ignore
-UpdatedAccount = dict_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
-AccountFilters = filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
+# Account = dict_model("Account", Account, accounts)  # type: ignore
+# AccountOverview = dict_model("AccountOverview", AccountOverview, accounts)  # type: ignore
+# UpdatedAccount = dict_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
+# AccountFilters = filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
 
 
 # OPPORTUNITY
@@ -192,11 +218,11 @@ class OpportunityFilters(BasicFilters):
     pass
 
 
-Opportunity = dict_model("Opportunity", Opportunity, accounts)  # type: ignore
-OpportunityOverview = dict_model("OpportunityOverview", OpportunityOverview, accounts)  # type: ignore
-OpportunityOverviewWithAccountName = dict_model("OpportunityOverviewWithAccountName", OpportunityOverviewWithAccountName, accounts)  # type: ignore
-UpdatedOpportunity = dict_model("UpdatedOpportunity", UpdatedOpportunity, accounts)  # type: ignore
-OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
+# Opportunity = dict_model("Opportunity", Opportunity, accounts)  # type: ignore
+# OpportunityOverview = dict_model("OpportunityOverview", OpportunityOverview, accounts)  # type: ignore
+# OpportunityOverviewWithAccountName = dict_model("OpportunityOverviewWithAccountName", OpportunityOverviewWithAccountName, accounts)  # type: ignore
+# UpdatedOpportunity = dict_model("UpdatedOpportunity", UpdatedOpportunity, accounts)  # type: ignore
+# OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
 
 
 # PROJECT
@@ -239,12 +265,12 @@ class ProjectFilters(BasicFilters):
     pass
 
 
-Project = dict_model("Project", Project, accounts)  # type: ignore
-ProjectOverview = dict_model("ProjectOverview", ProjectOverview, accounts)  # type: ignore
-ProjectOverviewWithAccountName = dict_model("ProjectOverviewWithAccountName", ProjectOverviewWithAccountName, accounts)  # type: ignore
-ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
-UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
-ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
+# Project = dict_model("Project", Project, accounts)  # type: ignore
+# ProjectOverview = dict_model("ProjectOverview", ProjectOverview, accounts)  # type: ignore
+# ProjectOverviewWithAccountName = dict_model("ProjectOverviewWithAccountName", ProjectOverviewWithAccountName, accounts)  # type: ignore
+# ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
+# UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
+# ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
 
 
 # TASK
@@ -319,15 +345,17 @@ class ProjectNote(OpportunityNote):
     project_id: UUID
 
 
-class NoteOverview(Name, CommonInDB, DBComputed):
+class AccountNoteOverview(Name, CommonInDB, DBComputed):
     account_id: UUID
-    opportunity_id: UUID
-    project_id: UUID
     note_id: UUID
 
 
-class NoteOverviewWithProjectName(NoteOverview):
-    project_name: str | None = None
+class OpportunityNoteOverview(AccountNoteOverview):
+    opportunity_id: UUID
+
+
+class ProjectNoteOverview(OpportunityNoteOverview):
+    project_id: UUID
 
 
 class NoteFilters(BaseModel):

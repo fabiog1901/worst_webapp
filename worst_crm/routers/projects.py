@@ -17,21 +17,21 @@ from worst_crm.models import (
 import worst_crm.dependencies as dep
 
 router = APIRouter(
-    prefix='/projects',
+    prefix="/projects",
     dependencies=[Depends(dep.get_current_user)],
-    tags=['projects'],
+    tags=["projects"],
 )
 
 
 # CRUD
-@router.get('')
+@router.get("")
 async def get_all_projects(
     project_filters: ProjectFilters | None = None,
 ) -> list[ProjectOverviewWithAccountName]:
     return db.get_all_projects(project_filters)
 
 
-@router.get('/{account_id}')
+@router.get("/{account_id}")
 async def get_all_projects_for_account_id(
     account_id: UUID,
     project_filters: ProjectFilters | None = None,
@@ -39,14 +39,14 @@ async def get_all_projects_for_account_id(
     return db.get_all_projects_for_account_id(account_id, project_filters)
 
 
-@router.get('/{account_id}/{opportunity_id}')
+@router.get("/{account_id}/{opportunity_id}")
 async def get_all_projects_for_opportunity_id(
     account_id: UUID, opportunity_id: UUID
 ) -> list[ProjectOverview]:
     return db.get_all_projects_for_opportunity_id(account_id, opportunity_id)
 
 
-@router.get('/{account_id}/{opportunity_id}/{project_id}')
+@router.get("/{account_id}/{opportunity_id}/{project_id}")
 async def get_project(
     account_id: UUID, opportunity_id: UUID, project_id: UUID
 ) -> Project | None:
@@ -54,8 +54,8 @@ async def get_project(
 
 
 @router.post(
-    '/{account_id}/{opportunity_id}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    "/{account_id}/{opportunity_id}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def create_project(
     account_id: UUID,
@@ -69,8 +69,8 @@ async def create_project(
 
 
 @router.put(
-    '/{account_id}/{opportunity_id}/{project_id}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    "/{account_id}/{opportunity_id}/{project_id}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_project(
     account_id: UUID,
@@ -87,8 +87,8 @@ async def update_project(
 
 
 @router.delete(
-    '/{account_id}/{opportunity_id}/{project_id}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    "/{account_id}/{opportunity_id}/{project_id}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_project(
     account_id: UUID, opportunity_id: UUID, project_id: UUID
@@ -98,19 +98,19 @@ async def delete_project(
 
 # Attachements
 @router.get(
-    '/{account_id}/{opportunity_id}/{project_id}/presigned-get-url/{filename}',
-    name='Get pre-signed URL for downloading an attachment',
+    "/{account_id}/{opportunity_id}/{project_id}/presigned-get-url/{filename}",
+    name="Get pre-signed URL for downloading an attachment",
 )
 async def get_presigned_get_url(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, filename: str
 ):
     s3_object_name = (
         str(account_id)
-        + '/'
+        + "/"
         + str(opportunity_id)
-        + '/'
+        + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + filename
     )
     data = dep.get_presigned_get_url(s3_object_name)
@@ -118,20 +118,20 @@ async def get_presigned_get_url(
 
 
 @router.get(
-    '/{account_id}/{opportunity_id}/{project_id}/presigned-put-url/{filename}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
-    name='Get pre-signed URL for uploading an attachment',
+    "/{account_id}/{opportunity_id}/{project_id}/presigned-put-url/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    name="Get pre-signed URL for uploading an attachment",
 )
 async def get_presigned_put_url(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, filename: str
 ):
     s3_object_name = (
         str(account_id)
-        + '/'
+        + "/"
         + str(opportunity_id)
-        + '/'
+        + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + filename
     )
     db.add_project_attachment(account_id, opportunity_id, project_id, filename)
@@ -140,19 +140,19 @@ async def get_presigned_put_url(
 
 
 @router.delete(
-    '/{account_id}/{opportunity_id}/{project_id}/attachments/{filename}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    "/{account_id}/{opportunity_id}/{project_id}/attachments/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, filename: str
 ):
     s3_object_name = (
         str(account_id)
-        + '/'
+        + "/"
         + str(opportunity_id)
-        + '/'
+        + "/"
         + str(project_id)
-        + '/'
+        + "/"
         + filename
     )
     db.remove_project_attachment(account_id, opportunity_id, project_id, filename)

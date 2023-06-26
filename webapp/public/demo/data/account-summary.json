@@ -1,8 +1,0 @@
-
-{
-    "data": [
-        {"id": "1000","name": "Bermuda Bank","due_date": "2023-02-13", "status": "TLC"},
-        {"id": "1001","name": "TelCo Jam","due_date": "2023-03-11", "status": "NEW"}
-   ]
-}
-    

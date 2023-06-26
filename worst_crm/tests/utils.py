@@ -8,8 +8,6 @@ from worst_crm.models import (
     NewProject,
     Task,
     NewTask,
-    Note,
-    NewNote,
 )
 import worst_crm.db as db
 import worst_crm.dependencies as dep
@@ -172,54 +170,54 @@ def delete_task(
     return None
 
 
-# NOTES
-def get_note(
-    account_id: UUID, project_id: UUID, note_id: int, token: str
-) -> Note | None:
-    r = client.get(
-        f"/notes/{account_id}/{project_id}/{note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200
-    if r.json():
-        return Note(**r.json())
-    return None
+# # NOTES
+# def get_note(
+#     account_id: UUID, project_id: UUID, note_id: int, token: str
+# ) -> Note | None:
+#     r = client.get(
+#         f"/notes/{account_id}/{project_id}/{note_id}",
+#         headers={"Authorization": f"Bearer {token}"},
+#     )
+#     assert r.status_code == 200
+#     if r.json():
+#         return Note(**r.json())
+#     return None
 
 
-def create_note(account_id: UUID, project_id: UUID, token: str) -> NewNote:
-    r = client.post(
-        f"/notes/{account_id}/{project_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200
-    return NewNote(**r.json())
+# def create_note(account_id: UUID, project_id: UUID, token: str) -> NewNote:
+#     r = client.post(
+#         f"/notes/{account_id}/{project_id}",
+#         headers={"Authorization": f"Bearer {token}"},
+#     )
+#     assert r.status_code == 200
+#     return NewNote(**r.json())
 
 
-def update_note(account_id: UUID, project_id: UUID, note_id: int, token: str) -> Note:
-    r = client.put(
-        f"/notes/{account_id}/{project_id}/{note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        json={
-            "name": "NOTE-000001",
-            "text": "dummy Note descr UPDATED",
-            "tags": [random.choice(["n1", "n2", "n3"])],
-        },
-    )
-    assert r.status_code == 200
-    return Note(**r.json())
+# def update_note(account_id: UUID, project_id: UUID, note_id: int, token: str) -> Note:
+#     r = client.put(
+#         f"/notes/{account_id}/{project_id}/{note_id}",
+#         headers={"Authorization": f"Bearer {token}"},
+#         json={
+#             "name": "NOTE-000001",
+#             "text": "dummy Note descr UPDATED",
+#             "tags": [random.choice(["n1", "n2", "n3"])],
+#         },
+#     )
+#     assert r.status_code == 200
+#     return Note(**r.json())
 
 
-def delete_note(
-    account_id: UUID, project_id: UUID, note_id: int, token: str
-) -> Note | None:
-    r = client.delete(
-        f"/notes/{account_id}/{project_id}/{note_id}",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert r.status_code == 200
-    if r.json():
-        return Note(**r.json())
-    return None
+# def delete_note(
+#     account_id: UUID, project_id: UUID, note_id: int, token: str
+# ) -> Note | None:
+#     r = client.delete(
+#         f"/notes/{account_id}/{project_id}/{note_id}",
+#         headers={"Authorization": f"Bearer {token}"},
+#     )
+#     assert r.status_code == 200
+#     if r.json():
+#         return Note(**r.json())
+#     return None
 
 
 # PYTEST FIXTURES

@@ -6,41 +6,42 @@ import datetime as dt
 import os
 
 from worst_crm.models import (
-    NewAccount,
     Account,
     AccountFilters,
     AccountInDB,
+    AccountNote,
+    AccountNoteOverview,
     AccountOverview,
+    NewAccount,
+    NewAccountNote,
     NewOpportunity,
     NewOpportunityNote,
+    NewProject,
     NewProjectNote,
+    NewTask,
+    NoteFilters,
+    NoteInDB,
     Opportunity,
     OpportunityFilters,
     OpportunityInDB,
     OpportunityNote,
+    OpportunityNoteOverview,
     OpportunityOverview,
     OpportunityOverviewWithAccountName,
-    NewTask,
+    Project,
+    ProjectFilters,
+    ProjectInDB,
     ProjectNote,
+    ProjectNoteOverview,
+    ProjectOverview,
+    ProjectOverviewWithAccountName,
+    ProjectOverviewWithOpportunityName,
+    Status,
     Task,
     TaskFilters,
     TaskInDB,
     TaskOverview,
     TaskOverviewWithProjectName,
-    NewAccountNote,
-    AccountNote,
-    NoteFilters,
-    NoteInDB,
-    NoteOverview,
-    NoteOverviewWithProjectName,
-    NewProject,
-    Project,
-    ProjectFilters,
-    ProjectInDB,
-    ProjectOverview,
-    ProjectOverviewWithAccountName,
-    ProjectOverviewWithOpportunityName,
-    Status,
 )
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
@@ -256,6 +257,10 @@ ACCOUNT_IN_DB_COLS = get_fields(AccountInDB)
 ACCOUNT_IN_DB_PLACEHOLDERS = get_placeholders(AccountInDB)
 ACCOUNT_OVERVIEW_COLS = get_fields(AccountOverview)
 ACCOUNTS_COLS = get_fields(Account)
+
+
+def add_model_accounts(d):
+    pass
 
 
 def get_all_accounts(account_filters: AccountFilters | None) -> list[AccountOverview]:
@@ -828,52 +833,33 @@ def remove_task_attachment(
 # NOTES
 NOTE_IN_DB_COLS = get_fields(NoteInDB)
 NOTE_IN_DB_PLACEHOLDERS = get_placeholders(NoteInDB)
-NOTE_OVERVIEW_COLS = get_fields(NoteOverview)
 ACCOUNT_NOTES_COLS = get_fields(AccountNote)
 OPPORTUNITY_NOTES_COLS = get_fields(OpportunityNote)
 PROJECT_NOTES_COLS = get_fields(ProjectNote)
 
 
-# def get_all_notes(
-#     account_id: UUID, note_filters: NoteFilters
-# ) -> list[NoteOverviewWithProjectName]:
-#     where_clause, bind_params = __get_where_clause(
-#         note_filters, table_name="notes", include_where=False
-#     )
-
-#     fully_qualified = ", ".join([f"notes.{x}" for x in NoteOverview.__fields__.keys()])
-
-#     return execute_stmt(
-#         f"""
-#         SELECT {fully_qualified}, projects.name AS project_name
-#         FROM notes JOIN projects
-#             ON notes.project_id = projects.project_id
-#         WHERE notes.account_id = %s
-#         {' AND ' if where_clause else ''} {where_clause}
-#         ORDER BY project_name, note_id DESC
-#         """,
-#         (account_id,) + bind_params,
-#         NoteOverviewWithProjectName,
-#         True,
-#     )
-
-
-# def get_all_notes_for_project_id(
-#     account_id: UUID, project_id: UUID
-# ) -> list[NoteOverview]:
-#     return execute_stmt(
-#         f"""
-#         SELECT {NOTE_OVERVIEW_COLS}
-#         FROM notes
-#         WHERE (account_id, project_id) =  (%s, %s)
-#         ORDER BY note_id DESC
-#         """,
-#         (account_id, project_id),
-#         NoteOverview,
-#         True,
-#     )
-
 # ACCOUNT_NOTES
+def get_all_account_notes(
+    account_id: UUID, note_filters: NoteFilters | None = None
+) -> list[AccountNoteOverview]:
+    where_clause, bind_params = __get_where_clause(
+        note_filters, table_name="account_notes", include_where=False
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT {ACCOUNT_NOTES_COLS}
+        FROM account_notes
+        WHERE account_id = %s
+        {' AND ' if where_clause else ''} {where_clause}
+        ORDER BY name
+        """,
+        (account_id,) + bind_params,
+        AccountNoteOverview,
+        True,
+    )
+
+
 def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     return execute_stmt(
         f"""
@@ -965,6 +951,27 @@ def remove_account_note_attachment(
 
 
 # OPPORTUNITY_NOTE
+def get_all_opportunity_notes(
+    account_id: UUID, opportunity_id: UUID, note_filters: NoteFilters | None = None
+) -> list[OpportunityNoteOverview]:
+    where_clause, bind_params = __get_where_clause(
+        note_filters, table_name="account_notes", include_where=False
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT {OPPORTUNITY_NOTES_COLS}
+        FROM opportunity_notes
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        {' AND ' if where_clause else ''} {where_clause}
+        ORDER BY name
+        """,
+        (account_id, opportunity_id) + bind_params,
+        OpportunityNoteOverview,
+        True,
+    )
+
+
 def get_opportunity_note(
     account_id: UUID, opportunity_id: UUID, note_id: UUID
 ) -> OpportunityNote | None:
@@ -1060,6 +1067,30 @@ def remove_opportunity_note_attachment(
 
 
 # PROJECT_NOTE
+def get_all_project_notes(
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    note_filters: NoteFilters | None = None,
+) -> list[ProjectNoteOverview]:
+    where_clause, bind_params = __get_where_clause(
+        note_filters, table_name="account_notes", include_where=False
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT {PROJECT_NOTES_COLS}
+        FROM project_notes
+        WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
+        {' AND ' if where_clause else ''} {where_clause}
+        ORDER BY name
+        """,
+        (account_id, opportunity_id, project_id) + bind_params,
+        ProjectNoteOverview,
+        True,
+    )
+
+
 def get_project_note(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID
 ) -> ProjectNote | None:

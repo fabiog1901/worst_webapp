@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID
-import datetime as dt
 from worst_crm import db
 from worst_crm.models import (
     NewAccount,
@@ -14,29 +13,51 @@ from worst_crm.models import (
     AccountFilters,
     User,
 )
+from worst_crm.models import update_account as up
 import worst_crm.dependencies as dep
 
+import datetime as dt
+import uuid
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+
 router = APIRouter(
-    prefix='/accounts',
-    dependencies=[Depends(dep.get_current_user)],
-    tags=['accounts'],
+    prefix="/accounts",
+    # dependencies=[Depends(dep.get_current_user)],
+    tags=["accounts"],
 )
 
 
+# MODEL
+@router.get("/model")
+async def add_column():
+    accounts = {
+        "ticker": (str | None, None),
+        "industry": (str | None, None),
+    }
+
+    db.add_model_accounts(accounts)
+    up(accounts)
+    from worst_crm.models import Account
+
+    print(Account.__fields__)
+    return {}
+
+
 # CRUD
-@router.get('')
+@router.get("")
 async def get_all_accounts(
     account_filters: AccountFilters | None = None,
 ) -> list[AccountOverview]:
     return db.get_all_accounts(account_filters)
 
 
-@router.get('/{account_id}')
+@router.get("/{account_id}")
 async def get_account(account_id: UUID) -> Account | None:
     return db.get_account(account_id)
 
 
-@router.post('', dependencies=[Security(dep.get_current_user, scopes=['rw'])])
+@router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def create_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> NewAccount | None:
@@ -48,7 +69,7 @@ async def create_account(
 
 
 @router.put(
-    '/{account_id}', dependencies=[Security(dep.get_current_user, scopes=['rw'])]
+    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def update_account(
     account_id: UUID,
@@ -62,7 +83,7 @@ async def update_account(
 
 
 @router.delete(
-    '/{account_id}', dependencies=[Security(dep.get_current_user, scopes=['rw'])]
+    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def delete_account(account_id: UUID) -> Account | None:
     return db.delete_account(account_id)
@@ -70,32 +91,32 @@ async def delete_account(account_id: UUID) -> Account | None:
 
 # Attachements
 @router.get(
-    '/{account_id}/presigned-get-url/{filename}',
-    name='Get pre-signed URL for downloading an attachment',
+    "/{account_id}/presigned-get-url/{filename}",
+    name="Get pre-signed URL for downloading an attachment",
 )
 async def get_presigned_get_url(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + '/' + filename
+    s3_object_name = str(account_id) + "/" + filename
     data = dep.get_presigned_get_url(s3_object_name)
     return HTMLResponse(content=data)
 
 
 @router.get(
-    '/{account_id}/presigned-put-url/{filename}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
-    name='Get pre-signed URL for uploading an attachment',
+    "/{account_id}/presigned-put-url/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    name="Get pre-signed URL for uploading an attachment",
 )
 async def get_presigned_put_url(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + '/' + filename
+    s3_object_name = str(account_id) + "/" + filename
     db.add_account_attachment(account_id, filename)
     data = dep.get_presigned_put_url(s3_object_name)
     return HTMLResponse(content=data)
 
 
 @router.delete(
-    '/{account_id}/attachments/{filename}',
-    dependencies=[Security(dep.get_current_user, scopes=['rw'])],
+    "/{account_id}/attachments/{filename}",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement(account_id: UUID, filename: str):
-    s3_object_name = str(account_id) + '/' + filename
+    s3_object_name = str(account_id) + "/" + filename
     db.remove_account_attachment(account_id, filename)
     dep.s3_remove_object(s3_object_name)

@@ -1,7 +1,8 @@
-<script setup></script>
-
 <template>
-    <router-view />
+  <main-nav />
+  <router-view />
 </template>
 
-<style scoped></style>
+<script setup lang="ts">
+import MainNav from "@/components/MainNav.vue";
+</script>
