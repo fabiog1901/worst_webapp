@@ -139,6 +139,49 @@ CREATE TABLE opportunities (
 CREATE INVERTED INDEX opportunity_tags_gin ON opportunities(tags);
 
 
+CREATE TABLE artifact_schemas (
+    -- pk
+    name STRING NOT NULL,
+    -- fields
+    artifact_schema JSONB NULL,
+    -- PK
+    CONSTRAINT pk PRIMARY KEY (name)
+);
+
+
+CREATE TABLE artifacts (
+    -- pk
+    account_id UUID NOT NULL,
+    opportunity_id UUID NOT NULL,
+    artifact_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    -- audit info
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
+    -- fields not nullable
+    -- fields nullable
+    name STRING NULL,
+    schema_name STRING NULL,
+    text STRING NULL,
+    tags STRING [] NULL DEFAULT ARRAY[],
+    -- PK
+    CONSTRAINT pk PRIMARY KEY (account_id, opportunity_id, artifact_id),
+    -- PK related FK
+    CONSTRAINT fk_opportunities FOREIGN KEY (account_id, opportunity_id) 
+        REFERENCES opportunities(account_id, opportunity_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    -- other FKs
+    CONSTRAINT schema_name_in_artifact_schemas FOREIGN KEY (schema_name)
+        REFERENCES artifact_schemas(name) ON DELETE SET NULL,
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE INVERTED INDEX artifact_tags_gin ON artifacts(tags);
+
+
 CREATE TABLE projects (
     -- pk
     account_id UUID NOT NULL,

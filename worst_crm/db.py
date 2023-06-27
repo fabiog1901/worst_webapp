@@ -16,6 +16,7 @@ from worst_crm.models import (
     NewAccountNote,
     NewOpportunity,
     NewOpportunityNote,
+    NewArtifact,
     NewProject,
     NewProjectNote,
     NewTask,
@@ -28,6 +29,12 @@ from worst_crm.models import (
     OpportunityNoteOverview,
     OpportunityOverview,
     OpportunityOverviewWithAccountName,
+    Artifact,
+    ArtifactFilters,
+    ArtifactInDB,
+    ArtifactOverview,
+    ArtifactOverviewWithAccountName,
+    ArtifactOverviewWithOpportunityName,
     Project,
     ProjectFilters,
     ProjectInDB,
@@ -381,11 +388,11 @@ def get_all_opportunities(
 
     return execute_stmt(
         f"""
-        SELECT {fully_qualified}, opportunities.name AS opportunity_name
-        FROM projects JOIN opportunities
-            ON projects.opportunity_id = opportunities.opportunity_id
+        SELECT {fully_qualified}, accounts.name AS account_name
+        FROM accounts JOIN opportunities
+            ON accounts.account_id = opportunities.account_id
         {where_clause}
-        ORDER BY opportunity_name, projects.name
+        ORDER BY account_name, opportunities.name
         """,
         bind_params,
         OpportunityOverviewWithAccountName,
@@ -494,6 +501,155 @@ def remove_opportunity_attachment(
         """,
         (s3_object_name, account_id, opportunity_id),
         returning_rs=False,
+    )
+
+
+# ARTIFACTS
+ARTIFACT_IN_DB_COLS = get_fields(ArtifactInDB)
+ARTIFACT_IN_DB_PLACEHOLDERS = get_placeholders(ArtifactInDB)
+ARTIFACT_OVERVIEW_COLS = get_fields(ArtifactOverview)
+ARTIFACTS_COLS = get_fields(Artifact)
+
+
+def get_all_artifacts(
+    artifact_filters: ArtifactFilters | None,
+) -> list[ArtifactOverviewWithAccountName]:
+    where_clause, bind_params = __get_where_clause(
+        artifact_filters, table_name="artifacts", include_where=False
+    )
+
+    fully_qualified = ", ".join(
+        [f"artifacts.{x}" for x in ArtifactOverview.__fields__.keys()]
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT
+            {fully_qualified}, 
+            accounts.name as account_name, 
+            opportunities.name AS opportunity_name
+        FROM accounts a 
+            JOIN opportunities o 
+                ON a.account_id = o.account_id 
+            JOIN artifacts p 
+                ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id)
+        {where_clause}
+        ORDER BY account_name, opportunity_name, artifacts.name
+        """,
+        bind_params,
+        ArtifactOverviewWithAccountName,
+        True,
+    )
+
+
+def get_all_artifacts_for_account_id(
+    account_id: UUID,
+    artifact_filters: ArtifactFilters | None,
+) -> list[ArtifactOverviewWithOpportunityName]:
+    where_clause, bind_params = __get_where_clause(
+        artifact_filters, table_name="artifacts", include_where=False
+    )
+
+    fully_qualified = ", ".join(
+        [f"artifacts.{x}" for x in ArtifactOverview.__fields__.keys()]
+    )
+
+    return execute_stmt(
+        f"""
+        SELECT {fully_qualified}, opportunities.name AS opportunity_name
+        FROM artifacts p JOIN opportunities o
+            ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id) 
+        WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
+        ORDER BY opportunity_name, artifacts.name
+        """,
+        (account_id,) + bind_params,
+        ArtifactOverviewWithOpportunityName,
+        True,
+    )
+
+
+def get_all_artifacts_for_opportunity_id(
+    account_id: UUID, opportunity_id: UUID
+) -> list[ArtifactOverview]:
+    return execute_stmt(
+        f"""
+        SELECT {PROJECT_OVERVIEW_COLS}
+        FROM artifacts
+        WHERE (account_id, opportunity_id) = (%s, %s)
+        ORDER BY name
+        """,
+        (account_id, opportunity_id),
+        ArtifactOverview,
+        True,
+    )
+
+
+def get_artifact(
+    account_id: UUID, opportunity_id: UUID, artifact_id: UUID
+) -> Artifact | None:
+    return execute_stmt(
+        f"""
+        SELECT {PROJECTS_COLS}
+        FROM artifacts 
+        WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
+        """,
+        (account_id, opportunity_id, artifact_id),
+        Artifact,
+    )
+
+
+def create_artifact(
+    account_id: UUID, opportunity_id: UUID, artifact_in_db: ArtifactInDB
+) -> NewArtifact | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO artifacts 
+            ({PROJECT_IN_DB_COLS}, account_id, opportunity_id)
+        VALUES
+            ({PROJECT_IN_DB_PLACEHOLDERS}, %s, %s)
+        RETURNING account_id, opportunity_id, artifact_id
+        """,
+        (*tuple(artifact_in_db.dict().values()), account_id, opportunity_id),
+        NewArtifact,
+    )
+
+
+def update_artifact(
+    account_id: UUID,
+    artifact_id: UUID,
+    opportunity_id: UUID,
+    artifact_in_db: ArtifactInDB,
+) -> Artifact | None:
+    old_proj = get_artifact(account_id, opportunity_id, artifact_id)
+
+    if old_proj:
+        old_proj = ArtifactInDB(**old_proj.dict())
+        update_data = artifact_in_db.dict(exclude_unset=True)
+        new_proj = old_proj.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE artifacts SET 
+                ({PROJECT_IN_DB_COLS}) = ({PROJECT_IN_DB_PLACEHOLDERS})
+            WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
+            RETURNING {PROJECTS_COLS}
+            """,
+            (*tuple(new_proj.dict().values()), account_id, opportunity_id, artifact_id),
+            Artifact,
+        )
+
+
+def delete_artifact(
+    account_id: UUID, opportunity_id: UUID, artifact_id: UUID
+) -> Artifact | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM artifacts
+        WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
+        RETURNING {PROJECTS_COLS}
+        """,
+        (account_id, opportunity_id, artifact_id),
+        Artifact,
     )
 
 

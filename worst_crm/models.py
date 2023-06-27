@@ -16,22 +16,6 @@ def update_account(d):
     pass
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def update_model(name: str, base, dict_def: dict):
     fields = {}
     for field_name, value in dict_def.items():
@@ -179,10 +163,10 @@ class AccountFilters(BasicFilters):
 # extending the Model dynamically
 # if I don't previously declare Account as a class, here Account will be a variable
 # and a variable gives problem elsewhere where it is imported
-# Account = dict_model("Account", Account, accounts)  # type: ignore
-# AccountOverview = dict_model("AccountOverview", AccountOverview, accounts)  # type: ignore
-# UpdatedAccount = dict_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
-# AccountFilters = filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
+# Account = update_model("Account", Account, accounts)  # type: ignore
+# AccountOverview = update_model("AccountOverview", AccountOverview, accounts)  # type: ignore
+# UpdatedAccount = update_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
+# AccountFilters = update_filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
 
 
 # OPPORTUNITY
@@ -225,6 +209,54 @@ class OpportunityFilters(BasicFilters):
 # OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
 
 
+# ARTIFACT
+class NewArtifact(BaseModel):
+    account_id: UUID
+    opportunity_id: UUID
+    artifact_id: UUID
+
+
+class UpdatedArtifact(Name, Text):
+    pass
+
+
+class ArtifactInDB(Name, Text, CommonInDB):
+    pass
+
+
+class Artifact(DBComputed, ArtifactInDB):
+    account_id: UUID
+    opportunity_id: UUID
+    artifact_id: UUID
+
+
+class ArtifactOverview(Name, CommonInDB, DBComputed):
+    account_id: UUID
+    opportunity_id: UUID
+    artifact_id: UUID
+
+
+class ArtifactOverviewWithAccountName(ArtifactOverview):
+    account_name: str | None = None
+    opportunity_name: str | None = None
+
+
+class ArtifactOverviewWithOpportunityName(ArtifactOverview):
+    opportunity_name: str | None = None
+
+
+class ArtifactFilters(BasicFilters):
+    pass
+
+
+# Artifact = dict_model("Artifact", Artifact, accounts)  # type: ignore
+# ArtifactOverview = dict_model("ArtifactOverview", ArtifactOverview, accounts)  # type: ignore
+# ArtifactOverviewWithAccountName = dict_model("ArtifactOverviewWithAccountName", ArtifactOverviewWithAccountName, accounts)  # type: ignore
+# ArtifactOverviewWithOpportunityName = dict_model("ArtifactOverviewWithOpportunityName", ArtifactOverviewWithOpportunityName, accounts)  # type: ignore
+# UpdatedArtifact = dict_model("UpdatedArtifact", UpdatedArtifact, accounts)  # type: ignore
+# ArtifactFilters = filter_model("ArtifactFilters", ProjectFilters, accounts)  # type: ignore
+
+
 # PROJECT
 class NewProject(BaseModel):
     account_id: UUID
@@ -249,6 +281,7 @@ class Project(DBComputed, ProjectInDB):
 
 class ProjectOverview(Basic1, CommonInDB, DBComputed):
     account_id: UUID
+    opportunity_id: UUID
     project_id: UUID
 
 
@@ -271,6 +304,7 @@ class ProjectFilters(BasicFilters):
 # ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
 # UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
 # ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
+
 
 
 # TASK
