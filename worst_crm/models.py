@@ -1,6 +1,7 @@
 from pydantic import create_model, BaseModel, Field, EmailStr
 from typing import Any
 from uuid import UUID
+import uuid
 import datetime as dt
 
 # utility functions
@@ -169,6 +170,31 @@ class AccountFilters(BasicFilters):
 # AccountFilters = update_filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
 
 
+# CONTACT
+class UpdatedContact(BaseModel):
+    account_id: UUID
+    contact_id: UUID | None = None
+    fname: str | None = Field(default="", max_length=50)
+    lname: str | None = Field(default="", max_length=50)
+    role_title: str | None = Field(default="", max_length=50)
+    email: EmailStr | None = None
+    telephone_number: str | None = Field(default="", max_length=20)
+    business_card: str | None = Field(default="", max_length=500)
+    tags: set[str] | None = None
+
+
+class ContactInDB(UpdatedContact, CommonInDB):
+    pass
+
+
+class Contact(DBComputed, ContactInDB):
+    pass
+
+
+class ContactWithAccountName(Contact):
+    account_name: str | None = None
+
+
 # OPPORTUNITY
 class NewOpportunity(BaseModel):
     account_id: UUID
@@ -183,15 +209,12 @@ class OpportunityInDB(Basic1, Text, CommonInDB):
     pass
 
 
-class Opportunity(DBComputed, OpportunityInDB):
-    account_id: UUID
-    opportunity_id: UUID
+class Opportunity(NewOpportunity, DBComputed, OpportunityInDB):
     attachments: list[str]
 
 
-class OpportunityOverview(Basic1, CommonInDB, DBComputed):
-    account_id: UUID
-    opportunity_id: UUID
+class OpportunityOverview(NewOpportunity, Basic1, CommonInDB, DBComputed):
+    pass
 
 
 class OpportunityOverviewWithAccountName(OpportunityOverview):
@@ -304,7 +327,6 @@ class ProjectFilters(BasicFilters):
 # ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
 # UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
 # ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
-
 
 
 # TASK

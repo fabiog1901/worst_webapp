@@ -1,4 +1,5 @@
 from psycopg_pool import ConnectionPool
+from psycopg.types.array import ListDumper
 from pydantic import PyObject
 from typing import Any
 from uuid import UUID
@@ -22,6 +23,9 @@ from worst_crm.models import (
     NewTask,
     NoteFilters,
     NoteInDB,
+    Contact,
+    ContactWithAccountName,
+    ContactInDB,
     Opportunity,
     OpportunityFilters,
     OpportunityInDB,
@@ -57,6 +61,7 @@ DB_URL = os.getenv("DB_URL")
 
 if not DB_URL:
     raise EnvironmentError("DB_URL env variable not found!")
+
 
 # the pool starts connecting immediately.
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
@@ -368,11 +373,113 @@ def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
     )
 
 
+# CONTACTS
+CONTACT_IN_DB_COLS = get_fields(ContactInDB)
+CONTACT_IN_DB_PLACEHOLDERS = get_placeholders(ContactInDB)
+CONTACT_OVERVIEW_COLS = get_fields(Contact)
+CONTACT_COLS = get_fields(Contact)
+
+
+def get_all_contacts() -> list[ContactWithAccountName]:
+    fully_qualified = ", ".join([f"contacts.{x}" for x in Contact.__fields__.keys()])
+
+    return execute_stmt(
+        f"""
+        SELECT {fully_qualified}, accounts.name AS account_name
+        FROM accounts JOIN contacts
+            ON accounts.account_id = contacts.account_id
+        ORDER BY account_name, contacts.fname
+        """,
+        (),
+        ContactWithAccountName,
+        True,
+    )
+
+
+def get_all_contacts_for_account_id(account_id: UUID) -> list[Contact]:
+    return execute_stmt(
+        f"""
+        SELECT {CONTACT_COLS}
+        FROM contacts
+        WHERE account_id = %s
+        ORDER BY fname
+        """,
+        (account_id,),
+        Contact,
+        True,
+    )
+
+
+def get_contact(account_id: UUID, contact_id: UUID) -> Contact | None:
+    return execute_stmt(
+        f"""
+        SELECT {CONTACT_COLS}
+        FROM contacts 
+        WHERE (account_id, contact_id) = (%s, %s)
+        """,
+        (account_id, contact_id),
+        Contact,
+    )
+
+
+def create_contact(contact_in_db: ContactInDB) -> Contact | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO contacts 
+            ({CONTACT_IN_DB_COLS})
+        VALUES
+            ({CONTACT_IN_DB_PLACEHOLDERS})
+        RETURNING {CONTACT_COLS}
+        """,
+        tuple(contact_in_db.dict().values()),
+        Contact,
+    )
+
+
+def update_contact(contact_in_db: ContactInDB) -> Contact | None:
+    if contact_in_db.contact_id:
+        old_contact = get_contact(contact_in_db.account_id, contact_in_db.contact_id)
+    else:
+        return None
+
+    if old_contact:
+        old_contact = ContactInDB(**old_contact.dict())
+        update_data = contact_in_db.dict(exclude_unset=True)
+        new_contact = old_contact.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE contacts SET 
+                ({CONTACT_IN_DB_COLS}) = ({CONTACT_IN_DB_PLACEHOLDERS})
+            WHERE (account_id, contact_id) = (%s, %s)
+            RETURNING {CONTACT_COLS}
+            """,
+            (
+                *tuple(new_contact.dict().values()),
+                contact_in_db.account_id,
+                contact_in_db.contact_id,
+            ),
+            Contact,
+        )
+
+
+def delete_contact(account_id: UUID, contact_id: UUID) -> Contact | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM contacts
+        WHERE (account_id, contact_id) = (%s, %s)
+        RETURNING {CONTACT_COLS}
+        """,
+        (account_id, contact_id),
+        Contact,
+    )
+
+
 # OPPORTUNITIES
-OPPORTUNITY_IN_DB_COLS = get_fields(ProjectInDB)
-OPPORTUNITY_IN_DB_PLACEHOLDERS = get_placeholders(ProjectInDB)
-OPPORTUNITY_OVERVIEW_COLS = get_fields(ProjectOverview)
-OPPORTUNITIES_COLS = get_fields(Project)
+OPPORTUNITY_IN_DB_COLS = get_fields(OpportunityInDB)
+OPPORTUNITY_IN_DB_PLACEHOLDERS = get_placeholders(OpportunityInDB)
+OPPORTUNITY_OVERVIEW_COLS = get_fields(OpportunityOverview)
+OPPORTUNITIES_COLS = get_fields(Opportunity)
 
 
 def get_all_opportunities(
@@ -438,7 +545,7 @@ def create_opportunity(
         RETURNING account_id, opportunity_id
         """,
         (*tuple(opportunity_in_db.dict().values()), account_id),
-        NewProject,
+        NewOpportunity,
     )
 
 
@@ -472,7 +579,7 @@ def delete_opportunity(account_id: UUID, opportunity_id: UUID) -> Opportunity | 
         RETURNING {OPPORTUNITIES_COLS}
         """,
         (account_id, opportunity_id),
-        Project,
+        Opportunity,
     )
 
 
@@ -573,7 +680,7 @@ def get_all_artifacts_for_opportunity_id(
 ) -> list[ArtifactOverview]:
     return execute_stmt(
         f"""
-        SELECT {PROJECT_OVERVIEW_COLS}
+        SELECT {ARTIFACT_OVERVIEW_COLS}
         FROM artifacts
         WHERE (account_id, opportunity_id) = (%s, %s)
         ORDER BY name
@@ -589,7 +696,7 @@ def get_artifact(
 ) -> Artifact | None:
     return execute_stmt(
         f"""
-        SELECT {PROJECTS_COLS}
+        SELECT {ARTIFACTS_COLS}
         FROM artifacts 
         WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
         """,
@@ -604,9 +711,9 @@ def create_artifact(
     return execute_stmt(
         f"""
         INSERT INTO artifacts 
-            ({PROJECT_IN_DB_COLS}, account_id, opportunity_id)
+            ({ARTIFACT_IN_DB_COLS}, account_id, opportunity_id)
         VALUES
-            ({PROJECT_IN_DB_PLACEHOLDERS}, %s, %s)
+            ({ARTIFACT_IN_DB_PLACEHOLDERS}, %s, %s)
         RETURNING account_id, opportunity_id, artifact_id
         """,
         (*tuple(artifact_in_db.dict().values()), account_id, opportunity_id),
@@ -630,9 +737,9 @@ def update_artifact(
         return execute_stmt(
             f"""
             UPDATE artifacts SET 
-                ({PROJECT_IN_DB_COLS}) = ({PROJECT_IN_DB_PLACEHOLDERS})
+                ({ARTIFACT_IN_DB_COLS}) = ({ARTIFACT_IN_DB_PLACEHOLDERS})
             WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
-            RETURNING {PROJECTS_COLS}
+            RETURNING {ARTIFACTS_COLS}
             """,
             (*tuple(new_proj.dict().values()), account_id, opportunity_id, artifact_id),
             Artifact,
@@ -646,7 +753,7 @@ def delete_artifact(
         f"""
         DELETE FROM artifacts
         WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
-        RETURNING {PROJECTS_COLS}
+        RETURNING {ARTIFACTS_COLS}
         """,
         (account_id, opportunity_id, artifact_id),
         Artifact,
@@ -1368,24 +1475,32 @@ def execute_stmt(
     returning_rs: bool = True,
 ) -> Any:
     with pool.connection() as conn:
+        # convert a set to a psycopg list
+        conn.adapters.register_dumper(set, ListDumper)
+
         with conn.cursor() as cur:
-            cur.execute(stmt, args)  # type: ignore
+            try:
+                cur.execute(stmt, args)  # type: ignore
 
-            if not returning_rs:
-                return
+                if not returning_rs:
+                    return
 
-            if not cur.description:
-                raise ValueError("Could not fetch column names from ResultSet")
-            col_names = [desc[0] for desc in cur.description]
+                if not cur.description:
+                    raise ValueError("Could not fetch column names from ResultSet")
+                col_names = [desc[0] for desc in cur.description]
 
-            if is_list:
-                rsl = cur.fetchall()
-                return [
-                    model(**{k: rs[i] for i, k in enumerate(col_names)}) for rs in rsl
-                ]
-            else:
-                rs = cur.fetchone()
-                if rs:
-                    return model(**{k: rs[i] for i, k in enumerate(col_names)})
+                if is_list:
+                    rsl = cur.fetchall()
+                    return [
+                        model(**{k: rs[i] for i, k in enumerate(col_names)})
+                        for rs in rsl
+                    ]
                 else:
-                    return None
+                    rs = cur.fetchone()
+                    if rs:
+                        return model(**{k: rs[i] for i, k in enumerate(col_names)})
+                    else:
+                        return None
+            except Exception as e:
+                # TODO correctly handle error such as PK violations
+                return None

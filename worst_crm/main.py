@@ -4,7 +4,15 @@ from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from worst_crm.models import UserInDB, Token, User, UpdatedUserInDB
-from worst_crm.routers import accounts, opportunities, artifacts, projects, notes, tasks
+from worst_crm.routers import (
+    accounts,
+    contacts,
+    opportunities,
+    artifacts,
+    projects,
+    notes,
+    tasks,
+)
 import os
 import worst_crm.dependencies as dep
 from worst_crm.routers.admin import admin
@@ -95,6 +103,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 
 
 app.include_router(accounts.router)
+app.include_router(contacts.router)
 app.include_router(opportunities.router)
 app.include_router(artifacts.router)
 app.include_router(projects.router)
