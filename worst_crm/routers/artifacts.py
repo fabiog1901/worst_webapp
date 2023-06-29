@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
     Artifact,
-    NewArtifact,
     ArtifactFilters,
     ArtifactInDB,
     ArtifactOverview,
@@ -54,28 +53,31 @@ async def get_artifact(
 
 
 @router.post(
-    "/{account_id}/{opportunity_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`opportunity_id` will be generated if not provided by client.",
 )
 async def create_artifact(
-    account_id: UUID,
-    opportunity_id: UUID,
+    artifact: UpdatedArtifact,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewArtifact | None:
+) -> Artifact | None:
     artifact_in_db = ArtifactInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+        **artifact.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
-    return db.create_artifact(account_id, opportunity_id, artifact_in_db)
+
+    if not artifact_in_db.artifact_id:
+        artifact_in_db.artifact_id = uuid4()
+
+    return db.create_artifact(artifact_in_db)
 
 
 @router.put(
-    "/{account_id}/{opportunity_id}/{artifact_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_artifact(
-    account_id: UUID,
-    opportunity_id: UUID,
-    artifact_id: UUID,
     artifact: UpdatedArtifact,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Artifact | None:
@@ -83,7 +85,7 @@ async def update_artifact(
         **artifact.dict(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    return db.update_artifact(account_id, opportunity_id, artifact_id, artifact_in_db)
+    return db.update_artifact(artifact_in_db)
 
 
 @router.delete(

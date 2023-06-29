@@ -11,37 +11,32 @@ from worst_crm.models import (
     AccountFilters,
     AccountInDB,
     AccountNote,
+    AccountNoteInDB,
     AccountNoteOverview,
     AccountOverview,
-    NewAccountNote,
-    NewOpportunity,
-    NewOpportunityNote,
-    NewArtifact,
-    NewProject,
-    NewProjectNote,
-    NewTask,
-    NoteFilters,
-    NoteInDB,
-    Contact,
-    ContactWithAccountName,
-    ContactInDB,
-    Opportunity,
-    OpportunityFilters,
-    OpportunityInDB,
-    OpportunityNote,
-    OpportunityNoteOverview,
-    OpportunityOverview,
-    OpportunityOverviewWithAccountName,
     Artifact,
     ArtifactFilters,
     ArtifactInDB,
     ArtifactOverview,
     ArtifactOverviewWithAccountName,
     ArtifactOverviewWithOpportunityName,
+    Contact,
+    ContactInDB,
+    ContactWithAccountName,
+    NoteFilters,
+    Opportunity,
+    OpportunityFilters,
+    OpportunityInDB,
+    OpportunityNote,
+    OpportunityNoteInDB,
+    OpportunityNoteOverview,
+    OpportunityOverview,
+    OpportunityOverviewWithAccountName,
     Project,
     ProjectFilters,
     ProjectInDB,
     ProjectNote,
+    ProjectNoteInDB,
     ProjectNoteOverview,
     ProjectOverview,
     ProjectOverviewWithAccountName,
@@ -302,7 +297,7 @@ def get_account(account_id: UUID) -> Account | None:
     )
 
 
-def create_account(account_in_db: AccountInDB) -> Account:
+def create_account(account_in_db: AccountInDB) -> Account | None:
     return execute_stmt(
         f"""
         INSERT INTO accounts 
@@ -535,26 +530,27 @@ def get_opportunity(account_id: UUID, opportunity_id: UUID) -> Opportunity | Non
     )
 
 
-def create_opportunity(
-    account_id: UUID, opportunity_in_db: OpportunityInDB
-) -> NewOpportunity | None:
+def create_opportunity(opportunity_in_db: OpportunityInDB) -> Opportunity | None:
     return execute_stmt(
         f"""
         INSERT INTO opportunities 
-            ({OPPORTUNITY_IN_DB_COLS}, account_id)
+            ({OPPORTUNITY_IN_DB_COLS})
         VALUES
-            ({OPPORTUNITY_IN_DB_PLACEHOLDERS}, %s)
-        RETURNING account_id, opportunity_id
+            ({OPPORTUNITY_IN_DB_PLACEHOLDERS})
+        RETURNING {OPPORTUNITIES_COLS}
         """,
-        (*tuple(opportunity_in_db.dict().values()), account_id),
-        NewOpportunity,
+        tuple(opportunity_in_db.dict().values()),
+        Opportunity,
     )
 
 
-def update_opportunity(
-    account_id: UUID, opportunity_id: UUID, opportunity_in_db: OpportunityInDB
-) -> Opportunity | None:
-    old_opp = get_opportunity(account_id, opportunity_id)
+def update_opportunity(opportunity_in_db: OpportunityInDB) -> Opportunity | None:
+    if opportunity_in_db.opportunity_id:
+        old_opp = get_opportunity(
+            opportunity_in_db.account_id, opportunity_in_db.opportunity_id
+        )
+    else:
+        return None
 
     if old_opp:
         old_opp = OpportunityInDB(**old_opp.dict())
@@ -568,7 +564,11 @@ def update_opportunity(
             WHERE (account_id, opportunity_id) = (%s, %s)
             RETURNING {OPPORTUNITIES_COLS}
             """,
-            (*tuple(new_opp.dict().values()), account_id, opportunity_id),
+            (
+                *tuple(new_opp.dict().values()),
+                opportunity_in_db.account_id,
+                opportunity_in_db.opportunity_id,
+            ),
             Opportunity,
         )
 
@@ -707,29 +707,29 @@ def get_artifact(
     )
 
 
-def create_artifact(
-    account_id: UUID, opportunity_id: UUID, artifact_in_db: ArtifactInDB
-) -> NewArtifact | None:
+def create_artifact(artifact_in_db: ArtifactInDB) -> Artifact | None:
     return execute_stmt(
         f"""
         INSERT INTO artifacts 
-            ({ARTIFACT_IN_DB_COLS}, account_id, opportunity_id)
+            ({ARTIFACT_IN_DB_COLS})
         VALUES
-            ({ARTIFACT_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING account_id, opportunity_id, artifact_id
+            ({ARTIFACT_IN_DB_PLACEHOLDERS})
+        RETURNING {ARTIFACTS_COLS}
         """,
-        (*tuple(artifact_in_db.dict().values()), account_id, opportunity_id),
-        NewArtifact,
+        tuple(artifact_in_db.dict().values()),
+        Artifact,
     )
 
 
-def update_artifact(
-    account_id: UUID,
-    artifact_id: UUID,
-    opportunity_id: UUID,
-    artifact_in_db: ArtifactInDB,
-) -> Artifact | None:
-    old_proj = get_artifact(account_id, opportunity_id, artifact_id)
+def update_artifact(artifact_in_db: ArtifactInDB) -> Artifact | None:
+    if artifact_in_db.artifact_id:
+        old_proj = get_artifact(
+            artifact_in_db.account_id,
+            artifact_in_db.opportunity_id,
+            artifact_in_db.artifact_id,
+        )
+    else:
+        return None
 
     if old_proj:
         old_proj = ArtifactInDB(**old_proj.dict())
@@ -743,7 +743,12 @@ def update_artifact(
             WHERE (account_id, opportunity_id, artifact_id) = (%s, %s, %s)
             RETURNING {ARTIFACTS_COLS}
             """,
-            (*tuple(new_proj.dict().values()), account_id, opportunity_id, artifact_id),
+            (
+                *tuple(new_proj.dict().values()),
+                artifact_in_db.account_id,
+                artifact_in_db.opportunity_id,
+                artifact_in_db.artifact_id,
+            ),
             Artifact,
         )
 
@@ -856,26 +861,29 @@ def get_project(
     )
 
 
-def create_project(
-    account_id: UUID, opportunity_id: UUID, project_in_db: ProjectInDB
-) -> NewProject | None:
+def create_project(project_in_db: ProjectInDB) -> Project | None:
     return execute_stmt(
         f"""
         INSERT INTO projects 
-            ({PROJECT_IN_DB_COLS}, account_id, opportunity_id)
+            ({PROJECT_IN_DB_COLS})
         VALUES
-            ({PROJECT_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING account_id, opportunity_id, project_id
+            ({PROJECT_IN_DB_PLACEHOLDERS})
+        RETURNING {PROJECTS_COLS}
         """,
-        (*tuple(project_in_db.dict().values()), account_id, opportunity_id),
-        NewProject,
+        tuple(project_in_db.dict().values()),
+        Project,
     )
 
 
-def update_project(
-    account_id: UUID, project_id: UUID, opportunity_id: UUID, project_in_db: ProjectInDB
-) -> Project | None:
-    old_proj = get_project(account_id, opportunity_id, project_id)
+def update_project(project_in_db: ProjectInDB) -> Project | None:
+    if project_in_db.project_id:
+        old_proj = get_project(
+            project_in_db.account_id,
+            project_in_db.opportunity_id,
+            project_in_db.project_id,
+        )
+    else:
+        return None
 
     if old_proj:
         old_proj = ProjectInDB(**old_proj.dict())
@@ -889,7 +897,12 @@ def update_project(
             WHERE (account_id, opportunity_id, project_id) = (%s, %s, %s)
             RETURNING {PROJECTS_COLS}
             """,
-            (*tuple(new_proj.dict().values()), account_id, opportunity_id, project_id),
+            (
+                *tuple(new_proj.dict().values()),
+                project_in_db.account_id,
+                project_in_db.opportunity_id,
+                project_in_db.project_id,
+            ),
             Project,
         )
 
@@ -997,30 +1010,30 @@ def get_task(
     )
 
 
-def create_task(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_in_db: TaskInDB
-) -> NewTask | None:
+def create_task(task_in_db: TaskInDB) -> Task | None:
     return execute_stmt(
         f"""
         INSERT INTO tasks 
-            ({TASK_IN_DB_COLS}, account_id, opportunity_id, project_id)
+            ({TASK_IN_DB_COLS})
         VALUES
-            ({TASK_IN_DB_PLACEHOLDERS}, %s, %s, %s)
-        RETURNING account_id, project_id, task_id
+            ({TASK_IN_DB_PLACEHOLDERS})
+        RETURNING {TASKS_COLS}
         """,
-        (*tuple(task_in_db.dict().values()), account_id, opportunity_id, project_id),
-        NewTask,
+        tuple(task_in_db.dict().values()),
+        Task,
     )
 
 
-def update_task(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
-    task_id: UUID,
-    task_in_db: TaskInDB,
-) -> Task | None:
-    old_task = get_task(account_id, opportunity_id, project_id, task_id)
+def update_task(task_in_db: TaskInDB) -> Task | None:
+    if task_in_db.task_id:
+        old_task = get_task(
+            task_in_db.account_id,
+            task_in_db.opportunity_id,
+            task_in_db.project_id,
+            task_in_db.task_id,
+        )
+    else:
+        return None
 
     if old_task:
         old_task = TaskInDB(**old_task.dict())
@@ -1036,10 +1049,10 @@ def update_task(
             """,
             (
                 *tuple(new_task.dict().values()),
-                account_id,
-                opportunity_id,
-                project_id,
-                task_id,
+                task_in_db.account_id,
+                task_in_db.opportunity_id,
+                task_in_db.project_id,
+                task_in_db.task_id,
             ),
             Task,
         )
@@ -1096,8 +1109,12 @@ def remove_task_attachment(
 
 
 # NOTES
-NOTE_IN_DB_COLS = get_fields(NoteInDB)
-NOTE_IN_DB_PLACEHOLDERS = get_placeholders(NoteInDB)
+ACC_NOTE_IN_DB_COLS = get_fields(AccountNoteInDB)
+OPP_NOTE_IN_DB_COLS = get_fields(OpportunityNoteInDB)
+PROJ_NOTE_IN_DB_COLS = get_fields(ProjectNoteInDB)
+ACC_NOTE_IN_DB_PLACEHOLDERS = get_placeholders(AccountNoteInDB)
+OPP_NOTE_IN_DB_PLACEHOLDERS = get_placeholders(OpportunityNoteInDB)
+PROJ_NOTE_IN_DB_PLACEHOLDERS = get_placeholders(ProjectNoteInDB)
 ACCOUNT_NOTES_COLS = get_fields(AccountNote)
 OPPORTUNITY_NOTES_COLS = get_fields(OpportunityNote)
 PROJECT_NOTES_COLS = get_fields(ProjectNote)
@@ -1137,40 +1154,43 @@ def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     )
 
 
-def create_account_note(
-    account_id: UUID, note_in_db: NoteInDB
-) -> NewAccountNote | None:
+def create_account_note(note_in_db: AccountNoteInDB) -> AccountNote | None:
     return execute_stmt(
         f"""
         INSERT INTO account_notes 
-            ({NOTE_IN_DB_COLS}, account_id)
+            ({ACC_NOTE_IN_DB_COLS})
         VALUES
-            ({NOTE_IN_DB_PLACEHOLDERS}, %s)
-        RETURNING account_id, note_id
+            ({ACC_NOTE_IN_DB_PLACEHOLDERS})
+        RETURNING {ACCOUNT_NOTES_COLS}
         """,
-        (*tuple(note_in_db.dict().values()), account_id),
-        NewAccountNote,
+        tuple(note_in_db.dict().values()),
+        AccountNote,
     )
 
 
-def update_account_note(
-    account_id: UUID, note_id: UUID, note_in_db: NoteInDB
-) -> AccountNote | None:
-    old_note = get_account_note(account_id, note_id)
+def update_account_note(note_in_db: AccountNoteInDB) -> AccountNote | None:
+    if note_in_db.note_id:
+        old_note = get_account_note(note_in_db.account_id, note_in_db.note_id)
+    else:
+        return None
 
     if old_note:
-        old_note = NoteInDB(**old_note.dict())
+        old_note = AccountNoteInDB(**old_note.dict())
         update_data = note_in_db.dict(exclude_unset=True)
         new_note = old_note.copy(update=update_data)
 
         return execute_stmt(
             f"""
             UPDATE account_notes SET 
-                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
+                ({ACC_NOTE_IN_DB_COLS}) = ({ACC_NOTE_IN_DB_PLACEHOLDERS})
             WHERE (account_id, note_id) = (%s, %s)
             RETURNING {ACCOUNT_NOTES_COLS}
             """,
-            (*tuple(new_note.dict().values()), account_id, note_id),
+            (
+                *tuple(new_note.dict().values()),
+                note_in_db.account_id,
+                note_in_db.note_id,
+            ),
             AccountNote,
         )
 
@@ -1251,40 +1271,46 @@ def get_opportunity_note(
     )
 
 
-def create_opportunity_note(
-    account_id: UUID, opportunity_id: UUID, note_in_db: NoteInDB
-) -> NewOpportunityNote | None:
+def create_opportunity_note(note_in_db: OpportunityNoteInDB) -> OpportunityNote | None:
     return execute_stmt(
         f"""
         INSERT INTO opportunity_notes 
-            ({NOTE_IN_DB_COLS}, account_id, opportunity_id)
+            ({OPP_NOTE_IN_DB_COLS})
         VALUES
-            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s)
-        RETURNING account_id, opportunity_id, note_id
+            ({OPP_NOTE_IN_DB_PLACEHOLDERS})
+        RETURNING {OPPORTUNITY_NOTES_COLS}
         """,
-        (*tuple(note_in_db.dict().values()), account_id, opportunity_id),
-        NewOpportunityNote,
+        tuple(note_in_db.dict().values()),
+        OpportunityNote,
     )
 
 
-def update_opportunity_note(
-    account_id: UUID, opportunity_id: UUID, note_id: UUID, note_in_db: NoteInDB
-) -> OpportunityNote | None:
-    old_note = get_opportunity_note(account_id, opportunity_id, note_id)
+def update_opportunity_note(note_in_db: OpportunityNoteInDB) -> OpportunityNote | None:
+    if note_in_db.note_id:
+        old_note = get_opportunity_note(
+            note_in_db.account_id, note_in_db.opportunity_id, note_in_db.note_id
+        )
+    else:
+        return None
 
     if old_note:
-        old_note = NoteInDB(**old_note.dict())
+        old_note = OpportunityNoteInDB(**old_note.dict())
         update_data = note_in_db.dict(exclude_unset=True)
         new_note = old_note.copy(update=update_data)
 
         return execute_stmt(
             f"""
             UPDATE opportunity_notes SET 
-                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
+                ({OPP_NOTE_IN_DB_COLS}) = ({OPP_NOTE_IN_DB_PLACEHOLDERS})
             WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
             RETURNING {OPPORTUNITY_NOTES_COLS}
             """,
-            (*tuple(new_note.dict().values()), account_id, opportunity_id, note_id),
+            (
+                *tuple(new_note.dict().values()),
+                note_in_db.account_id,
+                note_in_db.opportunity_id,
+                note_in_db.note_id,
+            ),
             OpportunityNote,
         )
 
@@ -1370,49 +1396,49 @@ def get_project_note(
     )
 
 
-def create_project_note(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, note_in_db: NoteInDB
-) -> NewProjectNote | None:
+def create_project_note(note_in_db: ProjectNoteInDB) -> ProjectNote | None:
     return execute_stmt(
         f"""
         INSERT INTO project_notes 
-            ({NOTE_IN_DB_COLS}, account_id, opportunity_id, project_id)
+            ({PROJ_NOTE_IN_DB_COLS})
         VALUES
-            ({NOTE_IN_DB_PLACEHOLDERS}, %s, %s, %s)
-        RETURNING account_id, opportunity_id, note_id
+            ({PROJ_NOTE_IN_DB_PLACEHOLDERS})
+        RETURNING {PROJECT_NOTES_COLS}
         """,
-        (*tuple(note_in_db.dict().values()), account_id, opportunity_id, project_id),
-        NewProjectNote,
+        tuple(note_in_db.dict().values()),
+        ProjectNote,
     )
 
 
-def update_project_note(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
-    note_id: UUID,
-    note_in_db: NoteInDB,
-) -> ProjectNote | None:
-    old_note = get_project_note(account_id, opportunity_id, project_id, note_id)
+def update_project_note(note_in_db: ProjectNoteInDB) -> ProjectNote | None:
+    if note_in_db.note_id:
+        old_note = get_project_note(
+            note_in_db.account_id,
+            note_in_db.opportunity_id,
+            note_in_db.project_id,
+            note_in_db.note_id,
+        )
+    else:
+        return None
 
     if old_note:
-        old_note = NoteInDB(**old_note.dict())
+        old_note = ProjectNoteInDB(**old_note.dict())
         update_data = note_in_db.dict(exclude_unset=True)
         new_note = old_note.copy(update=update_data)
 
         return execute_stmt(
             f"""
             UPDATE project_notes SET 
-                ({NOTE_IN_DB_COLS}) = ({NOTE_IN_DB_PLACEHOLDERS})
+                ({PROJ_NOTE_IN_DB_COLS}) = ({PROJ_NOTE_IN_DB_PLACEHOLDERS})
             WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
             RETURNING {PROJECT_NOTES_COLS}
             """,
             (
                 *tuple(new_note.dict().values()),
-                account_id,
-                opportunity_id,
-                project_id,
-                note_id,
+                note_in_db.account_id,
+                note_in_db.opportunity_id,
+                note_in_db.project_id,
+                note_in_db.note_id,
             ),
             ProjectNote,
         )

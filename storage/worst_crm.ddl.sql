@@ -134,7 +134,7 @@ CREATE TABLE contacts (
 CREATE TABLE opportunities (
     -- pk
     account_id UUID NOT NULL,
-    opportunity_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    opportunity_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -183,7 +183,7 @@ CREATE TABLE artifacts (
     -- pk
     account_id UUID NOT NULL,
     opportunity_id UUID NOT NULL,
-    artifact_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    artifact_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -216,7 +216,7 @@ CREATE TABLE projects (
     -- pk
     account_id UUID NOT NULL,
     opportunity_id UUID NOT NULL,
-    project_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -256,7 +256,7 @@ CREATE TABLE tasks (
     account_id UUID NOT NULL,
     opportunity_id UUID NOT NULL,
     project_id UUID NOT NULL,
-    task_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -294,7 +294,7 @@ CREATE INVERTED INDEX tasks_tags_gin ON tasks(tags);
 CREATE TABLE account_notes (
     -- pk
     account_id UUID NOT NULL,
-    note_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -326,7 +326,7 @@ CREATE TABLE opportunity_notes (
     -- pk
     account_id UUID NOT NULL,
     opportunity_id UUID NOT NULL,
-    note_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
@@ -359,7 +359,7 @@ CREATE TABLE project_notes (
     account_id UUID NOT NULL,
     opportunity_id UUID NOT NULL,
     project_id UUID NOT NULL,
-    note_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,

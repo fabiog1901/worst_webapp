@@ -77,10 +77,7 @@ async def create_account(
     return db.create_account(acc_in_db)
 
 
-@router.put(
-    "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])]
-)
+@router.put("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
 async def update_account(
     acc: UpdatedAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],

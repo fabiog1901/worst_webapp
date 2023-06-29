@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
     Opportunity,
-    NewOpportunity,
     OpportunityFilters,
     OpportunityInDB,
     OpportunityOverview,
@@ -43,26 +42,31 @@ async def get_opportunity(account_id: UUID, opportunity_id: UUID) -> Opportunity
 
 
 @router.post(
-    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
+    "",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`opportunity_id` will be generated if not provided by client.",
 )
 async def create_opportunity(
-    account_id: UUID,
+    opp: UpdatedOpportunity,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewOpportunity | None:
+) -> Opportunity | None:
     opportunity_in_db = OpportunityInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+        **opp.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
 
-    return db.create_opportunity(account_id, opportunity_in_db)
+    if not opportunity_in_db.opportunity_id:
+        opportunity_in_db.opportunity_id = uuid4()
+
+    return db.create_opportunity(opportunity_in_db)
 
 
 @router.put(
-    "/{account_id}/{opportunity_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_opportunity(
-    account_id: UUID,
-    opportunity_id: UUID,
     opportunity: UpdatedOpportunity,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Opportunity | None:
@@ -70,7 +74,7 @@ async def update_opportunity(
         **opportunity.dict(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    return db.update_opportunity(account_id, opportunity_id, opportunity_in_db)
+    return db.update_opportunity(opportunity_in_db)
 
 
 @router.delete(

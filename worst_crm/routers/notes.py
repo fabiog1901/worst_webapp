@@ -1,21 +1,22 @@
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
     AccountNote,
+    AccountNoteInDB,
     AccountNoteOverview,
-    NewAccountNote,
-    NewOpportunityNote,
-    NewProjectNote,
     NoteFilters,
-    NoteInDB,
     OpportunityNote,
+    OpportunityNoteInDB,
     OpportunityNoteOverview,
     ProjectNote,
+    ProjectNoteInDB,
     ProjectNoteOverview,
-    UpdatedNote,
+    UpdatedAccountNote,
+    UpdatedOpportunityNote,
+    UpdatedProjectNote,
     User,
 )
 import worst_crm.dependencies as dep
@@ -41,33 +42,37 @@ async def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | Non
 
 
 @router.post(
-    "/{account_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`note_id` will be generated if not provided by client.",
 )
 async def create_account_note(
-    account_id: UUID,
+    acc_note: UpdatedAccountNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewAccountNote | None:
-    note_in_db = NoteInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+) -> AccountNote | None:
+    note_in_db = AccountNoteInDB(
+        **acc_note.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
 
-    return db.create_account_note(account_id, note_in_db)
+    if not note_in_db.note_id:
+        note_in_db.note_id = uuid4()
+
+    return db.create_account_note(note_in_db)
 
 
 @router.put(
-    "/{account_id}/{note_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_account_note(
-    account_id: UUID,
-    note_id: UUID,
-    note: UpdatedNote,
+    note: UpdatedAccountNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> AccountNote | None:
-    note_in_db = NoteInDB(**note.dict(), updated_by=current_user.user_id)
+    note_in_db = AccountNoteInDB(**note.dict(), updated_by=current_user.user_id)
 
-    return db.update_account_note(account_id, note_id, note_in_db)
+    return db.update_account_note(note_in_db)
 
 
 @router.delete(
@@ -130,35 +135,37 @@ async def get_opportunity_note(
 
 
 @router.post(
-    "/{account_id}/{opportunity_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`note_id` will be generated if not provided by client.",
 )
 async def create_opportunity_note(
-    account_id: UUID,
-    opportunity_id: UUID,
+    note: UpdatedOpportunityNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewOpportunityNote | None:
-    note_in_db = NoteInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+) -> OpportunityNote | None:
+    note_in_db = OpportunityNoteInDB(
+        **note.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
 
-    return db.create_opportunity_note(account_id, opportunity_id, note_in_db)
+    if not note_in_db.note_id:
+        note_in_db.note_id = uuid4()
+
+    return db.create_opportunity_note(note_in_db)
 
 
 @router.put(
-    "/{account_id}/{opportunity_id}/{note_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_opportunity_note(
-    account_id: UUID,
-    opportunity_id: UUID,
-    note_id: UUID,
-    note: UpdatedNote,
+    note: UpdatedOpportunityNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> OpportunityNote | None:
-    note_in_db = NoteInDB(**note.dict(), updated_by=current_user.user_id)
+    note_in_db = OpportunityNoteInDB(**note.dict(), updated_by=current_user.user_id)
 
-    return db.update_opportunity_note(account_id, opportunity_id, note_id, note_in_db)
+    return db.update_opportunity_note(note_in_db)
 
 
 @router.delete(
@@ -247,20 +254,24 @@ async def get_project_note(
 
 
 @router.post(
-    "/{account_id}/{opportunity_id}/{project_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`note_id` will be generated if not provided by client.",
 )
 async def create_project_note(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
+    note: UpdatedProjectNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewProjectNote | None:
-    note_in_db = NoteInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+) -> ProjectNote | None:
+    note_in_db = ProjectNoteInDB(
+        **note.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
 
-    return db.create_project_note(account_id, opportunity_id, project_id, note_in_db)
+    if not note_in_db.note_id:
+        note_in_db.note_id = uuid4()
+
+    return db.create_project_note(note_in_db)
 
 
 @router.put(
@@ -268,18 +279,14 @@ async def create_project_note(
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_project_note(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
-    note_id: UUID,
-    note: UpdatedNote,
+    note: UpdatedProjectNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> ProjectNote | None:
-    note_in_db = NoteInDB(**note.dict(), updated_by=current_user.user_id)
-
-    return db.update_project_note(
-        account_id, opportunity_id, project_id, note_id, note_in_db
+    note_in_db = ProjectNoteInDB(
+        **note.dict(exclude_unset=True), updated_by=current_user.user_id
     )
+
+    return db.update_project_note(note_in_db)
 
 
 @router.delete(

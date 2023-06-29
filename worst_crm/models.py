@@ -1,7 +1,6 @@
 from pydantic import create_model, BaseModel, Field, EmailStr
 from typing import Any
 from uuid import UUID
-import uuid
 import datetime as dt
 
 # utility functions
@@ -145,7 +144,6 @@ class AccountInDB(UpdatedAccount, CommonInDB):
 
 
 class Account(DBComputed, AccountInDB):
-    account_id: UUID
     attachments: list[str]
 
 
@@ -192,25 +190,22 @@ class ContactWithAccountName(Contact):
 
 
 # OPPORTUNITY
-class NewOpportunity(BaseModel):
-    account_id: UUID
-    opportunity_id: UUID
-
-
 class UpdatedOpportunity(Basic1, Text):
+    account_id: UUID
+    opportunity_id: UUID | None = None
+
+
+class OpportunityInDB(UpdatedOpportunity, CommonInDB):
     pass
 
 
-class OpportunityInDB(Basic1, Text, CommonInDB):
-    pass
-
-
-class Opportunity(NewOpportunity, DBComputed, OpportunityInDB):
+class Opportunity(DBComputed, OpportunityInDB):
     attachments: list[str]
 
 
-class OpportunityOverview(NewOpportunity, Basic1, CommonInDB, DBComputed):
-    pass
+class OpportunityOverview(Basic1, CommonInDB, DBComputed):
+    account_id: UUID
+    opportunity_id: UUID
 
 
 class OpportunityOverviewWithAccountName(OpportunityOverview):
@@ -229,39 +224,36 @@ class OpportunityFilters(BasicFilters):
 
 
 # ARTIFACT
-class NewArtifact(BaseModel):
+class UpdatedArtifact(Name, Text):
     account_id: UUID
     opportunity_id: UUID
-    artifact_id: UUID
+    artifact_id: UUID | None = None
+    schema_name: str
+    tags: set[str] | None = None
 
 
-class UpdatedArtifact(Name, Text):
-    pass
-
-
-class ArtifactInDB(Name, Text, CommonInDB):
+class ArtifactInDB(UpdatedArtifact, CommonInDB):
     pass
 
 
 class Artifact(DBComputed, ArtifactInDB):
-    account_id: UUID
-    opportunity_id: UUID
-    artifact_id: UUID
+    pass
 
 
 class ArtifactOverview(Name, CommonInDB, DBComputed):
     account_id: UUID
     opportunity_id: UUID
     artifact_id: UUID
-
-
-class ArtifactOverviewWithAccountName(ArtifactOverview):
-    account_name: str | None = None
-    opportunity_name: str | None = None
+    schema_name: str
+    tags: set[str] | None = None
 
 
 class ArtifactOverviewWithOpportunityName(ArtifactOverview):
     opportunity_name: str | None = None
+
+
+class ArtifactOverviewWithAccountName(ArtifactOverviewWithOpportunityName):
+    account_name: str | None = None
 
 
 class ArtifactFilters(BasicFilters):
@@ -277,24 +269,17 @@ class ArtifactFilters(BasicFilters):
 
 
 # PROJECT
-class NewProject(BaseModel):
+class UpdatedProject(Basic1, Text):
     account_id: UUID
     opportunity_id: UUID
-    project_id: UUID
+    project_id: UUID | None = None
 
 
-class UpdatedProject(Basic1, Text):
-    pass
-
-
-class ProjectInDB(Basic1, Text, CommonInDB):
+class ProjectInDB(UpdatedProject, CommonInDB):
     pass
 
 
 class Project(DBComputed, ProjectInDB):
-    account_id: UUID
-    opportunity_id: UUID
-    project_id: UUID
     attachments: list[str]
 
 
@@ -304,13 +289,12 @@ class ProjectOverview(Basic1, CommonInDB, DBComputed):
     project_id: UUID
 
 
-class ProjectOverviewWithAccountName(ProjectOverview):
-    account_name: str | None = None
-    opportunity_name: str | None = None
-
-
 class ProjectOverviewWithOpportunityName(ProjectOverview):
     opportunity_name: str | None = None
+
+
+class ProjectOverviewWithAccountName(ProjectOverviewWithOpportunityName):
+    account_name: str | None = None
 
 
 class ProjectFilters(BasicFilters):
@@ -326,29 +310,24 @@ class ProjectFilters(BasicFilters):
 
 
 # TASK
-class NewTask(BaseModel):
-    account_id: UUID
-    project_id: UUID
-    task_id: UUID
-
-
 class UpdatedTask(Basic1, Text):
-    pass
+    account_id: UUID
+    opportunity_id: UUID
+    project_id: UUID
+    task_id: UUID | None = None
 
 
-class TaskInDB(Basic1, Text, CommonInDB):
+class TaskInDB(UpdatedTask, CommonInDB):
     pass
 
 
 class Task(DBComputed, TaskInDB):
-    account_id: UUID
-    project_id: UUID
-    task_id: UUID
     attachments: list[str]
 
 
 class TaskOverview(Basic1, CommonInDB, DBComputed):
     account_id: UUID
+    opportunity_id: UUID
     project_id: UUID
     task_id: UUID
 
@@ -362,39 +341,42 @@ class TaskFilters(BasicFilters):
 
 
 # NOTES
-class NewAccountNote(BaseModel):
+class UpdatedAccountNote(Name, Text):
     account_id: UUID
-    note_id: UUID
+    note_id: UUID | None = None
+    tags: set[str] | None = None
 
 
-class NewOpportunityNote(NewAccountNote):
+class UpdatedOpportunityNote(UpdatedAccountNote):
     opportunity_id: UUID
 
 
-class NewProjectNote(NewOpportunityNote):
+class UpdatedProjectNote(UpdatedOpportunityNote):
     project_id: UUID
 
 
-class UpdatedNote(Name, Text):
+class AccountNoteInDB(UpdatedAccountNote, CommonInDB):
     pass
 
 
-class NoteInDB(Name, Text, CommonInDB):
+class OpportunityNoteInDB(UpdatedOpportunityNote, CommonInDB):
     pass
 
 
-class AccountNote(DBComputed, NoteInDB):
-    account_id: UUID
-    note_id: UUID
+class ProjectNoteInDB(UpdatedProjectNote, CommonInDB):
+    pass
+
+
+class AccountNote(DBComputed, AccountNoteInDB):
     attachments: list[str]
 
 
-class OpportunityNote(AccountNote):
-    opportunity_id: UUID
+class OpportunityNote(DBComputed, OpportunityNoteInDB):
+    attachments: list[str]
 
 
-class ProjectNote(OpportunityNote):
-    project_id: UUID
+class ProjectNote(DBComputed, ProjectNoteInDB):
+    attachments: list[str]
 
 
 class AccountNoteOverview(Name, CommonInDB, DBComputed):

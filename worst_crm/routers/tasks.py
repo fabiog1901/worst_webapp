@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
     Task,
-    NewTask,
     TaskFilters,
     UpdatedTask,
     TaskInDB,
@@ -45,37 +44,37 @@ async def get_task(
 
 
 @router.post(
-    "/{account_id}/{opportunity_id}/{project_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`task_id` will be generated if not provided by client.",
 )
 async def create_task(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
+    task: UpdatedTask,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewTask | None:
+) -> Task | None:
     task_in_db = TaskInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+        **task.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
 
-    return db.create_task(account_id, opportunity_id, project_id, task_in_db)
+    if not task_in_db.task_id:
+        task_in_db.task_id = uuid4()
+
+    return db.create_task(task_in_db)
 
 
 @router.put(
-    "/{account_id}/{opportunity_id}/{project_id}/{task_id}",
+    "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_task(
-    account_id: UUID,
-    opportunity_id: UUID,
-    project_id: UUID,
-    task_id: UUID,
     task: UpdatedTask,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
     task_in_db = TaskInDB(**task.dict(), updated_by=current_user.user_id)
 
-    return db.update_task(account_id, opportunity_id, project_id, task_id, task_in_db)
+    return db.update_task(task_in_db)
 
 
 @router.delete(
