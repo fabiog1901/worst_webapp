@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import (
     UserInDB,
-    NewAccount,
     Account,
     Project,
     NewProject,
@@ -35,11 +34,11 @@ def get_account(account_id: UUID, token) -> Account | None:
     return None
 
 
-def create_account(token) -> NewAccount:
+def create_account(token) -> Account:
     r = client.post("/accounts", headers={"Authorization": f"Bearer {token}"})
 
     assert r.status_code == 200
-    return NewAccount(**r.json())
+    return Account(**r.json())
 
 
 def update_account(account_id: UUID, token) -> Account:

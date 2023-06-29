@@ -136,15 +136,11 @@ class Status(BaseModel):
 
 
 # ACCOUNT
-class NewAccount(BaseModel):
-    account_id: UUID
-
-
 class UpdatedAccount(Basic1, Text):
-    pass
+    account_id: UUID | None = None
 
 
-class AccountInDB(Basic1, Text, CommonInDB):
+class AccountInDB(UpdatedAccount, CommonInDB):
     pass
 
 

@@ -67,7 +67,7 @@ INSERT INTO task_status (name) VALUES ('NEW'), ('OPEN'), ('ON HOLD'), ('PENDING'
 /*********************************/   
 CREATE TABLE accounts (
     -- pk
-    account_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    account_id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,

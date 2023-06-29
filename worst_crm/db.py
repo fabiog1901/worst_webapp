@@ -13,7 +13,6 @@ from worst_crm.models import (
     AccountNote,
     AccountNoteOverview,
     AccountOverview,
-    NewAccount,
     NewAccountNote,
     NewOpportunity,
     NewOpportunityNote,
@@ -303,26 +302,29 @@ def get_account(account_id: UUID) -> Account | None:
     )
 
 
-def create_account(account_in_db: AccountInDB) -> NewAccount:
+def create_account(account_in_db: AccountInDB) -> Account:
     return execute_stmt(
         f"""
         INSERT INTO accounts 
             ({ACCOUNT_IN_DB_COLS})
         VALUES
             ({ACCOUNT_IN_DB_PLACEHOLDERS})
-        RETURNING account_id
+        RETURNING {ACCOUNTS_COLS}
         """,
         tuple(account_in_db.dict().values()),
-        NewAccount,
+        Account,
     )
 
 
-def update_account(account_id: UUID, account: AccountInDB) -> Account | None:
-    old_acc = get_account(account_id)
+def update_account(account_in_db: AccountInDB) -> Account | None:
+    if account_in_db.account_id:
+        old_acc = get_account(account_in_db.account_id)
+    else:
+        return None
 
     if old_acc:
         old_acc = AccountInDB(**old_acc.dict())
-        update_data = account.dict(exclude_unset=True)
+        update_data = account_in_db.dict(exclude_unset=True)
         new_acc = old_acc.copy(update=update_data)
 
         return execute_stmt(
@@ -332,7 +334,7 @@ def update_account(account_id: UUID, account: AccountInDB) -> Account | None:
             WHERE account_id = %s
             RETURNING {ACCOUNTS_COLS}
             """,
-            (*tuple(new_acc.dict().values()), account_id),
+            (*tuple(new_acc.dict().values()), account_in_db.account_id),
             Account,
         )
 
@@ -1503,4 +1505,5 @@ def execute_stmt(
                         return None
             except Exception as e:
                 # TODO correctly handle error such as PK violations
+                print(e)
                 return None

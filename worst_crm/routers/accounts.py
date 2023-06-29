@@ -2,10 +2,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Security, Query
 from fastapi.responses import HTMLResponse
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
-    NewAccount,
     Account,
     UpdatedAccount,
     AccountInDB,
@@ -29,19 +28,19 @@ router = APIRouter(
 
 
 # MODEL
-@router.get("/model")
-async def add_column():
-    accounts = {
-        "ticker": (str | None, None),
-        "industry": (str | None, None),
-    }
+# @router.get("/model")
+# async def add_column():
+#     accounts = {
+#         "ticker": (str | None, None),
+#         "industry": (str | None, None),
+#     }
 
-    db.add_model_accounts(accounts)
-    up(accounts)
-    from worst_crm.models import Account
+#     db.add_model_accounts(accounts)
+#     up(accounts)
+#     from worst_crm.models import Account
 
-    print(Account.__fields__)
-    return {}
+#     print(Account.__fields__)
+#     return {}
 
 
 # CRUD
@@ -57,29 +56,39 @@ async def get_account(account_id: UUID) -> Account | None:
     return db.get_account(account_id)
 
 
-@router.post("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
+@router.post(
+    "",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+    description="`account_id` will be generated if not provided by client.",
+)
 async def create_account(
+    account: UpdatedAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> NewAccount | None:
+) -> Account | None:
     acc_in_db = AccountInDB(
-        created_by=current_user.user_id, updated_by=current_user.user_id
+        **account.dict(exclude_unset=True),
+        created_by=current_user.user_id,
+        updated_by=current_user.user_id
     )
+
+    if not acc_in_db.account_id:
+        acc_in_db.account_id = uuid4()
 
     return db.create_account(acc_in_db)
 
 
 @router.put(
-    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
+    "",
+    dependencies=[Security(dep.get_current_user, scopes=["rw"])]
 )
 async def update_account(
-    account_id: UUID,
-    updated_account: UpdatedAccount,
+    acc: UpdatedAccount,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **updated_account.dict(exclude_unset=True), updated_by=current_user.user_id
+        **acc.dict(exclude_unset=True), updated_by=current_user.user_id
     )
-    return db.update_account(account_id, acc_in_db)
+    return db.update_account(acc_in_db)
 
 
 @router.delete(
