@@ -22,7 +22,7 @@ from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(
     prefix="/accounts",
-    # dependencies=[Depends(dep.get_current_user)],
+    dependencies=[Depends(dep.get_current_user)],
     tags=["accounts"],
 )
 

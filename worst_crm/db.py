@@ -230,6 +230,9 @@ def __get_where_clause(
     where: list[str] = []
     bind_params: list[Any] = []
 
+    if not filters:
+        return ('', ()) 
+    
     filters_iter = iter(filters)
 
     for k, v in filters_iter:
@@ -271,7 +274,6 @@ def add_model_accounts(d):
 
 def get_all_accounts(account_filters: AccountFilters | None) -> list[AccountOverview]:
     where_clause, bind_params = __get_where_clause(account_filters, "accounts")
-
     return execute_stmt(
         f"""
         SELECT {ACCOUNT_OVERVIEW_COLS}

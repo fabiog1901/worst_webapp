@@ -4,9 +4,7 @@ from worst_crm.models import (
     UserInDB,
     Account,
     Project,
-    NewProject,
     Task,
-    NewTask,
 )
 import worst_crm.db as db
 import worst_crm.dependencies as dep
@@ -23,50 +21,50 @@ def get_random_name(prefix: str = "ACC-") -> str:
 
 
 # UTILITY FUNCTIONS
-def get_account(account_id: UUID, token) -> Account | None:
-    r = client.get(
-        f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+# def get_account(account_id: UUID, token) -> Account | None:
+#     r = client.get(
+#         f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
+#     )
 
-    assert r.status_code == 200
-    if r.json():
-        return Account(**r.json())
-    return None
-
-
-def create_account(token) -> Account:
-    r = client.post("/accounts", headers={"Authorization": f"Bearer {token}"})
-
-    assert r.status_code == 200
-    return Account(**r.json())
+#     assert r.status_code == 200
+#     if r.json():
+#         return Account(**r.json())
+#     return None
 
 
-def update_account(account_id: UUID, token) -> Account:
-    r = client.put(
-        f"/accounts/{account_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        json={
-            "name": "ACC-00001",
-            "text": "some dummy text updated",
-            "status": random.choice(["NEW", "OPPORTUNITY", "POC"]),
-            "owned_by": "dummyadmin",
-            "tags": [random.choice(["t1", "t2", "t3"])],
-            "data": {"k": "v", "kk": "vv"},
-        },
-    )
-    assert r.status_code == 200
-    return Account(**r.json())
+# def create_account(token) -> Account:
+#     r = client.post("/accounts", headers={"Authorization": f"Bearer {token}"})
+
+#     assert r.status_code == 200
+#     return Account(**r.json())
 
 
-def delete_account(account_id: UUID, token) -> Account | None:
-    r = client.delete(
-        f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
-    )
+# def update_account(account_id: UUID, token) -> Account:
+#     r = client.put(
+#         f"/accounts/{account_id}",
+#         headers={"Authorization": f"Bearer {token}"},
+#         json={
+#             "name": "ACC-00001",
+#             "text": "some dummy text updated",
+#             "status": random.choice(["NEW", "OPPORTUNITY", "POC"]),
+#             "owned_by": "dummyadmin",
+#             "tags": [random.choice(["t1", "t2", "t3"])],
+#             "data": {"k": "v", "kk": "vv"},
+#         },
+#     )
+#     assert r.status_code == 200
+#     return Account(**r.json())
 
-    assert r.status_code == 200
-    if r.json():
-        return Account(**r.json())
-    return None
+
+# def delete_account(account_id: UUID, token) -> Account | None:
+#     r = client.delete(
+#         f"/accounts/{account_id}", headers={"Authorization": f"Bearer {token}"}
+#     )
+
+#     assert r.status_code == 200
+#     if r.json():
+#         return Account(**r.json())
+#     return None
 
 
 # PROJECT
@@ -81,12 +79,12 @@ def get_project(account_id: UUID, project_id: UUID, token: str) -> Project | Non
     return None
 
 
-def create_project(account_id: UUID, token: str) -> NewProject:
+def create_project(account_id: UUID, token: str) -> Project:
     r = client.post(
         f"/projects/{account_id}", headers={"Authorization": f"Bearer {token}"}
     )
     assert r.status_code == 200
-    return NewProject(**r.json())
+    return Project(**r.json())
 
 
 def update_project(account_id: UUID, project_id: UUID, token: str) -> Project:
@@ -131,13 +129,13 @@ def get_task(
     return None
 
 
-def create_task(account_id: UUID, project_id: UUID, token: str) -> NewTask:
+def create_task(account_id: UUID, project_id: UUID, token: str) -> Task:
     r = client.post(
         f"/tasks/{account_id}/{project_id}",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 200
-    return NewTask(**r.json())
+    return Task(**r.json())
 
 
 def update_task(account_id: UUID, project_id: UUID, task_id: int, token: str) -> Task:

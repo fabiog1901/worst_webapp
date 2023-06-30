@@ -29,20 +29,20 @@ router = APIRouter(
 
 
 # ACCOUNT_NOTE
-@router.get("/{account_id}")
+@router.get("/account/{account_id}")
 async def get_all_account_notes(
     account_id: UUID, note_filters: NoteFilters | None = None
 ) -> list[AccountNoteOverview]:
     return db.get_all_account_notes(account_id, note_filters)
 
 
-@router.get("/{account_id}/{note_id}")
+@router.get("/account/{account_id}/{note_id}")
 async def get_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
     return db.get_account_note(account_id, note_id)
 
 
 @router.post(
-    "",
+    "/account",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     description="`note_id` will be generated if not provided by client.",
 )
@@ -63,7 +63,7 @@ async def create_account_note(
 
 
 @router.put(
-    "",
+    "/account",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_account_note(
@@ -76,7 +76,7 @@ async def update_account_note(
 
 
 @router.delete(
-    "/{account_id}/{note_id}",
+    "/account/{account_id}/{note_id}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_account_note(account_id: UUID, note_id: UUID) -> AccountNote | None:
@@ -84,7 +84,7 @@ async def delete_account_note(account_id: UUID, note_id: UUID) -> AccountNote | 
 
 
 @router.get(
-    "/{account_id}/{note_id}/presigned-get-url/{filename}",
+    "/account/{account_id}/{note_id}/presigned-get-url/{filename}",
 )
 async def get_presigned_get_url_for_account_note(
     account_id: UUID, note_id: UUID, filename: str
@@ -95,7 +95,7 @@ async def get_presigned_get_url_for_account_note(
 
 
 @router.get(
-    "/{account_id}/{note_id}/presigned-put-url/{filename}",
+    "/account/{account_id}/{note_id}/presigned-put-url/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def get_presigned_put_url_for_account_note(
@@ -108,7 +108,7 @@ async def get_presigned_put_url_for_account_note(
 
 
 @router.delete(
-    "/{account_id}/{note_id}/attachments/{filename}",
+    "/account/{account_id}/{note_id}/attachments/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement_from_account_note(
@@ -120,14 +120,14 @@ async def delete_attachement_from_account_note(
 
 
 # OPPORTUNITY_NOTE
-@router.get("/{account_id}/{opportunity_id}")
+@router.get("/opportunity/{account_id}/{opportunity_id}")
 async def get_all_opportunity_notes(
     account_id: UUID, opportunity_id: UUID, note_filters: NoteFilters | None = None
 ) -> list[OpportunityNoteOverview]:
     return db.get_all_opportunity_notes(account_id, opportunity_id, note_filters)
 
 
-@router.get("/{account_id}/{opportunity_id}/{note_id}")
+@router.get("/opportunity/{account_id}/{opportunity_id}/{note_id}")
 async def get_opportunity_note(
     account_id: UUID, opportunity_id: UUID, note_id: UUID
 ) -> OpportunityNote | None:
@@ -135,7 +135,7 @@ async def get_opportunity_note(
 
 
 @router.post(
-    "",
+    "/opportunity",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     description="`note_id` will be generated if not provided by client.",
 )
@@ -156,7 +156,7 @@ async def create_opportunity_note(
 
 
 @router.put(
-    "",
+    "/opportunity",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_opportunity_note(
@@ -169,7 +169,7 @@ async def update_opportunity_note(
 
 
 @router.delete(
-    "/{account_id}/{opportunity_id}/{note_id}",
+    "/opportunity/{account_id}/{opportunity_id}/{note_id}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_opportunity_note(
@@ -179,7 +179,7 @@ async def delete_opportunity_note(
 
 
 @router.get(
-    "/{account_id}/{opportunity_id}/{note_id}/presigned-get-url/{filename}",
+    "/opportunity/{account_id}/{opportunity_id}/{note_id}/presigned-get-url/{filename}",
 )
 async def get_presigned_get_url_for_opportunity_note(
     account_id: UUID, opportunity_id: UUID, note_id: UUID, filename: str
@@ -198,7 +198,7 @@ async def get_presigned_get_url_for_opportunity_note(
 
 
 @router.get(
-    "/{account_id}/{opportunity_id}/{note_id}/presigned-put-url/{filename}",
+    "/opportunity/{account_id}/{opportunity_id}/{note_id}/presigned-put-url/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def get_presigned_put_url_for_opportunity_note(
@@ -219,7 +219,7 @@ async def get_presigned_put_url_for_opportunity_note(
 
 
 @router.delete(
-    "/{account_id}/{opportunity_id}/{note_id}/attachments/{filename}",
+    "/opportunity/{account_id}/{opportunity_id}/{note_id}/attachments/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement_from_opportunity_note(
@@ -239,7 +239,7 @@ async def delete_attachement_from_opportunity_note(
 
 
 # PROJECT_NOTE
-@router.get("/{account_id}/{opportunity_id}/{project_id}")
+@router.get("/project/{account_id}/{opportunity_id}/{project_id}")
 async def get_all_project_notes(
     account_id: UUID, opportunity_id: UUID, project_id: UUID
 ) -> list[ProjectNoteOverview]:
@@ -254,7 +254,7 @@ async def get_project_note(
 
 
 @router.post(
-    "",
+    "/project",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     description="`note_id` will be generated if not provided by client.",
 )
@@ -275,7 +275,7 @@ async def create_project_note(
 
 
 @router.put(
-    "/{account_id}/{opportunity_id}/{project_id}/{note_id}",
+    "/project/project",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_project_note(
@@ -290,7 +290,7 @@ async def update_project_note(
 
 
 @router.delete(
-    "/{account_id}/{opportunity_id}/{project_id}/{note_id}",
+    "/project/{account_id}/{opportunity_id}/{project_id}/{note_id}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_project_note(
@@ -325,7 +325,7 @@ async def get_presigned_get_url_for_project_note(
 
 
 @router.get(
-    "/{account_id}/{opportunity_id}/{project_id}/{note_id}/presigned-put-url/{filename}",
+    "/project/{account_id}/{opportunity_id}/{project_id}/{note_id}/presigned-put-url/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def get_presigned_put_url_for_project_note(
@@ -354,7 +354,7 @@ async def get_presigned_put_url_for_project_note(
 
 
 @router.delete(
-    "/{account_id}/{opportunity_id}/{project_id}/{note_id}/attachments/{filename}",
+    "/project/{account_id}/{opportunity_id}/{project_id}/{note_id}/attachments/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_attachement_from_project_note(
