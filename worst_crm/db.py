@@ -913,7 +913,7 @@ def get_all_projects_for_account_id(
         SELECT {fully_qualified}, opportunities.name AS opportunity_name
         FROM projects JOIN opportunities 
             ON (opportunities.account_id, opportunities.opportunity_id) = (projects.account_id, projects.opportunity_id) 
-        WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
+        WHERE projects.account_id = %s {' AND ' if where_clause else ''} {where_clause}
         ORDER BY opportunity_name, projects.name
         """,
         (account_id,) + bind_params,
