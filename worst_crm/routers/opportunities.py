@@ -30,7 +30,7 @@ async def get_all_opportunities(
 
 
 @router.get("/{account_id}")
-async def get_all_opportunitys_for_account_id(
+async def get_all_opportunities_for_account_id(
     account_id: UUID,
 ) -> list[OpportunityOverview]:
     return db.get_all_opportunities_for_account_id(account_id)

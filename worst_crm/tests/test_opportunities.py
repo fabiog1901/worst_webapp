@@ -9,135 +9,208 @@ from worst_crm.tests import utils
 from worst_crm.tests.utils import login, setup_test
 import hashlib
 import validators
+from faker import Faker
+
+fake = Faker()
+
 
 client = TestClient(app)
 
+ACCOUNT_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+OPPORTUNITY_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
-def test_get_Opportunitys_non_auth():
-    r = client.get("/Opportunitys")
+
+def test_get_opportunities_non_auth():
+    r = client.get("/opportunities")
 
     assert r.status_code == 401
 
 
-def test_create_Opportunity(login, setup_test):
-    acc = utils.create_account(login)
-
-    global new_proj
-    new_proj = utils.create_Opportunity(acc.account_id, login)
-
-    assert isinstance(new_proj, NewOpportunity)
-
-
-def test_update_Opportunity(login, setup_test):
-    global new_proj
-    global proj
-    upd_proj = utils.update_Opportunity(
-        new_proj.account_id, new_proj.Opportunity_id, login
+def test_create_opportunity(login):
+    r = client.post(
+        "/opportunities",
+        headers={"Authorization": f"Bearer {login}"},
+        json={
+            "name": "OPP-1",
+            "account_id": ACCOUNT_ID,
+            "opportunity_id": OPPORTUNITY_ID,
+            "text": "Initial text",
+            "status": "NEW",
+            "owned_by": "dummyadmin",
+            "tags": ["t1", "t2", "t1"],
+        },
     )
 
-    assert isinstance(upd_proj, Opportunity)
-    assert upd_proj == utils.get_Opportunity(
-        new_proj.account_id, new_proj.Opportunity_id, login
+    assert r.status_code == 200
+    opp = Opportunity(**r.json())
+    assert isinstance(opp, Opportunity)
+
+
+def test_load_opportunities(login):
+    for _ in range(100):
+        r = client.post(
+            "/opportunities",
+            headers={"Authorization": f"Bearer {login}"},
+            json={
+                "name": "OPP-" + fake.safe_color_name(),
+                "account_id": ACCOUNT_ID,
+                "text": fake.text(),
+                "status": "NEW",
+                "due_date": fake.date(),
+                "owned_by": "dummyadmin",
+                "tags": ["t1", "t2", "t1"],
+            },
+        )
+
+        assert r.status_code == 200
+
+
+def test_update_opportunity(login):
+    r = client.put(
+        f"/accounts",
+        headers={"Authorization": f"Bearer {login}"},
+        json={
+            "name": "OPP-1",
+            "account_id": ACCOUNT_ID,
+            "opportunity_id": OPPORTUNITY_ID,
+            "text": "Updated text",
+            "status": "NEW",
+            "owned_by": "dummyadmin",
+            "tags": ["t1", "t2", "t1"],
+        },
     )
+    assert r.status_code == 200
+    x = Opportunity(**r.json())
 
-    proj = upd_proj
-
-
-def test_read_all_Opportunitys(login, setup_test):
-    for _ in range(50):
-        utils.create_Opportunity(proj.account_id, login)
-
+    # fetch stored account
     r = client.get(
-        "/Opportunitys/",
+        f"/accounts/{ACCOUNT_ID}", headers={"Authorization": f"Bearer {login}"}
+    )
+
+    assert r.status_code == 200
+    upd_opp = Opportunity(**r.json())
+
+    assert upd_opp == x
+    assert x.text == "Updated text"
+
+
+def test_get_all_opportunities(login):
+    r = client.get(
+        "/opportunities/",
         headers={"Authorization": f"Bearer {login}"},
     )
     assert r.status_code == 200
-    l: list[OpportunityOverviewWithOpportunityName] = [
-        OpportunityOverviewWithOpportunityName(**x) for x in r.json()
+
+    l: list[OpportunityOverviewWithAccountName] = [
+        OpportunityOverviewWithAccountName(**x) for x in r.json()
     ]
-    assert len(l) >= 50
+    assert len(l) >= 100
 
 
-def test_read_all_Opportunitys_with_filters(login, setup_test):
-    r = client.get(
-        "/Opportunitys/",
+def test_get_all_opportunities_with_filters(login):
+    r = client.request(
+        "GET",
+        "/opportunities/",
         headers={"Authorization": f"Bearer {login}"},
-        params={"status": ["ON HOLD"]},
+        json={"name": ["OPP-1"]},
     )
     assert r.status_code == 200
-    l: list[OpportunityOverviewWithOpportunityName] = [
-        OpportunityOverviewWithOpportunityName(**x) for x in r.json()
+    l: list[OpportunityOverviewWithAccountName] = [
+        OpportunityOverviewWithAccountName(**x) for x in r.json()
     ]
     assert len(l) == 1
 
 
-def test_read_all_Opportunitys_for_account_id(login, setup_test):
+def test_get_all_opportunities_for_account_id(login):
     r = client.get(
-        f"/Opportunitys/{proj.account_id}",
+        f"/opportunities/{ACCOUNT_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
     assert r.status_code == 200
     l: list[OpportunityOverview] = [OpportunityOverview(**x) for x in r.json()]
-    assert len(l) >= 50
+    assert len(l) >= 100
 
 
-def test_attachment_upload_and_download(login, setup_test):
-    global proj
+def test_attachment_upload_and_download(login):
+    for filename in ["1MB with spaces.txt", "ss.png"]:
+        # uploading
+        r = client.get(
+            f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}/presigned-put-url/{filename}",
+            headers={"Authorization": f"Bearer {login}"},
+        )
 
-    filename = "1MB with spaces.txt"
+        assert r.status_code == 200
 
-    # Uploading
+        assert validators.url(r.text)  # type: ignore
+
+        utils.s3_upload(r.text, f".testdata/{filename}")
+
+        # Downloading
+        r = client.get(
+            f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}/presigned-get-url/{filename}",
+            headers={"Authorization": f"Bearer {login}"},
+        )
+
+        assert r.status_code == 200
+
+        assert validators.url(r.text)  # type: ignore
+
+        utils.s3_download(r.text, f".testdata/.{filename}")
+
+        # comparing for equality
+        with open(f".testdata/{filename}", "rb") as f:
+            digest1 = hashlib.file_digest(f, "sha256")
+
+        with open(f".testdata/.{filename}", "rb") as f:
+            digest2 = hashlib.file_digest(f, "sha256")  # type: ignore
+
+        assert digest1.hexdigest() == digest2.hexdigest()
+
+        # deleting attachment
+        r = client.delete(
+            f"opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}/attachments/{filename}",
+            headers={"Authorization": f"Bearer {login}"},
+        )
+
+        assert r.status_code == 200
+
+        # deleting attachment twice
+        r = client.delete(
+            f"opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}/attachments/{filename}",
+            headers={"Authorization": f"Bearer {login}"},
+        )
+
+        assert r.status_code == 200
+
+
+def test_delete_opportunity(login):
     r = client.get(
-        f"/Opportunitys/{proj.account_id}/{proj.Opportunity_id}/presigned-put-url/{filename}",
+        f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
-    assert r.status_code == 200
-    assert validators.url(r.text)  # type: ignore
-    utils.s3_upload(r.text, f".testdata/{filename}")
+    acc = Opportunity(**r.json())
 
-    # Downloading
-    r = client.get(
-        f"/Opportunitys/{proj.account_id}/{proj.Opportunity_id}/presigned-get-url/{filename}",
-        headers={"Authorization": f"Bearer {login}"},
-    )
-    assert r.status_code == 200
-    assert validators.url(r.text)  # type: ignore
-    utils.s3_download(r.text, f".testdata/.{filename}")
-
-    # comparing for equality
-    with open(f".testdata/{filename}", "rb") as f:
-        digest1 = hashlib.file_digest(f, "sha256")
-
-    with open(f".testdata/.{filename}", "rb") as f:
-        digest2 = hashlib.file_digest(f, "sha256")
-
-    assert digest1.hexdigest() == digest2.hexdigest()
-
-    # deleting
     r = client.delete(
-        f"Opportunitys/{proj.account_id}/{proj.Opportunity_id}/attachments/{filename}",
+        f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
+
     assert r.status_code == 200
+    assert acc == Opportunity(**r.json())
 
-    proj_with_attachments = utils.get_Opportunity(
-        proj.account_id, proj.Opportunity_id, login
+    # a get returns null
+    r = client.get(
+        f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}",
+        headers={"Authorization": f"Bearer {login}"},
     )
-
-    if proj_with_attachments:
-        proj = proj_with_attachments
-
-
-def test_delete_Opportunity(login, setup_test):
-    del_proj = utils.delete_Opportunity(proj.account_id, proj.Opportunity_id, login)
-
-    assert del_proj == proj
-
-    # a read returns null
-    assert utils.get_Opportunity(proj.account_id, proj.Opportunity_id, login) is None
+    assert r.json() is None
 
     # a second delete return null
-    assert utils.delete_Opportunity(proj.account_id, proj.Opportunity_id, login) is None
+    r = client.delete(
+        f"/opportunities/{ACCOUNT_ID}/{OPPORTUNITY_ID}",
+        headers={"Authorization": f"Bearer {login}"},
+    )
+    assert r.json() is None
 
-    # finally, delete account
-    assert utils.delete_account(proj.account_id, login)
+    # recreate account for other tests
+    test_create_opportunity(login)

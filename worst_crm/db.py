@@ -494,7 +494,6 @@ def get_all_opportunities(
     fully_qualified = ", ".join(
         [f"opportunities.{x}" for x in OpportunityOverview.__fields__.keys()]
     )
-
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, accounts.name AS account_name
