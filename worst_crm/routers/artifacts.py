@@ -55,7 +55,7 @@ async def get_artifact(
 @router.post(
     "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
-    description="`opportunity_id` will be generated if not provided by client.",
+    description="`artifact_id` will be generated if not provided by client.",
 )
 async def create_artifact(
     artifact: UpdatedArtifact,

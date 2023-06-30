@@ -95,7 +95,8 @@ def test_get_all_accounts(login, setup_test):
 
 
 def test_get_all_accounts_with_filters(login, setup_test):
-    r = client.request("GET",
+    r = client.request(
+        "GET",
         "/accounts",
         headers={"Authorization": f"Bearer {login}"},
         json={
@@ -109,7 +110,6 @@ def test_get_all_accounts_with_filters(login, setup_test):
 
 
 def test_attachment_upload_and_download(login, setup_test):
-
     for filename in ["1MB with spaces.txt", "ss.png"]:
         # uploading
         r = client.get(
@@ -140,7 +140,7 @@ def test_attachment_upload_and_download(login, setup_test):
             digest1 = hashlib.file_digest(f, "sha256")
 
         with open(f".testdata/.{filename}", "rb") as f:
-            digest2 = hashlib.file_digest(f, "sha256") # type: ignore
+            digest2 = hashlib.file_digest(f, "sha256")  # type: ignore
 
         assert digest1.hexdigest() == digest2.hexdigest()
 
@@ -166,7 +166,7 @@ def test_delete_account(login):
         f"/accounts/{ACCOUNT_ID}", headers={"Authorization": f"Bearer {login}"}
     )
     acc = Account(**r.json())
-    
+
     r = client.delete(
         f"/accounts/{ACCOUNT_ID}", headers={"Authorization": f"Bearer {login}"}
     )
@@ -185,6 +185,6 @@ def test_delete_account(login):
         f"/accounts/{ACCOUNT_ID}", headers={"Authorization": f"Bearer {login}"}
     )
     assert r.json() is None
-    
+
     # recreate account for other tests
     test_create_account(login, setup_test)

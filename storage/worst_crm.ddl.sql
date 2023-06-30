@@ -171,11 +171,22 @@ CREATE INVERTED INDEX opportunity_tags_gin ON opportunities(tags);
 
 CREATE TABLE artifact_schemas (
     -- pk
-    name STRING NOT NULL,
+    artifact_schema_id UUID NOT NULL,
+    -- audit info
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
     -- fields
+    name STRING NULL,
     artifact_schema JSONB NULL,
     -- PK
-    CONSTRAINT pk PRIMARY KEY (name)
+    CONSTRAINT pk PRIMARY KEY (artifact_schema_id),
+    -- other FKs
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 
@@ -192,7 +203,7 @@ CREATE TABLE artifacts (
     -- fields not nullable
     -- fields nullable
     name STRING NULL,
-    schema_name STRING NULL,
+    artifact_schema_id UUID NULL,
     text STRING NULL,
     tags STRING [] NULL DEFAULT ARRAY[],
     -- PK
@@ -201,8 +212,8 @@ CREATE TABLE artifacts (
     CONSTRAINT fk_opportunities FOREIGN KEY (account_id, opportunity_id) 
         REFERENCES opportunities(account_id, opportunity_id) ON DELETE CASCADE ON UPDATE CASCADE,
     -- other FKs
-    CONSTRAINT schema_name_in_artifact_schemas FOREIGN KEY (schema_name)
-        REFERENCES artifact_schemas(name) ON DELETE SET NULL,
+    CONSTRAINT artifact_schema_id_in_artifact_schemas FOREIGN KEY (artifact_schema_id)
+        REFERENCES artifact_schemas(artifact_schema_id) ON DELETE SET NULL,
     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)

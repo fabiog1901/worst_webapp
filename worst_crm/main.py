@@ -9,6 +9,7 @@ from worst_crm.routers import (
     contacts,
     opportunities,
     artifacts,
+    artifact_schemas,
     projects,
     notes,
     tasks,
@@ -106,6 +107,7 @@ app.include_router(accounts.router)
 app.include_router(contacts.router)
 app.include_router(opportunities.router)
 app.include_router(artifacts.router)
+app.include_router(artifact_schemas.router)
 app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(notes.router)

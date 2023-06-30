@@ -1,4 +1,4 @@
-from pydantic import create_model, BaseModel, Field, EmailStr
+from pydantic import Json, create_model, BaseModel, Field, EmailStr
 from typing import Any
 from uuid import UUID
 import datetime as dt
@@ -223,12 +223,26 @@ class OpportunityFilters(BasicFilters):
 # OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
 
 
+# ARTIFACT_SCHEMA
+class UpdatedArtifactSchema(Name):
+    artifact_schema_id: UUID | None = None
+    artifact_schema: dict | None = None
+
+
+class ArtifactSchemaInDB(UpdatedArtifactSchema, CommonInDB):
+    pass
+
+
+class ArtifactSchema(DBComputed, ArtifactSchemaInDB):
+    pass
+
+
 # ARTIFACT
 class UpdatedArtifact(Name, Text):
     account_id: UUID
     opportunity_id: UUID
     artifact_id: UUID | None = None
-    schema_name: str
+    artifact_schema_id: UUID
     tags: set[str] | None = None
 
 
@@ -244,7 +258,6 @@ class ArtifactOverview(Name, CommonInDB, DBComputed):
     account_id: UUID
     opportunity_id: UUID
     artifact_id: UUID
-    schema_name: str
     tags: set[str] | None = None
 
 

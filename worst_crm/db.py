@@ -1,5 +1,6 @@
 from psycopg_pool import ConnectionPool
 from psycopg.types.array import ListDumper
+from psycopg.types.json import JsonbDumper
 from pydantic import PyObject
 from typing import Any
 from uuid import UUID
@@ -20,6 +21,8 @@ from worst_crm.models import (
     ArtifactOverview,
     ArtifactOverviewWithAccountName,
     ArtifactOverviewWithOpportunityName,
+    ArtifactSchema,
+    ArtifactSchemaInDB,
     Contact,
     ContactInDB,
     ContactWithAccountName,
@@ -231,8 +234,8 @@ def __get_where_clause(
     bind_params: list[Any] = []
 
     if not filters:
-        return ('', ()) 
-    
+        return ("", ())
+
     filters_iter = iter(filters)
 
     for k, v in filters_iter:
@@ -612,6 +615,93 @@ def remove_opportunity_attachment(
         """,
         (s3_object_name, account_id, opportunity_id),
         returning_rs=False,
+    )
+
+
+# ARTIFACT_SCHEMA
+ARTIFACT_SCHEMA_IN_DB_COLS = get_fields(ArtifactSchemaInDB)
+ARTIFACT_SCHEMA_IN_DB_PLACEHOLDERS = get_placeholders(ArtifactSchemaInDB)
+ARTIFACT_SCHEMAS_COLS = get_fields(ArtifactSchema)
+
+
+def get_all_artifact_schemas() -> list[ArtifactSchema]:
+    return execute_stmt(
+        f"""
+        SELECT {ARTIFACT_SCHEMAS_COLS}
+        FROM artifact_schemas
+        ORDER BY name
+        """,
+        (),
+        ArtifactSchema,
+        True,
+    )
+
+
+def get_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+    return execute_stmt(
+        f"""
+        SELECT {ARTIFACT_SCHEMAS_COLS}
+        FROM artifact_schemas 
+        WHERE artifact_schema_id = %s
+        """,
+        (artifact_schema_id,),
+        ArtifactSchema,
+    )
+
+
+def create_artifact_schema(
+    artifact_schema_in_db: ArtifactSchemaInDB,
+) -> ArtifactSchema | None:
+    return execute_stmt(
+        f"""
+        INSERT INTO artifact_schemas 
+            ({ARTIFACT_SCHEMA_IN_DB_COLS})
+        VALUES
+            ({ARTIFACT_SCHEMA_IN_DB_PLACEHOLDERS})
+        RETURNING {ARTIFACT_SCHEMAS_COLS}
+        """,
+        tuple(artifact_schema_in_db.dict().values()),
+        ArtifactSchema,
+    )
+
+
+def update_artifact_schema(
+    artifact_schema_in_db: ArtifactSchemaInDB,
+) -> ArtifactSchema | None:
+    if artifact_schema_in_db.artifact_schema_id:
+        old_art = get_artifact_schema(artifact_schema_in_db.artifact_schema_id)
+    else:
+        return None
+
+    if old_art:
+        old_art = ArtifactSchemaInDB(**old_art.dict())
+        update_data = artifact_schema_in_db.dict(exclude_unset=True)
+        new_art = old_art.copy(update=update_data)
+
+        return execute_stmt(
+            f"""
+            UPDATE artifact_schemas SET 
+                ({ARTIFACT_SCHEMA_IN_DB_COLS}) = ({ARTIFACT_SCHEMA_IN_DB_PLACEHOLDERS})
+            WHERE artifact_schema_id = %s
+            RETURNING {ARTIFACT_SCHEMAS_COLS}
+            """,
+            (
+                *tuple(new_art.dict().values()),
+                new_art.artifact_schema_id,
+            ),
+            ArtifactSchema,
+        )
+
+
+def delete_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM artifact_schemas
+        WHERE artifact_schema_id = %s
+        RETURNING {ARTIFACT_SCHEMAS_COLS}
+        """,
+        (artifact_schema_id,),
+        ArtifactSchema,
     )
 
 
@@ -1496,6 +1586,13 @@ def remove_project_note_attachment(
     )
 
 
+from psycopg.types.json import Jsonb, JsonbDumper
+
+class DictJsonbDumper(JsonbDumper):
+    def dump(self, obj):
+        return super().dump(Jsonb(obj))
+
+
 # ==============================================================================================
 def execute_stmt(
     stmt: str,
@@ -1507,6 +1604,7 @@ def execute_stmt(
     with pool.connection() as conn:
         # convert a set to a psycopg list
         conn.adapters.register_dumper(set, ListDumper)
+        conn.adapters.register_dumper(dict, DictJsonbDumper)
 
         with conn.cursor() as cur:
             try:
