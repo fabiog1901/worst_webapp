@@ -729,11 +729,11 @@ def get_all_artifacts(
             {fully_qualified}, 
             accounts.name as account_name, 
             opportunities.name AS opportunity_name
-        FROM accounts a 
-            JOIN opportunities o 
-                ON a.account_id = o.account_id 
-            JOIN artifacts p 
-                ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id)
+        FROM accounts 
+            JOIN opportunities 
+                ON accounts.account_id = opportunities.account_id 
+            JOIN artifacts 
+                ON (opportunities.account_id, opportunities.opportunity_id) = (artifacts.account_id, artifacts.opportunity_id)
         {where_clause}
         ORDER BY account_name, opportunity_name, artifacts.name
         """,
@@ -758,8 +758,8 @@ def get_all_artifacts_for_account_id(
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, opportunities.name AS opportunity_name
-        FROM artifacts p JOIN opportunities o
-            ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id) 
+        FROM artifacts JOIN opportunities 
+            ON (opportunities.account_id, opportunities.opportunity_id) = (artifacts.account_id, artifacts.opportunity_id) 
         WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
         ORDER BY opportunity_name, artifacts.name
         """,
@@ -883,11 +883,11 @@ def get_all_projects(
             {fully_qualified}, 
             accounts.name as account_name, 
             opportunities.name AS opportunity_name
-        FROM accounts a 
-            JOIN opportunities o 
-                ON a.account_id = o.account_id 
-            JOIN projects p 
-                ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id)
+        FROM accounts
+            JOIN opportunities
+                ON accounts.account_id = opportunities.account_id 
+            JOIN projects  
+                ON (opportunities.account_id, opportunities.opportunity_id) = (projects.account_id, projects.opportunity_id)
         {where_clause}
         ORDER BY account_name, opportunity_name, projects.name
         """,
@@ -912,8 +912,8 @@ def get_all_projects_for_account_id(
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, opportunities.name AS opportunity_name
-        FROM projects p JOIN opportunities o
-            ON (o.account_id, o.opportunity_id) = (p.account_id, p.opportunity_id) 
+        FROM projects JOIN opportunities 
+            ON (opportunities.account_id, opportunities.opportunity_id) = (projects.account_id, projects.opportunity_id) 
         WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
         ORDER BY opportunity_name, projects.name
         """,
@@ -1060,8 +1060,8 @@ def get_all_tasks_for_opportunity_id(
     return execute_stmt(
         f"""
         SELECT {fully_qualified}, projects.name AS project_name
-        FROM tasks t JOIN projects p
-            ON (t.account_id, t.project_id) = (p.account_id, p.project_id)
+        FROM tasks JOIN projects
+            ON (tasks.account_id, tasks.project_id) = (projects.account_id, projects.project_id)
         WHERE tasks.account_id = %s
         {' AND ' if where_clause else ''} {where_clause}
         ORDER BY project_name, task_id DESC
@@ -1588,6 +1588,7 @@ def remove_project_note_attachment(
 
 from psycopg.types.json import Jsonb, JsonbDumper
 
+
 class DictJsonbDumper(JsonbDumper):
     def dump(self, obj):
         return super().dump(Jsonb(obj))
@@ -1619,6 +1620,8 @@ def execute_stmt(
 
                 if is_list:
                     rsl = cur.fetchall()
+                    for x in rsl:
+                        print(x)
                     return [
                         model(**{k: rs[i] for i, k in enumerate(col_names)})
                         for rs in rsl

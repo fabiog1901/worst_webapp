@@ -204,7 +204,7 @@ CREATE TABLE artifacts (
     -- fields nullable
     name STRING NULL,
     artifact_schema_id UUID NULL,
-    text STRING NULL,
+    schema_definition JSONB NULL,
     tags STRING [] NULL DEFAULT ARRAY[],
     -- PK
     CONSTRAINT pk PRIMARY KEY (account_id, opportunity_id, artifact_id),

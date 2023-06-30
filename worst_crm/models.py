@@ -238,11 +238,12 @@ class ArtifactSchema(DBComputed, ArtifactSchemaInDB):
 
 
 # ARTIFACT
-class UpdatedArtifact(Name, Text):
+class UpdatedArtifact(Name):
     account_id: UUID
     opportunity_id: UUID
     artifact_id: UUID | None = None
     artifact_schema_id: UUID
+    schema_definition: dict | None = None
     tags: set[str] | None = None
 
 

@@ -82,7 +82,6 @@ def test_update_account(login, setup_test):
 
 
 def test_get_all_accounts(login, setup_test):
-    # READ ALL
     r = client.get(
         "/accounts",
         headers={"Authorization": f"Bearer {login}"},
