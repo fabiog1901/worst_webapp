@@ -759,7 +759,7 @@ def get_all_artifacts_for_account_id(
         SELECT {fully_qualified}, opportunities.name AS opportunity_name
         FROM artifacts JOIN opportunities 
             ON (opportunities.account_id, opportunities.opportunity_id) = (artifacts.account_id, artifacts.opportunity_id) 
-        WHERE account_id = %s {' AND ' if where_clause else ''} {where_clause}
+        WHERE artifacts.account_id = %s {' AND ' if where_clause else ''} {where_clause}
         ORDER BY opportunity_name, artifacts.name
         """,
         (account_id,) + bind_params,
