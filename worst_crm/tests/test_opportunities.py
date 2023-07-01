@@ -7,7 +7,7 @@ from worst_crm.models import (
     OpportunityOverviewWithAccountName,
 )
 from worst_crm.tests import utils
-from worst_crm.tests.utils import login, setup_test
+from worst_crm.tests.utils import login
 import hashlib
 import validators
 from faker import Faker

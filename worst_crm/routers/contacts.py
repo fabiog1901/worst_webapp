@@ -53,7 +53,6 @@ async def create_contact(
 
     if not contact_in_db.contact_id:
         contact_in_db.contact_id = uuid4()
-
     return db.create_contact(contact_in_db)
 
 

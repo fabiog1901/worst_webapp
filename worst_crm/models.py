@@ -172,7 +172,7 @@ class UpdatedContact(BaseModel):
     lname: str | None = Field(default="", max_length=50)
     role_title: str | None = Field(default="", max_length=50)
     email: EmailStr | None = None
-    telephone_number: str | None = Field(default="", max_length=20)
+    telephone_number: str | None = Field(default="", max_length=30)
     business_card: str | None = Field(default="", max_length=500)
     tags: set[str] | None = None
 
