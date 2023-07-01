@@ -89,14 +89,26 @@ async def delete_task(
 
 # Attachments
 @router.get(
-    "/{account_id}/{project_id}/{task_id}/presigned-get-url/{filename}",
+    "/{account_id}/{opportunity_id}/{project_id}/{task_id}/presigned-get-url/{filename}",
     name="Get pre-signed URL for downloading an attachment",
 )
 async def get_presigned_get_url(
-    account_id: UUID, project_id: UUID, task_id: int, filename: str
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
+    filename: str,
 ):
     s3_object_name = (
-        str(account_id) + "/" + str(project_id) + "/" + str(task_id) + "/" + filename
+        str(account_id)
+        + "/"
+        + str(opportunity_id)
+        + "/"
+        + str(project_id)
+        + "/"
+        + str(task_id)
+        + "/"
+        + filename
     )
     data = dep.get_presigned_get_url(s3_object_name)
     return HTMLResponse(content=data)
