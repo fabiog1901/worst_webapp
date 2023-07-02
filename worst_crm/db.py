@@ -1355,7 +1355,7 @@ def get_opportunity_note(
         f"""
         SELECT {OPPORTUNITY_NOTES_COLS}
         FROM opportunity_notes 
-        WHERE (account_id, opportunity_id, note_id) = (%s, $s, %s)
+        WHERE (account_id, opportunity_id, note_id) = (%s, %s, %s)
         """,
         (account_id, opportunity_id, note_id),
         OpportunityNote,
@@ -1480,7 +1480,7 @@ def get_project_note(
         f"""
         SELECT {PROJECT_NOTES_COLS}
         FROM project_notes 
-        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, $s, %s, %s)
+        WHERE (account_id, opportunity_id, project_id, note_id) = (%s, %s, %s, %s)
         """,
         (account_id, opportunity_id, project_id, note_id),
         ProjectNote,

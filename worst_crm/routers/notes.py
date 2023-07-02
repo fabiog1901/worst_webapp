@@ -246,7 +246,7 @@ async def get_all_project_notes(
     return db.get_all_project_notes(account_id, opportunity_id, project_id)
 
 
-@router.get("/{account_id}/{opportunity_id}/{project_id}/{note_id}")
+@router.get("/project/{account_id}/{opportunity_id}/{project_id}/{note_id}")
 async def get_project_note(
     account_id: UUID, opportunity_id: UUID, project_id: UUID, note_id: UUID
 ) -> ProjectNote | None:
@@ -275,7 +275,7 @@ async def create_project_note(
 
 
 @router.put(
-    "/project/project",
+    "/project",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_project_note(
@@ -300,7 +300,7 @@ async def delete_project_note(
 
 
 @router.get(
-    "/{account_id}/{opportunity_id}/{project_id}/{note_id}/presigned-get-url/{filename}",
+    "/project/{account_id}/{opportunity_id}/{project_id}/{note_id}/presigned-get-url/{filename}",
 )
 async def get_presigned_get_url_for_project_note(
     account_id: UUID,
