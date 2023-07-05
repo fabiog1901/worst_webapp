@@ -1,10 +1,8 @@
 from psycopg_pool import ConnectionPool
 from psycopg.types.array import ListDumper
-from psycopg.types.json import JsonbDumper
-from pydantic import PyObject
+from psycopg.types.json import Jsonb, JsonbDumper
 from typing import Any
 from uuid import UUID
-import datetime as dt
 import os
 
 from worst_crm.models import (
@@ -62,6 +60,17 @@ if not DB_URL:
 
 # the pool starts connecting immediately.
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
+
+
+def get_watch() -> int:
+    return execute_stmt(
+        "SELECT ts::INT8 FROM WATCH AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
+    )[0]
+
+
+def update_watch() -> None:
+    # just refresh the entry to update column 'ts'
+    execute_stmt("UPDATE watch SET id=1 WHERE true", returning_rs=False)
 
 
 def load_schema(ddl_filename):
@@ -262,6 +271,91 @@ def __get_where_clause(
         where_clause += x + " AND "
 
     return (where_clause[:-4], tuple(bind_params))
+
+
+# ADMIN/MODELS
+def get_type(x):
+    """
+    Maps a python type to a column data type
+    """
+    return {
+        "str": "STRING",
+        "int": "INT8",
+        "datetime": "TIMESTAMPTZ",
+        "date": "DATE",
+    }.get(x, None)
+
+
+def get_model(name: str) -> dict:
+    return execute_stmt(
+        """
+        SELECT model_def 
+        FROM models
+        WHERE name = %s""",
+        (name,),
+    )[0]
+
+
+def update_model(name: str, model: dict) -> dict:
+    def get_table_name(x):
+        return {
+            "account": "accounts",
+            "opportunity": "opportunities",
+            "artifact": "artifacts",
+            "project": "projects",
+            "task": "tasks",
+            "account_note": "account_notes",
+            "opportunity_note": "opportunity_notes",
+            "project_note": "project_notes",
+            "contact": "contacts",
+        }[x]
+
+    old_model = get_model(name)
+
+    additions = {}
+    removals = {}
+    tobeupdated = {}
+
+    for k, v in old_model.items():
+        if k in model.keys():
+            if v != model[k]:
+                # TODO change to column definition
+                tobeupdated[k] = v
+        else:
+            removals[k] = v
+
+    for k, v in model.items():
+        if k not in old_model.keys():
+            additions[k] = v
+
+    # drop column stmts have to be executed in their own transaction
+    for x in removals.keys():
+        execute_stmt(
+            f"""SET sql_safe_updates = false;
+            ALTER TABLE {get_table_name(name)} DROP COLUMN {x};
+            SET sql_safe_updates = true;
+            """,
+            returning_rs=False,
+        )
+
+    for x, y in additions.items():
+        execute_stmt(
+            f"ALTER TABLE {get_table_name(name)} ADD COLUMN {x} {get_type(y['type'])};",
+            returning_rs=False,
+        )
+
+    new_model = execute_stmt(
+        """UPDATE models 
+        SET model_def = %s 
+        WHERE name = %s 
+        RETURNING model_def""",
+        (model, name),
+    )[0]
+
+    # trigger async App restart
+    update_watch()
+
+    return new_model
 
 
 # ACCOUNTS
@@ -1585,9 +1679,6 @@ def remove_project_note_attachment(
     )
 
 
-from psycopg.types.json import Jsonb, JsonbDumper
-
-
 class DictJsonbDumper(JsonbDumper):
     def dump(self, obj):
         return super().dump(Jsonb(obj))
@@ -1597,7 +1688,7 @@ class DictJsonbDumper(JsonbDumper):
 def execute_stmt(
     stmt: str,
     args: tuple = (),
-    model: PyObject = Any,
+    model: Any = None,
     is_list: bool = False,
     returning_rs: bool = True,
 ) -> Any:
@@ -1619,16 +1710,21 @@ def execute_stmt(
 
                 if is_list:
                     rsl = cur.fetchall()
-                    for x in rsl:
-                        print(x)
-                    return [
-                        model(**{k: rs[i] for i, k in enumerate(col_names)})
-                        for rs in rsl
-                    ]
+
+                    if model:
+                        return [
+                            model(**{k: rs[i] for i, k in enumerate(col_names)})
+                            for rs in rsl
+                        ]
+                    else:
+                        return rsl
                 else:
                     rs = cur.fetchone()
                     if rs:
-                        return model(**{k: rs[i] for i, k in enumerate(col_names)})
+                        if model:
+                            return model(**{k: rs[i] for i, k in enumerate(col_names)})
+                        else:
+                            return rs
                     else:
                         return None
             except Exception as e:

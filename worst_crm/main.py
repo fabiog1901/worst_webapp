@@ -1,3 +1,5 @@
+import threading
+import time
 from fastapi.responses import FileResponse
 from worst_crm import db
 from fastapi import FastAPI, Depends, HTTPException, Query, status
@@ -15,6 +17,7 @@ from worst_crm.routers import (
     tasks,
 )
 import os
+from pathlib import Path
 import worst_crm.dependencies as dep
 from worst_crm.routers.admin import admin
 from fastapi.middleware.cors import CORSMiddleware
@@ -115,3 +118,27 @@ app.include_router(notes.router)
 
 # ADMIN
 app.include_router(admin.router)
+
+# uvicorn server is started and configured to reload
+# if file 'watch.txt' changes.
+# Thus, whenever the app wants to instruct uvicorn to reboot itself,
+# it just has to touch that file.
+# To make sure that every instance of the app reboots,
+# the app updates a db entry that is periodically fetched by
+# every instance. If the value is different than the initial value,
+# the app touches file watch.txt which will cause uvicorn to reload the app.
+
+# store initial value at startup
+watch_epoch = db.get_watch()
+
+
+def watch_it(watch_epoch: int):
+    while True:
+        if db.get_watch() > watch_epoch:
+            Path("watch.txt").touch()
+
+        time.sleep(15)
+
+
+# periodically check if a restart is needed
+threading.Thread(target=watch_it, args=(watch_epoch,), daemon=True).start()

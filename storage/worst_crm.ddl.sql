@@ -65,6 +65,33 @@ INSERT INTO task_status (name) VALUES ('NEW'), ('OPEN'), ('ON HOLD'), ('PENDING'
 /*********************************/
 /*            OBJECTS            */
 /*********************************/   
+
+CREATE TABLE models (
+    -- pk
+    name STRING NOT NULL,
+    -- fields
+    model_def JSONB,
+    CONSTRAINT pk PRIMARY KEY (name)
+);
+INSERT INTO models VALUES 
+    ('account', '{}'),
+    ('opportunity', '{}'),
+    ('artifact', '{}'),
+    ('project', '{}'),
+    ('task', '{}'),
+    ('contact', '{}')
+;
+
+
+CREATE TABLE watch (
+    -- pk
+    id INT2 NOT NULL,
+    -- fields
+    ts TIMESTAMPTZ DEFAULT now() ON UPDATE now(),
+    CONSTRAINT pk PRIMARY KEY (id)
+);
+INSERT INTO watch (id) VALUES (1);
+
 CREATE TABLE accounts (
     -- pk
     account_id UUID NOT NULL,

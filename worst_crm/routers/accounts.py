@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Security, Query
+from fastapi import APIRouter, Depends, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -12,35 +12,13 @@ from worst_crm.models import (
     AccountFilters,
     User,
 )
-from worst_crm.models import update_account as up
 import worst_crm.dependencies as dep
-
-import datetime as dt
-import uuid
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(
     prefix="/accounts",
     dependencies=[Depends(dep.get_current_user)],
     tags=["accounts"],
 )
-
-
-# MODEL
-# @router.get("/model")
-# async def add_column():
-#     accounts = {
-#         "ticker": (str | None, None),
-#         "industry": (str | None, None),
-#     }
-
-#     db.add_model_accounts(accounts)
-#     up(accounts)
-#     from worst_crm.models import Account
-
-#     print(Account.__fields__)
-#     return {}
 
 
 # CRUD

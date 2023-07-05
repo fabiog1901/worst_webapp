@@ -1,29 +1,97 @@
-from pydantic import Json, create_model, BaseModel, Field, EmailStr
-from typing import Any
+from pydantic import create_model, BaseModel, Field, EmailStr
 from uuid import UUID
 import datetime as dt
+import os
+import psycopg
+import re
 
-# utility functions
+#############################
+#  LOAD MODELS DYNAMICALLY  #
+#############################
 
-# this dict will come from the database
-# accounts = {
-#     "ticker": (str | None, None),
-#     "industry": (str | None, Field(min_length=3, max_length=20)),
-# }
+DB_URL = os.getenv("DB_URL")
 
-
-def update_account(d):
-    pass
+if not DB_URL:
+    raise EnvironmentError("DB_URL env variable not found!")
 
 
-def update_model(name: str, base, dict_def: dict):
+def fetch_model_definition(model_name: str) -> dict[str, dict]:
+    def to_snake_case(string):
+        return re.sub(r"(.)([A-Z])", r"\1_\2", str(string)).lower()
+
+    with psycopg.connect(DB_URL, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT model_def 
+                FROM models
+                WHERE name = %s""",
+                (to_snake_case(model_name),),
+            )
+
+            rs = cur.fetchone()
+
+            if rs:
+                return rs[0]
+
+    return {}
+
+
+def build_model_tuple(d: dict[str, dict]) -> dict:
+    fields = {}
+    for k, v in d.items():
+        if v.get("alt_type", None):
+            if v.get("default_value", None):
+                if isinstance(v["default_value"], dict):
+                    f = Field()
+                    for kk, vv in v["default_value"].items():
+                        setattr(f, kk, vv)
+                    # fields[k] = (str | None, None)
+                    fields[k] = (eval(v["type"]) | eval(v["alt_type"]), f)
+                else:
+                    fields[k] = (
+                        eval(v["type"]) | eval(v["alt_type"]),
+                        eval(v["default_value"]),
+                    )
+
+            else:
+                if isinstance(v["default_value"], dict):
+                    f = Field()
+                    for kk, vv in v["default_value"].items():
+                        setattr(f, kk, vv)
+                    fields[k] = eval(v["type"]) | eval(v["alt_type"])
+                else:
+                    fields[k] = eval(v["type"]) | eval(v["alt_type"])
+        else:
+            if v.get("default_value", None):
+                if isinstance(v["default_value"], dict):
+                    f = Field()
+                    for kk, vv in v["default_value"].items():
+                        setattr(f, kk, vv)
+                    fields[k] = (eval(v["type"]), f)
+                else:
+                    fields[k] = (eval(v["type"]), eval(v["default_value"]))
+
+            else:
+                if isinstance(v["default_value"], dict):
+                    f = Field()
+                    for kk, vv in v["default_value"].items():
+                        setattr(f, kk, vv)
+                    fields[k] = eval(v["type"])
+                else:
+                    fields[k] = eval(v["type"])
+
+    return fields
+
+
+def extend_model(name: str, base: type, dict_def: dict):
     fields = {}
     for field_name, value in dict_def.items():
         if isinstance(value, tuple):
             fields[field_name] = value
         elif isinstance(value, dict):
             fields[field_name] = (
-                update_model(f"{name}_{field_name}", base, value),
+                extend_model(f"{name}_{field_name}", base, value),
                 ...,
             )
         else:
@@ -31,19 +99,31 @@ def update_model(name: str, base, dict_def: dict):
     return create_model(name, __base__=base, **fields)
 
 
-def update_filter_model(name: str, base, dict_def: dict):
+def extend_filter_model(name: str, base, dict_def: dict):
     fields = {}
     for field_name, value in dict_def.items():
         if isinstance(value, tuple):
             fields[field_name] = (list[value[0]], value[1])  # type: ignore
         elif isinstance(value, dict):
             fields[field_name] = (
-                update_filter_model(f"{name}_{field_name}", base, value),
+                extend_filter_model(f"{name}_{field_name}", base, value),
                 ...,
             )
         else:
             raise ValueError(f"Field {field_name}:{value} has invalid syntax")
     return create_model(name, __base__=base, **fields)
+
+
+def update_model(parent_class: type, base_class: type):
+    d = fetch_model_definition(parent_class.__name__)
+    f = build_model_tuple(d)
+    return extend_model(base_class.__name__, base_class, f)
+
+
+def update_filter_model(parent_class: type, base_class: type):
+    d = fetch_model_definition(parent_class.__name__)
+    f = build_model_tuple(d)
+    return extend_model(base_class.__name__, base_class, f)
 
 
 ###################
@@ -158,10 +238,11 @@ class AccountFilters(BasicFilters):
 # extending the Model dynamically
 # if I don't previously declare Account as a class, here Account will be a variable
 # and a variable gives problem elsewhere where it is imported
-# Account = update_model("Account", Account, accounts)  # type: ignore
-# AccountOverview = update_model("AccountOverview", AccountOverview, accounts)  # type: ignore
-# UpdatedAccount = update_model("UpdatedAccount", UpdatedAccount, accounts)  # type: ignore
-# AccountFilters = update_filter_model("AccountFilters", AccountFilters, accounts)  # type: ignore
+Account = update_model(Account, Account)
+AccountOverview = update_model(Account, AccountOverview)
+UpdatedAccount = update_model(Account, UpdatedAccount)
+AccountInDB = update_model(Account, UpdatedAccount)
+AccountFilters = update_filter_model(Account, AccountFilters)
 
 
 # CONTACT
@@ -187,6 +268,10 @@ class Contact(DBComputed, ContactInDB):
 
 class ContactWithAccountName(Contact):
     account_name: str | None = None
+
+
+Contact = update_model(Contact, Contact)
+UpdatedContact = update_model(Contact, UpdatedContact)
 
 
 # OPPORTUNITY
@@ -216,11 +301,13 @@ class OpportunityFilters(BasicFilters):
     pass
 
 
-# Opportunity = dict_model("Opportunity", Opportunity, accounts)  # type: ignore
-# OpportunityOverview = dict_model("OpportunityOverview", OpportunityOverview, accounts)  # type: ignore
-# OpportunityOverviewWithAccountName = dict_model("OpportunityOverviewWithAccountName", OpportunityOverviewWithAccountName, accounts)  # type: ignore
-# UpdatedOpportunity = dict_model("UpdatedOpportunity", UpdatedOpportunity, accounts)  # type: ignore
-# OpportunityFilters = filter_model("OpportunityFilters", OpportunityFilters, accounts)  # type: ignore
+Opportunity = update_model(Opportunity, Opportunity)
+OpportunityOverview = update_model(Opportunity, OpportunityOverview)
+OpportunityOverviewWithAccountName = update_model(
+    Opportunity, OpportunityOverviewWithAccountName
+)
+UpdatedOpportunity = update_model(Opportunity, UpdatedOpportunity)
+OpportunityFilters = update_filter_model(Opportunity, OpportunityFilters)
 
 
 # ARTIFACT_SCHEMA
@@ -274,12 +361,16 @@ class ArtifactFilters(BasicFilters):
     pass
 
 
-# Artifact = dict_model("Artifact", Artifact, accounts)  # type: ignore
-# ArtifactOverview = dict_model("ArtifactOverview", ArtifactOverview, accounts)  # type: ignore
-# ArtifactOverviewWithAccountName = dict_model("ArtifactOverviewWithAccountName", ArtifactOverviewWithAccountName, accounts)  # type: ignore
-# ArtifactOverviewWithOpportunityName = dict_model("ArtifactOverviewWithOpportunityName", ArtifactOverviewWithOpportunityName, accounts)  # type: ignore
-# UpdatedArtifact = dict_model("UpdatedArtifact", UpdatedArtifact, accounts)  # type: ignore
-# ArtifactFilters = filter_model("ArtifactFilters", ProjectFilters, accounts)  # type: ignore
+Artifact = update_model(Artifact, Artifact)
+ArtifactOverview = update_model(Artifact, ArtifactOverview)
+ArtifactOverviewWithAccountName = update_model(
+    Artifact, ArtifactOverviewWithAccountName
+)
+ArtifactOverviewWithOpportunityName = update_model(
+    Artifact, ArtifactOverviewWithOpportunityName
+)
+UpdatedArtifact = update_model(Artifact, UpdatedArtifact)
+ArtifactFilters = update_filter_model(Artifact, ArtifactFilters)
 
 
 # PROJECT
@@ -315,12 +406,14 @@ class ProjectFilters(BasicFilters):
     pass
 
 
-# Project = dict_model("Project", Project, accounts)  # type: ignore
-# ProjectOverview = dict_model("ProjectOverview", ProjectOverview, accounts)  # type: ignore
-# ProjectOverviewWithAccountName = dict_model("ProjectOverviewWithAccountName", ProjectOverviewWithAccountName, accounts)  # type: ignore
-# ProjectOverviewWithOpportunityName = dict_model("ProjectOverviewWithOpportunityName", ProjectOverviewWithOpportunityName, accounts)  # type: ignore
-# UpdatedProject = dict_model("UpdatedProject", UpdatedProject, accounts)  # type: ignore
-# ProjectFilters = filter_model("ProjectFilters", ProjectFilters, accounts)  # type: ignore
+Project = update_model(Project, Project)
+ProjectOverview = update_model(Project, ProjectOverview)
+ProjectOverviewWithAccountName = update_model(Project, ProjectOverviewWithAccountName)
+ProjectOverviewWithOpportunityName = update_model(
+    Project, ProjectOverviewWithOpportunityName
+)
+UpdatedProject = update_model(Project, UpdatedProject)
+ProjectFilters = update_filter_model(Project, ProjectFilters)
 
 
 # TASK
@@ -352,6 +445,13 @@ class TaskOverviewWithProjectName(TaskOverview):
 
 class TaskFilters(BasicFilters):
     pass
+
+
+Task = update_model(Task, Task)
+TaskOverview = update_model(Task, TaskOverview)
+TaskOverviewWithProjectName = update_model(Task, TaskOverviewWithProjectName)
+UpdatedTask = update_model(Task, UpdatedTask)
+TaskFilters = update_filter_model(Task, TaskFilters)
 
 
 # NOTES
@@ -416,3 +516,19 @@ class NoteFilters(BaseModel):
     updated_at_from: dt.date | None = None
     updated_at_to: dt.date | None = None
     updated_by: list[str] | None = None
+
+
+AccountNote = update_model(AccountNote, AccountNote)
+AccountNoteOverview = update_model(AccountNote, AccountNoteOverview)
+UpdatedAccountNote = update_model(AccountNote, UpdatedAccountNote)
+
+OpportunityNote = update_model(AccountNote, OpportunityNote)
+OpportunityNoteOverview = update_model(AccountNote, OpportunityNoteOverview)
+UpdatedOpportunityNote = update_model(AccountNote, UpdatedOpportunityNote)
+
+ProjectNote = update_model(AccountNote, ProjectNote)
+ProjectNoteOverview = update_model(AccountNote, ProjectNoteOverview)
+UpdatedProjectNote = update_model(AccountNote, UpdatedProjectNote)
+
+
+NoteFilters = update_filter_model(AccountNote, NoteFilters)
