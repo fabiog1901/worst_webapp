@@ -516,4 +516,3 @@ class NoteFilters(BaseModel):
     updated_at_from: dt.date | None = None
     updated_at_to: dt.date | None = None
     updated_by: list[str] | None = None
-
