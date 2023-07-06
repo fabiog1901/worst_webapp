@@ -517,18 +517,3 @@ class NoteFilters(BaseModel):
     updated_at_to: dt.date | None = None
     updated_by: list[str] | None = None
 
-
-AccountNote = update_model(AccountNote, AccountNote)
-AccountNoteOverview = update_model(AccountNote, AccountNoteOverview)
-UpdatedAccountNote = update_model(AccountNote, UpdatedAccountNote)
-
-OpportunityNote = update_model(AccountNote, OpportunityNote)
-OpportunityNoteOverview = update_model(AccountNote, OpportunityNoteOverview)
-UpdatedOpportunityNote = update_model(AccountNote, UpdatedOpportunityNote)
-
-ProjectNote = update_model(AccountNote, ProjectNote)
-ProjectNoteOverview = update_model(AccountNote, ProjectNoteOverview)
-UpdatedProjectNote = update_model(AccountNote, UpdatedProjectNote)
-
-
-NoteFilters = update_filter_model(AccountNote, NoteFilters)
