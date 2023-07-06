@@ -311,8 +311,8 @@ OpportunityFilters = update_filter_model(Opportunity, OpportunityFilters)
 
 
 # ARTIFACT_SCHEMA
-class UpdatedArtifactSchema(Name):
-    artifact_schema_id: UUID | None = None
+class UpdatedArtifactSchema(BaseModel):
+    artifact_schema_id: str
     artifact_schema: dict | None = None
 
 
@@ -329,8 +329,8 @@ class UpdatedArtifact(Name):
     account_id: UUID
     opportunity_id: UUID
     artifact_id: UUID | None = None
-    artifact_schema_id: UUID
-    schema_definition: dict | None = None
+    artifact_schema_id: str
+    artifact_schema: dict | None = None
     tags: set[str] | None = None
 
 

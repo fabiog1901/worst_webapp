@@ -21,7 +21,7 @@ client = TestClient(app)
 ACCOUNT_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 OPPORTUNITY_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 ARTIFACT_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-ARTIFACT_SCHEMA_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+ARTIFACT_SCHEMA_ID = "ART-SCHEMA-1"
 
 
 def test_get_artifacts_non_auth():
@@ -40,7 +40,7 @@ def test_create_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "schema_definition": {"myobj": "mylucabello"},
+            "artifact_schema": {"myobj": "mylucabello"},
             "tags": ["t1", "t2", "t1"],
         },
     )
@@ -59,7 +59,7 @@ def test_load_artifacts(login):
                 "account_id": ACCOUNT_ID,
                 "opportunity_id": OPPORTUNITY_ID,
                 "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-                "schema_definition": {"myobj": random.randint(0000, 9999)},
+                "artifact_schema": {"myobj": random.randint(0000, 9999)},
                 "tags": ["t1", "t2", "t1"],
             },
         )
@@ -77,7 +77,7 @@ def test_update_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "schema_definition": {"myobj": "mymatteobello"},
+            "artifact_schema": {"myobj": "mymatteobello"},
             "tags": ["t1", "t2", "t1"],
         },
     )
@@ -92,7 +92,7 @@ def test_update_artifact(login):
 
     assert r.status_code == 200
     assert Artifact(**r.json()) == x
-    assert x.schema_definition == {"myobj": "mymatteobello"}
+    assert x.artifact_schema == {"myobj": "mymatteobello"}
 
 
 def test_get_all_artifacts(login):

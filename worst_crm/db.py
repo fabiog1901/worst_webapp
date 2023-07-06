@@ -722,7 +722,7 @@ def get_all_artifact_schemas() -> list[ArtifactSchema]:
         f"""
         SELECT {ARTIFACT_SCHEMAS_COLS}
         FROM artifact_schemas
-        ORDER BY name
+        ORDER BY artifact_schema_id
         """,
         (),
         ArtifactSchema,
@@ -730,7 +730,7 @@ def get_all_artifact_schemas() -> list[ArtifactSchema]:
     )
 
 
-def get_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+def get_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
     return execute_stmt(
         f"""
         SELECT {ARTIFACT_SCHEMAS_COLS}
@@ -786,7 +786,7 @@ def update_artifact_schema(
         )
 
 
-def delete_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+def delete_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
     return execute_stmt(
         f"""
         DELETE FROM artifact_schemas

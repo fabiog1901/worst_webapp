@@ -1,10 +1,7 @@
 from fastapi.testclient import TestClient
 from worst_crm.main import app
 from worst_crm.models import ArtifactSchema
-from worst_crm.tests import utils
 from worst_crm.tests.utils import login
-import hashlib
-import validators
 from faker import Faker
 import random
 
@@ -12,7 +9,7 @@ fake = Faker()
 
 client = TestClient(app)
 
-ARTIFACT_SCHEMA_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+ARTIFACT_SCHEMA_ID = "ART-SCHEMA-1"
 
 
 def test_get_artifact_schemas_non_auth():
@@ -26,7 +23,6 @@ def test_create_artifact_schema(login):
         "/artifact-schemas",
         headers={"Authorization": f"Bearer {login}"},
         json={
-            "name": "ARTSCHEMA-1",
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
             "artifact_schema": {"cane": "bestia"},
         },
@@ -43,7 +39,7 @@ def test_load_artifact_schemas(login):
             "/artifact-schemas",
             headers={"Authorization": f"Bearer {login}"},
             json={
-                "name": "ARTSCHEMA-" + str(random.randint(000, 999)),
+                "artifact_schema_id": "ARTSCHEMA-" + str(random.randint(000, 999)),
                 "artifact_schema": {"cane": "bestia"},
             },
         )
@@ -55,7 +51,6 @@ def test_update_artifact_schema(login):
         f"/artifact-schemas",
         headers={"Authorization": f"Bearer {login}"},
         json={
-            "name": "ARTSCHEMA-1",
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
             "artifact_schema": {"cane": "fuffo"},
         },

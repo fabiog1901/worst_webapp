@@ -24,7 +24,7 @@ async def get_all_artifacts() -> list[ArtifactSchema]:
 
 
 @router.get("/{artifact_schema_id}")
-async def get_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+async def get_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
     return db.get_artifact_schema(artifact_schema_id)
 
 
@@ -42,9 +42,6 @@ async def create_artifact_schema(
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
-
-    if not artifact_in_db.artifact_schema_id:
-        artifact_in_db.artifact_schema_id = uuid4()
 
     return db.create_artifact_schema(artifact_in_db)
 
@@ -68,5 +65,5 @@ async def update_artifact_schema(
     "/{artifact_schema_id}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def delete_artifact_schema(artifact_schema_id: UUID) -> ArtifactSchema | None:
+async def delete_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
     return db.delete_artifact_schema(artifact_schema_id)

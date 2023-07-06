@@ -198,14 +198,13 @@ CREATE INVERTED INDEX opportunity_tags_gin ON opportunities(tags);
 
 CREATE TABLE artifact_schemas (
     -- pk
-    artifact_schema_id UUID NOT NULL,
+    artifact_schema_id STRING NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields
-    name STRING NULL,
     artifact_schema JSONB NULL,
     -- PK
     CONSTRAINT pk PRIMARY KEY (artifact_schema_id),
@@ -230,8 +229,8 @@ CREATE TABLE artifacts (
     -- fields not nullable
     -- fields nullable
     name STRING NULL,
-    artifact_schema_id UUID NULL,
-    schema_definition JSONB NULL,
+    artifact_schema_id STRING NULL,
+    artifact_schema JSONB NULL,
     tags STRING [] NULL DEFAULT ARRAY[],
     -- PK
     CONSTRAINT pk PRIMARY KEY (account_id, opportunity_id, artifact_id),
