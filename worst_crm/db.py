@@ -809,7 +809,7 @@ def get_all_artifacts(
     artifact_filters: ArtifactFilters | None,
 ) -> list[ArtifactOverviewWithAccountName]:
     where_clause, bind_params = __get_where_clause(
-        artifact_filters, table_name="artifacts", include_where=False
+        artifact_filters, table_name="artifacts", include_where=True
     )
 
     fully_qualified = ", ".join(
