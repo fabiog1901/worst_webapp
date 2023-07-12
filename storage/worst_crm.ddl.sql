@@ -205,7 +205,7 @@ CREATE TABLE artifact_schemas (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
     -- fields
-    artifact_schema JSONB NULL,
+    artifact_schema JSONB NOT NULL,
     -- PK
     CONSTRAINT pk PRIMARY KEY (artifact_schema_id),
     -- other FKs
@@ -230,7 +230,7 @@ CREATE TABLE artifacts (
     -- fields nullable
     name STRING NULL,
     artifact_schema_id STRING NULL,
-    artifact_schema JSONB NULL,
+    payload JSONB NULL,
     tags STRING [] NULL DEFAULT ARRAY[],
     -- PK
     CONSTRAINT pk PRIMARY KEY (account_id, opportunity_id, artifact_id),

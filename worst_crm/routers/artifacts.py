@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, Security
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Security, status
 from typing import Annotated
 from uuid import UUID, uuid4
 from worst_crm import db
@@ -14,12 +13,41 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+from worst_crm.models import build_model_tuple, extend_model
+from pydantic import BaseModel, ValidationError
 
 router = APIRouter(
     prefix="/artifacts",
     dependencies=[Depends(dep.get_current_user)],
     tags=["artifacts"],
 )
+
+
+def sanitize(artifact_schema_id: str, payload: dict) -> dict:
+    artifact_schema = db.get_artifact_schema(artifact_schema_id)
+
+    if artifact_schema:
+        model: type[BaseModel] = extend_model(
+            artifact_schema_id,
+            BaseModel,
+            build_model_tuple(artifact_schema.artifact_schema),
+        )
+
+        try:
+            model.parse_obj(payload)
+
+            return model(**payload).dict()
+
+        except ValidationError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=e
+            )
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"artifact schema '{artifact_schema_id}' not found.",
+        )
 
 
 # CRUD
@@ -64,11 +92,15 @@ async def create_artifact(
     artifact_in_db = ArtifactInDB(
         **artifact.dict(exclude_unset=True),
         created_by=current_user.user_id,
-        updated_by=current_user.user_id
+        updated_by=current_user.user_id,
     )
 
     if not artifact_in_db.artifact_id:
         artifact_in_db.artifact_id = uuid4()
+
+    artifact_in_db.payload = sanitize(
+        artifact_in_db.artifact_schema_id, artifact_in_db.payload
+    )
 
     return db.create_artifact(artifact_in_db)
 
@@ -83,6 +115,10 @@ async def update_artifact(
 ) -> Artifact | None:
     artifact_in_db = ArtifactInDB(
         **artifact.dict(exclude_unset=True), updated_by=current_user.user_id
+    )
+
+    artifact_in_db.payload = sanitize(
+        artifact_in_db.artifact_schema_id, artifact_in_db.payload
     )
 
     return db.update_artifact(artifact_in_db)

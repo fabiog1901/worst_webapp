@@ -40,13 +40,29 @@ def test_create_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "artifact_schema": {"myobj": "mylucabello"},
+            "payload": {"nodes": "3", "cpus": "xeon"},
             "tags": ["t1", "t2", "t1"],
         },
     )
     assert r.status_code == 200
     x = Artifact(**r.json())
     assert isinstance(x, Artifact)
+
+
+def test_create_non_conforming_artifact(login):
+    r = client.post(
+        "/artifacts",
+        headers={"Authorization": f"Bearer {login}"},
+        json={
+            "name": "ART-1",
+            "account_id": ACCOUNT_ID,
+            "opportunity_id": OPPORTUNITY_ID,
+            "artifact_schema_id": ARTIFACT_SCHEMA_ID,
+            "payload": ["cpus", "xeon"],
+            "tags": ["t1", "t2", "t1"],
+        },
+    )
+    assert r.status_code == 422
 
 
 def test_load_artifacts(login):
@@ -59,7 +75,7 @@ def test_load_artifacts(login):
                 "account_id": ACCOUNT_ID,
                 "opportunity_id": OPPORTUNITY_ID,
                 "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-                "artifact_schema": {"myobj": random.randint(0000, 9999)},
+                "payload": {"nodes": fake.name(), "cpus": fake.last_name()},
                 "tags": ["t1", "t2", "t1"],
             },
         )
@@ -77,7 +93,7 @@ def test_update_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "artifact_schema": {"myobj": "mymatteobello"},
+            "payload": {"nodes": "5", "cpus": "xeon"},
             "tags": ["t1", "t2", "t1"],
         },
     )
@@ -92,7 +108,7 @@ def test_update_artifact(login):
 
     assert r.status_code == 200
     assert Artifact(**r.json()) == x
-    assert x.artifact_schema == {"myobj": "mymatteobello"}
+    assert x.payload == {"nodes": "5", "cpus": "xeon"}
 
 
 def test_get_all_artifacts(login):

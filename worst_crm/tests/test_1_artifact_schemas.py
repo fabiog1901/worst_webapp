@@ -24,7 +24,14 @@ def test_create_artifact_schema(login):
         headers={"Authorization": f"Bearer {login}"},
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "artifact_schema": {"cane": "bestia"},
+            "artifact_schema": {
+                "nodes": {"type": "str"},
+                "cpus": {
+                    "type": "str",
+                    "alt_type": "None",
+                    "default_value": {"min_length": 3, "max_length": 30},
+                },
+            },
         },
     )
 
@@ -40,7 +47,18 @@ def test_load_artifact_schemas(login):
             headers={"Authorization": f"Bearer {login}"},
             json={
                 "artifact_schema_id": "ARTSCHEMA-" + str(random.randint(000, 999)),
-                "artifact_schema": {"cane": "bestia"},
+                "artifact_schema": {
+                    "nodes": {
+                        "type": "str",
+                        "alt_type": "None",
+                        "default_value": "None",
+                    },
+                    "cpus": {
+                        "type": "str",
+                        "alt_type": "None",
+                        "default_value": {"min_length": 3, "max_length": 30},
+                    },
+                },
             },
         )
         assert r.status_code == 200
@@ -52,7 +70,13 @@ def test_update_artifact_schema(login):
         headers={"Authorization": f"Bearer {login}"},
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "artifact_schema": {"cane": "fuffo"},
+            "artifact_schema": {
+                "nodes": {"type": "str"},
+                "cpus": {
+                    "type": "str",
+                    "default_value": {"min_length": 3333, "max_length": 30},
+                },
+            },
         },
     )
     assert r.status_code == 200
@@ -68,7 +92,13 @@ def test_update_artifact_schema(login):
     acc = ArtifactSchema(**r.json())
 
     assert upd_acc == acc
-    assert acc.artifact_schema == {"cane": "fuffo"}
+    assert acc.artifact_schema == {
+        "nodes": {"type": "str"},
+        "cpus": {
+            "type": "str",
+            "default_value": {"min_length": 3333, "max_length": 30},
+        },
+    }
 
 
 def test_get_all_artifact_schemas(

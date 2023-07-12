@@ -40,46 +40,20 @@ def fetch_model_definition(model_name: str) -> dict[str, dict]:
 def build_model_tuple(d: dict[str, dict]) -> dict:
     fields = {}
     for k, v in d.items():
-        if v.get("alt_type", None):
-            if v.get("default_value", None):
-                if isinstance(v["default_value"], dict):
-                    f = Field()
-                    for kk, vv in v["default_value"].items():
-                        setattr(f, kk, vv)
-                    # fields[k] = (str | None, None)
-                    fields[k] = (eval(v["type"]) | eval(v["alt_type"]), f)
-                else:
-                    fields[k] = (
-                        eval(v["type"]) | eval(v["alt_type"]),
-                        eval(v["default_value"]),
-                    )
-
+        if v.get("default_value", None):
+            if isinstance(v["default_value"], dict):
+                f = Field()
+                for kk, vv in v["default_value"].items():
+                    setattr(f, kk, vv)
+                fields[k] = (eval(v["type"]) | None, f)
             else:
-                if isinstance(v["default_value"], dict):
-                    f = Field()
-                    for kk, vv in v["default_value"].items():
-                        setattr(f, kk, vv)
-                    fields[k] = eval(v["type"]) | eval(v["alt_type"])
-                else:
-                    fields[k] = eval(v["type"]) | eval(v["alt_type"])
+                fields[k] = (
+                    eval(v["type"]) | None,
+                    v["default_value"],
+                )
+
         else:
-            if v.get("default_value", None):
-                if isinstance(v["default_value"], dict):
-                    f = Field()
-                    for kk, vv in v["default_value"].items():
-                        setattr(f, kk, vv)
-                    fields[k] = (eval(v["type"]), f)
-                else:
-                    fields[k] = (eval(v["type"]), eval(v["default_value"]))
-
-            else:
-                if isinstance(v["default_value"], dict):
-                    f = Field()
-                    for kk, vv in v["default_value"].items():
-                        setattr(f, kk, vv)
-                    fields[k] = eval(v["type"])
-                else:
-                    fields[k] = eval(v["type"])
+            fields[k] = (eval(v["type"]) | None, None)
 
     return fields
 
@@ -313,7 +287,7 @@ OpportunityFilters = update_filter_model(Opportunity, OpportunityFilters)
 # ARTIFACT_SCHEMA
 class UpdatedArtifactSchema(BaseModel):
     artifact_schema_id: str
-    artifact_schema: dict | None = None
+    artifact_schema: dict
 
 
 class ArtifactSchemaInDB(UpdatedArtifactSchema, CommonInDB):
@@ -330,7 +304,7 @@ class UpdatedArtifact(Name):
     opportunity_id: UUID
     artifact_id: UUID | None = None
     artifact_schema_id: str
-    artifact_schema: dict | None = None
+    payload: dict | None = None
     tags: set[str] | None = None
 
 

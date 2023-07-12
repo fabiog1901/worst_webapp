@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Security
 from typing import Annotated
-from uuid import UUID, uuid4
 from worst_crm import db
 from worst_crm.models import (
     ArtifactSchema,
@@ -31,7 +30,6 @@ async def get_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
 @router.post(
     "",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
-    description="`artifact_schema_id` will be generated if not provided by client.",
 )
 async def create_artifact_schema(
     artifact_schema: UpdatedArtifactSchema,
