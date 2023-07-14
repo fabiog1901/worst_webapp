@@ -62,7 +62,7 @@ async def create_project(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **proj.dict(exclude_unset=True),
+        **proj.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -82,7 +82,7 @@ async def update_project(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Project | None:
     project_in_db = ProjectInDB(
-        **project.dict(exclude_unset=True), updated_by=current_user.user_id
+        **project.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_project(project_in_db)

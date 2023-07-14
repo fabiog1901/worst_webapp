@@ -8,7 +8,6 @@ packages = [{include = "worst_crm"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = {extras = ["all"], version = "^0.95.1"}
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 psycopg = {extras = ["pool"], version = "^3.1.8"}
 psycopg-binary = "^3.1.8"
@@ -19,6 +18,7 @@ email-validator = "^2.0.0.post2"
 requests = "^2.30.0"
 validators = "^0.20.0"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
+fastapi = {extras = ["all"], version = "^0.100.0"}
 
 
 [tool.poetry.group.dev.dependencies]

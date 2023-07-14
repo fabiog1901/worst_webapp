@@ -9,8 +9,6 @@ from worst_crm.models import (
 )
 from worst_crm.tests import utils
 from worst_crm.tests.utils import login
-import hashlib
-import validators
 from faker import Faker
 
 fake = Faker()
@@ -40,7 +38,7 @@ def test_create_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "payload": {"nodes": "3", "cpus": "xeon"},
+            "payload": {"nodes": 3, "name": "cluster-xeon"},
             "tags": ["t1", "t2", "t1"],
         },
     )
@@ -75,7 +73,7 @@ def test_load_artifacts(login):
                 "account_id": ACCOUNT_ID,
                 "opportunity_id": OPPORTUNITY_ID,
                 "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-                "payload": {"nodes": fake.name(), "cpus": fake.last_name()},
+                "payload": {"name": fake.name(), "nodes": random.randint(0, 90)},
                 "tags": ["t1", "t2", "t1"],
             },
         )
@@ -93,7 +91,7 @@ def test_update_artifact(login):
             "opportunity_id": OPPORTUNITY_ID,
             "artifact_id": ARTIFACT_ID,
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
-            "payload": {"nodes": "5", "cpus": "xeon"},
+            "payload": {"nodes": 5, "name": "cluster-xeon-2"},
             "tags": ["t1", "t2", "t1"],
         },
     )
@@ -108,7 +106,7 @@ def test_update_artifact(login):
 
     assert r.status_code == 200
     assert Artifact(**r.json()) == x
-    assert x.payload == {"nodes": "5", "cpus": "xeon"}
+    assert x.payload == {"nodes": 5, "name": "cluster-xeon-2"}
 
 
 def test_get_all_artifacts(login):

@@ -36,7 +36,7 @@ async def create_artifact_schema(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> ArtifactSchema | None:
     artifact_in_db = ArtifactSchemaInDB(
-        **artifact_schema.dict(exclude_unset=True),
+        **artifact_schema.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -53,7 +53,7 @@ async def update_artifact_schema(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> ArtifactSchema | None:
     artifact_in_db = ArtifactSchemaInDB(
-        **artifact.dict(exclude_unset=True), updated_by=current_user.user_id
+        **artifact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_artifact_schema(artifact_in_db)

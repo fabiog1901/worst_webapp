@@ -34,9 +34,9 @@ def sanitize(artifact_schema_id: str, payload: dict) -> dict:
         )
 
         try:
-            model.parse_obj(payload)
+            model.model_validate(payload)
 
-            return model(**payload).dict()
+            return model(**payload).model_dump()
 
         except ValidationError as e:
             raise HTTPException(
@@ -90,7 +90,7 @@ async def create_artifact(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Artifact | None:
     artifact_in_db = ArtifactInDB(
-        **artifact.dict(exclude_unset=True),
+        **artifact.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id,
     )
@@ -114,7 +114,7 @@ async def update_artifact(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Artifact | None:
     artifact_in_db = ArtifactInDB(
-        **artifact.dict(exclude_unset=True), updated_by=current_user.user_id
+        **artifact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     artifact_in_db.payload = sanitize(

@@ -51,7 +51,7 @@ async def create_opportunity(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Opportunity | None:
     opportunity_in_db = OpportunityInDB(
-        **opp.dict(exclude_unset=True),
+        **opp.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -71,7 +71,7 @@ async def update_opportunity(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Opportunity | None:
     opportunity_in_db = OpportunityInDB(
-        **opportunity.dict(exclude_unset=True), updated_by=current_user.user_id
+        **opportunity.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_opportunity(opportunity_in_db)

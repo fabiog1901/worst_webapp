@@ -23,7 +23,8 @@ async def get_user(user_id: str) -> User | None:
 @router.post("")
 async def create_user(new_user: NewUser) -> User | None:
     uid = UserInDB(
-        **new_user.dict(), hashed_password=dep.get_password_hash(new_user.password)
+        **new_user.model_dump(),
+        hashed_password=dep.get_password_hash(new_user.password)
     )
 
     return db.create_user(uid)
@@ -31,7 +32,7 @@ async def create_user(new_user: NewUser) -> User | None:
 
 @router.put("/{user_id}")
 async def update_user(user_id: str, user: UpdatedUser) -> User | None:
-    updated_uid = UpdatedUserInDB(**user.dict())
+    updated_uid = UpdatedUserInDB(**user.model_dump())
 
     if user.password:
         updated_uid.hashed_password = dep.get_password_hash(user.password)

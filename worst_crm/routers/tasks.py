@@ -53,7 +53,7 @@ async def create_task(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
     task_in_db = TaskInDB(
-        **task.dict(exclude_unset=True),
+        **task.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -72,7 +72,7 @@ async def update_task(
     task: UpdatedTask,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Task | None:
-    task_in_db = TaskInDB(**task.dict(), updated_by=current_user.user_id)
+    task_in_db = TaskInDB(**task.model_dump(), updated_by=current_user.user_id)
 
     return db.update_task(task_in_db)
 

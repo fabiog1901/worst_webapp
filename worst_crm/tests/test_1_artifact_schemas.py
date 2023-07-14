@@ -25,12 +25,21 @@ def test_create_artifact_schema(login):
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
             "artifact_schema": {
-                "nodes": {"type": "str"},
-                "cpus": {
-                    "type": "str",
-                    "alt_type": "None",
-                    "default_value": {"min_length": 3, "max_length": 30},
+                "properties": {
+                    "nodes": {
+                        "anyOf": [{"type": "integer"}, {"type": "null"}],
+                        "title": "Nodes",
+                    },
+                    "name": {
+                        "default": "cluster-name",
+                        "maxLength": 30,
+                        "title": "Name",
+                        "type": "string",
+                    },
                 },
+                "required": ["nodes"],
+                "title": "Cluster",
+                "type": "object",
             },
         },
     )
@@ -48,16 +57,21 @@ def test_load_artifact_schemas(login):
             json={
                 "artifact_schema_id": "ARTSCHEMA-" + str(random.randint(000, 999)),
                 "artifact_schema": {
-                    "nodes": {
-                        "type": "str",
-                        "alt_type": "None",
-                        "default_value": "None",
+                    "properties": {
+                        "nodes": {
+                            "anyOf": [{"type": "integer"}, {"type": "null"}],
+                            "title": "Nodes",
+                        },
+                        "name": {
+                            "default": "cluster-name",
+                            "maxLength": 30,
+                            "title": "Name",
+                            "type": "string",
+                        },
                     },
-                    "cpus": {
-                        "type": "str",
-                        "alt_type": "None",
-                        "default_value": {"min_length": 3, "max_length": 30},
-                    },
+                    "required": ["nodes"],
+                    "title": "Cluster",
+                    "type": "object",
                 },
             },
         )
@@ -71,11 +85,21 @@ def test_update_artifact_schema(login):
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
             "artifact_schema": {
-                "nodes": {"type": "str"},
-                "cpus": {
-                    "type": "str",
-                    "default_value": {"min_length": 3333, "max_length": 30},
+                "properties": {
+                    "nodes": {
+                        "anyOf": [{"type": "integer"}, {"type": "null"}],
+                        "title": "Nodes",
+                    },
+                    "name": {
+                        "default": "cluster-name",
+                        "maxLength": 40,
+                        "title": "Name",
+                        "type": "string",
+                    },
                 },
+                "required": ["nodes"],
+                "title": "Cluster",
+                "type": "object",
             },
         },
     )
@@ -93,11 +117,21 @@ def test_update_artifact_schema(login):
 
     assert upd_acc == acc
     assert acc.artifact_schema == {
-        "nodes": {"type": "str"},
-        "cpus": {
-            "type": "str",
-            "default_value": {"min_length": 3333, "max_length": 30},
+        "properties": {
+            "nodes": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "title": "Nodes",
+            },
+            "name": {
+                "default": "cluster-name",
+                "maxLength": 40,
+                "title": "Name",
+                "type": "string",
+            },
         },
+        "required": ["nodes"],
+        "title": "Cluster",
+        "type": "object",
     }
 
 

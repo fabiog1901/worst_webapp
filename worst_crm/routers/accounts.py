@@ -44,7 +44,7 @@ async def create_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **account.dict(exclude_unset=True),
+        **account.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -61,7 +61,7 @@ async def update_account(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **acc.dict(exclude_unset=True), updated_by=current_user.user_id
+        **acc.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
     return db.update_account(acc_in_db)
 

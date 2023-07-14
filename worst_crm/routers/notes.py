@@ -51,7 +51,7 @@ async def create_account_note(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> AccountNote | None:
     note_in_db = AccountNoteInDB(
-        **acc_note.dict(exclude_unset=True),
+        **acc_note.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -70,7 +70,7 @@ async def update_account_note(
     note: UpdatedAccountNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> AccountNote | None:
-    note_in_db = AccountNoteInDB(**note.dict(), updated_by=current_user.user_id)
+    note_in_db = AccountNoteInDB(**note.model_dump(), updated_by=current_user.user_id)
 
     return db.update_account_note(note_in_db)
 
@@ -144,7 +144,7 @@ async def create_opportunity_note(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> OpportunityNote | None:
     note_in_db = OpportunityNoteInDB(
-        **note.dict(exclude_unset=True),
+        **note.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -163,7 +163,9 @@ async def update_opportunity_note(
     note: UpdatedOpportunityNote,
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> OpportunityNote | None:
-    note_in_db = OpportunityNoteInDB(**note.dict(), updated_by=current_user.user_id)
+    note_in_db = OpportunityNoteInDB(
+        **note.model_dump(), updated_by=current_user.user_id
+    )
 
     return db.update_opportunity_note(note_in_db)
 
@@ -263,7 +265,7 @@ async def create_project_note(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> ProjectNote | None:
     note_in_db = ProjectNoteInDB(
-        **note.dict(exclude_unset=True),
+        **note.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -283,7 +285,7 @@ async def update_project_note(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> ProjectNote | None:
     note_in_db = ProjectNoteInDB(
-        **note.dict(exclude_unset=True), updated_by=current_user.user_id
+        **note.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_project_note(note_in_db)

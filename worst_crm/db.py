@@ -187,7 +187,7 @@ def create_user(user: UserInDB) -> User | None:
             ({USERINDB_PLACEHOLDERS})
         returning {USERS_COLS}
         """,
-        tuple(user.dict().values()),
+        tuple(user.model_dump().values()),
         User,
     )
 
@@ -207,9 +207,9 @@ def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
     old_uid = get_user_with_hash(user_id)
 
     if old_uid:
-        update_data = user.dict(exclude_unset=True)
+        update_data = user.model_dump(exclude_unset=True)
 
-        new_uid = old_uid.copy(update=update_data)
+        new_uid = old_uid.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -219,7 +219,7 @@ def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
             where user_id  = %s
             returning {USERS_COLS}
             """,
-            (*tuple(new_uid.dict().values()), user_id),
+            (*tuple(new_uid.model_dump().values()), user_id),
             User,
         )
 
@@ -274,16 +274,16 @@ def __get_where_clause(
 
 
 # ADMIN/MODELS
-def get_type(x):
+def get_type(json_data_type: str) -> str:
     """
     Maps a python type to a column data type
     """
     return {
-        "str": "STRING",
-        "int": "INT8",
+        "string": "STRING",
+        "integer": "INT8",
         "datetime": "TIMESTAMPTZ",
         "date": "DATE",
-    }.get(x, None)
+    }[json_data_type]
 
 
 def get_model(name: str) -> dict:
@@ -297,7 +297,7 @@ def get_model(name: str) -> dict:
 
 
 def update_model(name: str, model: dict) -> dict:
-    def get_table_name(x):
+    def get_table_name(name: str) -> str:
         return {
             "account": "accounts",
             "opportunity": "opportunities",
@@ -308,28 +308,23 @@ def update_model(name: str, model: dict) -> dict:
             "opportunity_note": "opportunity_notes",
             "project_note": "project_notes",
             "contact": "contacts",
-        }[x]
+        }[name]
 
     old_model = get_model(name)
 
-    additions = {}
-    removals = {}
-    tobeupdated = {}
+    additions: dict[str, str] = {}
+    removals: list[str] = []
 
-    for k, v in old_model.items():
-        if k in model.keys():
-            if v != model[k]:
-                # TODO change to column definition
-                tobeupdated[k] = v
-        else:
-            removals[k] = v
+    for k in old_model.get("properties", {}).keys():
+        if k not in model.get("properties", {}).keys():
+            removals.append(k)
 
-    for k, v in model.items():
-        if k not in old_model.keys():
-            additions[k] = v
+    for k, v in model.get("properties", {}).items():
+        if k not in old_model.get("properties", {}).keys():
+            additions[k] = v["type"]
 
     # drop column stmts have to be executed in their own transaction
-    for x in removals.keys():
+    for x in removals:
         execute_stmt(
             f"""SET sql_safe_updates = false;
             ALTER TABLE {get_table_name(name)} DROP COLUMN {x};
@@ -340,7 +335,7 @@ def update_model(name: str, model: dict) -> dict:
 
     for x, y in additions.items():
         execute_stmt(
-            f"ALTER TABLE {get_table_name(name)} ADD COLUMN {x} {get_type(y['type'])};",
+            f"ALTER TABLE {get_table_name(name)} ADD COLUMN {x} {get_type(y)};",
             returning_rs=False,
         )
 
@@ -405,7 +400,7 @@ def create_account(account_in_db: AccountInDB) -> Account | None:
             ({ACCOUNT_IN_DB_PLACEHOLDERS})
         RETURNING {ACCOUNTS_COLS}
         """,
-        tuple(account_in_db.dict().values()),
+        tuple(account_in_db.model_dump().values()),
         Account,
     )
 
@@ -417,9 +412,9 @@ def update_account(account_in_db: AccountInDB) -> Account | None:
         return None
 
     if old_acc:
-        old_acc = AccountInDB(**old_acc.dict())
-        update_data = account_in_db.dict(exclude_unset=True)
-        new_acc = old_acc.copy(update=update_data)
+        old_acc = AccountInDB(**old_acc.model_dump())
+        update_data = account_in_db.model_dump(exclude_unset=True)
+        new_acc = old_acc.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -428,7 +423,7 @@ def update_account(account_in_db: AccountInDB) -> Account | None:
             WHERE account_id = %s
             RETURNING {ACCOUNTS_COLS}
             """,
-            (*tuple(new_acc.dict().values()), account_in_db.account_id),
+            (*tuple(new_acc.model_dump().values()), account_in_db.account_id),
             Account,
         )
 
@@ -527,7 +522,7 @@ def create_contact(contact_in_db: ContactInDB) -> Contact | None:
             ({CONTACT_IN_DB_PLACEHOLDERS})
         RETURNING {CONTACT_COLS}
         """,
-        tuple(contact_in_db.dict().values()),
+        tuple(contact_in_db.model_dump().values()),
         Contact,
     )
 
@@ -539,9 +534,9 @@ def update_contact(contact_in_db: ContactInDB) -> Contact | None:
         return None
 
     if old_contact:
-        old_contact = ContactInDB(**old_contact.dict())
-        update_data = contact_in_db.dict(exclude_unset=True)
-        new_contact = old_contact.copy(update=update_data)
+        old_contact = ContactInDB(**old_contact.model_dump())
+        update_data = contact_in_db.model_dump(exclude_unset=True)
+        new_contact = old_contact.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -551,7 +546,7 @@ def update_contact(contact_in_db: ContactInDB) -> Contact | None:
             RETURNING {CONTACT_COLS}
             """,
             (
-                *tuple(new_contact.dict().values()),
+                *tuple(new_contact.model_dump().values()),
                 contact_in_db.account_id,
                 contact_in_db.contact_id,
             ),
@@ -637,7 +632,7 @@ def create_opportunity(opportunity_in_db: OpportunityInDB) -> Opportunity | None
             ({OPPORTUNITY_IN_DB_PLACEHOLDERS})
         RETURNING {OPPORTUNITIES_COLS}
         """,
-        tuple(opportunity_in_db.dict().values()),
+        tuple(opportunity_in_db.model_dump().values()),
         Opportunity,
     )
 
@@ -651,9 +646,9 @@ def update_opportunity(opportunity_in_db: OpportunityInDB) -> Opportunity | None
         return None
 
     if old_opp:
-        old_opp = OpportunityInDB(**old_opp.dict())
-        update_data = opportunity_in_db.dict(exclude_unset=True)
-        new_opp = old_opp.copy(update=update_data)
+        old_opp = OpportunityInDB(**old_opp.model_dump())
+        update_data = opportunity_in_db.model_dump(exclude_unset=True)
+        new_opp = old_opp.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -663,7 +658,7 @@ def update_opportunity(opportunity_in_db: OpportunityInDB) -> Opportunity | None
             RETURNING {OPPORTUNITIES_COLS}
             """,
             (
-                *tuple(new_opp.dict().values()),
+                *tuple(new_opp.model_dump().values()),
                 opportunity_in_db.account_id,
                 opportunity_in_db.opportunity_id,
             ),
@@ -753,7 +748,7 @@ def create_artifact_schema(
             ({ARTIFACT_SCHEMA_IN_DB_PLACEHOLDERS})
         RETURNING {ARTIFACT_SCHEMAS_COLS}
         """,
-        tuple(artifact_schema_in_db.dict().values()),
+        tuple(artifact_schema_in_db.model_dump().values()),
         ArtifactSchema,
     )
 
@@ -767,9 +762,9 @@ def update_artifact_schema(
         return None
 
     if old_art:
-        old_art = ArtifactSchemaInDB(**old_art.dict())
-        update_data = artifact_schema_in_db.dict(exclude_unset=True)
-        new_art = old_art.copy(update=update_data)
+        old_art = ArtifactSchemaInDB(**old_art.model_dump())
+        update_data = artifact_schema_in_db.model_dump(exclude_unset=True)
+        new_art = old_art.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -779,7 +774,7 @@ def update_artifact_schema(
             RETURNING {ARTIFACT_SCHEMAS_COLS}
             """,
             (
-                *tuple(new_art.dict().values()),
+                *tuple(new_art.model_dump().values()),
                 new_art.artifact_schema_id,
             ),
             ArtifactSchema,
@@ -901,7 +896,7 @@ def create_artifact(artifact_in_db: ArtifactInDB) -> Artifact | None:
             ({ARTIFACT_IN_DB_PLACEHOLDERS})
         RETURNING {ARTIFACTS_COLS}
         """,
-        tuple(artifact_in_db.dict().values()),
+        tuple(artifact_in_db.model_dump().values()),
         Artifact,
     )
 
@@ -917,9 +912,9 @@ def update_artifact(artifact_in_db: ArtifactInDB) -> Artifact | None:
         return None
 
     if old_proj:
-        old_proj = ArtifactInDB(**old_proj.dict())
-        update_data = artifact_in_db.dict(exclude_unset=True)
-        new_proj = old_proj.copy(update=update_data)
+        old_proj = ArtifactInDB(**old_proj.model_dump())
+        update_data = artifact_in_db.model_dump(exclude_unset=True)
+        new_proj = old_proj.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -929,7 +924,7 @@ def update_artifact(artifact_in_db: ArtifactInDB) -> Artifact | None:
             RETURNING {ARTIFACTS_COLS}
             """,
             (
-                *tuple(new_proj.dict().values()),
+                *tuple(new_proj.model_dump().values()),
                 artifact_in_db.account_id,
                 artifact_in_db.opportunity_id,
                 artifact_in_db.artifact_id,
@@ -1055,7 +1050,7 @@ def create_project(project_in_db: ProjectInDB) -> Project | None:
             ({PROJECT_IN_DB_PLACEHOLDERS})
         RETURNING {PROJECTS_COLS}
         """,
-        tuple(project_in_db.dict().values()),
+        tuple(project_in_db.model_dump().values()),
         Project,
     )
 
@@ -1071,9 +1066,9 @@ def update_project(project_in_db: ProjectInDB) -> Project | None:
         return None
 
     if old_proj:
-        old_proj = ProjectInDB(**old_proj.dict())
-        update_data = project_in_db.dict(exclude_unset=True)
-        new_proj = old_proj.copy(update=update_data)
+        old_proj = ProjectInDB(**old_proj.model_dump())
+        update_data = project_in_db.model_dump(exclude_unset=True)
+        new_proj = old_proj.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -1083,7 +1078,7 @@ def update_project(project_in_db: ProjectInDB) -> Project | None:
             RETURNING {PROJECTS_COLS}
             """,
             (
-                *tuple(new_proj.dict().values()),
+                *tuple(new_proj.model_dump().values()),
                 project_in_db.account_id,
                 project_in_db.opportunity_id,
                 project_in_db.project_id,
@@ -1204,7 +1199,7 @@ def create_task(task_in_db: TaskInDB) -> Task | None:
             ({TASK_IN_DB_PLACEHOLDERS})
         RETURNING {TASKS_COLS}
         """,
-        tuple(task_in_db.dict().values()),
+        tuple(task_in_db.model_dump().values()),
         Task,
     )
 
@@ -1221,9 +1216,9 @@ def update_task(task_in_db: TaskInDB) -> Task | None:
         return None
 
     if old_task:
-        old_task = TaskInDB(**old_task.dict())
-        update_data = task_in_db.dict(exclude_unset=True)
-        new_task = old_task.copy(update=update_data)
+        old_task = TaskInDB(**old_task.model_dump())
+        update_data = task_in_db.model_dump(exclude_unset=True)
+        new_task = old_task.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -1233,7 +1228,7 @@ def update_task(task_in_db: TaskInDB) -> Task | None:
             RETURNING {TASKS_COLS}
             """,
             (
-                *tuple(new_task.dict().values()),
+                *tuple(new_task.model_dump().values()),
                 task_in_db.account_id,
                 task_in_db.opportunity_id,
                 task_in_db.project_id,
@@ -1348,7 +1343,7 @@ def create_account_note(note_in_db: AccountNoteInDB) -> AccountNote | None:
             ({ACC_NOTE_IN_DB_PLACEHOLDERS})
         RETURNING {ACCOUNT_NOTES_COLS}
         """,
-        tuple(note_in_db.dict().values()),
+        tuple(note_in_db.model_dump().values()),
         AccountNote,
     )
 
@@ -1360,9 +1355,9 @@ def update_account_note(note_in_db: AccountNoteInDB) -> AccountNote | None:
         return None
 
     if old_note:
-        old_note = AccountNoteInDB(**old_note.dict())
-        update_data = note_in_db.dict(exclude_unset=True)
-        new_note = old_note.copy(update=update_data)
+        old_note = AccountNoteInDB(**old_note.model_dump())
+        update_data = note_in_db.model_dump(exclude_unset=True)
+        new_note = old_note.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -1372,7 +1367,7 @@ def update_account_note(note_in_db: AccountNoteInDB) -> AccountNote | None:
             RETURNING {ACCOUNT_NOTES_COLS}
             """,
             (
-                *tuple(new_note.dict().values()),
+                *tuple(new_note.model_dump().values()),
                 note_in_db.account_id,
                 note_in_db.note_id,
             ),
@@ -1465,7 +1460,7 @@ def create_opportunity_note(note_in_db: OpportunityNoteInDB) -> OpportunityNote 
             ({OPP_NOTE_IN_DB_PLACEHOLDERS})
         RETURNING {OPPORTUNITY_NOTES_COLS}
         """,
-        tuple(note_in_db.dict().values()),
+        tuple(note_in_db.model_dump().values()),
         OpportunityNote,
     )
 
@@ -1479,9 +1474,9 @@ def update_opportunity_note(note_in_db: OpportunityNoteInDB) -> OpportunityNote 
         return None
 
     if old_note:
-        old_note = OpportunityNoteInDB(**old_note.dict())
-        update_data = note_in_db.dict(exclude_unset=True)
-        new_note = old_note.copy(update=update_data)
+        old_note = OpportunityNoteInDB(**old_note.model_dump())
+        update_data = note_in_db.model_dump(exclude_unset=True)
+        new_note = old_note.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -1491,7 +1486,7 @@ def update_opportunity_note(note_in_db: OpportunityNoteInDB) -> OpportunityNote 
             RETURNING {OPPORTUNITY_NOTES_COLS}
             """,
             (
-                *tuple(new_note.dict().values()),
+                *tuple(new_note.model_dump().values()),
                 note_in_db.account_id,
                 note_in_db.opportunity_id,
                 note_in_db.note_id,
@@ -1590,7 +1585,7 @@ def create_project_note(note_in_db: ProjectNoteInDB) -> ProjectNote | None:
             ({PROJ_NOTE_IN_DB_PLACEHOLDERS})
         RETURNING {PROJECT_NOTES_COLS}
         """,
-        tuple(note_in_db.dict().values()),
+        tuple(note_in_db.model_dump().values()),
         ProjectNote,
     )
 
@@ -1607,9 +1602,9 @@ def update_project_note(note_in_db: ProjectNoteInDB) -> ProjectNote | None:
         return None
 
     if old_note:
-        old_note = ProjectNoteInDB(**old_note.dict())
-        update_data = note_in_db.dict(exclude_unset=True)
-        new_note = old_note.copy(update=update_data)
+        old_note = ProjectNoteInDB(**old_note.model_dump())
+        update_data = note_in_db.model_dump(exclude_unset=True)
+        new_note = old_note.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
@@ -1619,7 +1614,7 @@ def update_project_note(note_in_db: ProjectNoteInDB) -> ProjectNote | None:
             RETURNING {PROJECT_NOTES_COLS}
             """,
             (
-                *tuple(new_note.dict().values()),
+                *tuple(new_note.model_dump().values()),
                 note_in_db.account_id,
                 note_in_db.opportunity_id,
                 note_in_db.project_id,

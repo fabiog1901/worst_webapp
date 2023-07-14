@@ -1,4 +1,5 @@
-from pydantic import create_model, BaseModel, Field, EmailStr
+from pydantic import create_model, BaseModel, EmailStr, Field
+from pydantic.fields import FieldInfo
 from uuid import UUID
 import datetime as dt
 import os
@@ -37,23 +38,26 @@ def fetch_model_definition(model_name: str) -> dict[str, dict]:
     return {}
 
 
-def build_model_tuple(d: dict[str, dict]) -> dict:
-    fields = {}
-    for k, v in d.items():
-        if v.get("default_value", None):
-            if isinstance(v["default_value"], dict):
-                f = Field()
-                for kk, vv in v["default_value"].items():
-                    setattr(f, kk, vv)
-                fields[k] = (eval(v["type"]) | None, f)
-            else:
-                fields[k] = (
-                    eval(v["type"]) | None,
-                    v["default_value"],
-                )
+def build_model_tuple(d: dict[str, dict[str, dict]]) -> dict:
+    def get_type(x):
+        return {"string": str, "integer": int, "null": None}[x]
 
+    def get_fieldinfo(meta: dict):
+        fi = FieldInfo()
+        if meta.get("default", None):
+            fi.default = meta["default"]
+        fi.metadata = fi._collect_metadata(meta)
+        return fi
+
+    fields = {}
+    for k, v in d.get("properties", {}).items():
+        if v.get("anyOf", None):
+            fields[k] = (
+                get_type(v["anyOf"][0]["type"]) | get_type(v["anyOf"][1]["type"]),
+                get_fieldinfo(v),
+            )
         else:
-            fields[k] = (eval(v["type"]) | None, None)
+            fields[k] = (get_type(v["type"]), get_fieldinfo(v))
 
     return fields
 

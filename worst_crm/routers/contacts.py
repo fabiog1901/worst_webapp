@@ -46,7 +46,7 @@ async def create_contact(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Contact | None:
     contact_in_db = ContactInDB(
-        **contact.dict(exclude_unset=True),
+        **contact.model_dump(exclude_unset=True),
         created_by=current_user.user_id,
         updated_by=current_user.user_id
     )
@@ -65,7 +65,7 @@ async def update_contact(
     current_user: Annotated[User, Depends(dep.get_current_user)],
 ) -> Contact | None:
     contact_in_db = ContactInDB(
-        **contact.dict(exclude_unset=True), updated_by=current_user.user_id
+        **contact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
     return db.update_contact(contact_in_db)
