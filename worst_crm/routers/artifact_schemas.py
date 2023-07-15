@@ -8,8 +8,9 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "artifact-schemas"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -44,18 +45,18 @@ async def create_artifact_schema(
         updated_by=current_user.user_id
     )
 
-    art = db.create_artifact_schema(artifact_in_db)
+    x = db.create_artifact_schema(artifact_in_db)
 
-    if art:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_artifact_schema",
-            art.model_json_schema(),
+            inspect.currentframe().f_code.co_name,
+            x.model_json_schema(),
         )
 
-    return art
+    return x
 
 
 @router.put(
@@ -70,18 +71,18 @@ async def update_artifact_schema(
         **artifact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    art = db.update_artifact_schema(artifact_in_db)
+    x = db.update_artifact_schema(artifact_in_db)
 
-    if art:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_artifact_schema",
-            art.model_json_schema(),
+            inspect.currentframe().f_code.co_name,
+            x.model_json_schema(),
         )
 
-    return art
+    return x
 
 
 @router.delete(
@@ -92,14 +93,14 @@ async def delete_artifact_schema(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> ArtifactSchema | None:
-    art = db.delete_artifact_schema(artifact_schema_id)
-    if art:
+    x = db.delete_artifact_schema(artifact_schema_id)
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_artifact_schema",
-            art.model_dump_json(),
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
 
-    return art
+    return x

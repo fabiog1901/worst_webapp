@@ -13,8 +13,9 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "accounts"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -57,18 +58,18 @@ async def create_account(
     if not acc_in_db.account_id:
         acc_in_db.account_id = uuid4()
 
-    acc = db.create_account(acc_in_db)
+    x = db.create_account(acc_in_db)
 
-    if acc:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_account",
-            acc.model_dump_json(),
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
 
-    return acc
+    return x
 
 
 @router.put(
@@ -83,18 +84,18 @@ async def update_account(
         **account.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    acc = db.update_account(acc_in_db)
+    x = db.update_account(acc_in_db)
 
-    if acc:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_account",
-            acc.model_dump_json(),
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
 
-    return acc
+    return x
 
 
 @router.delete(
@@ -105,18 +106,18 @@ async def delete_account(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> Account | None:
-    acc = db.delete_account(account_id)
+    x = db.delete_account(account_id)
 
-    if acc:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_account",
-            acc.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
 
-    return acc
+    return x
 
 
 # Attachements

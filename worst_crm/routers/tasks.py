@@ -13,8 +13,9 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "tasks"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -74,18 +75,18 @@ async def create_task(
     if not task_in_db.task_id:
         task_in_db.task_id = uuid4()
 
-    obj = db.create_task(task_in_db)
-    
-    if obj:
+    x = db.create_task(task_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_task",
-            obj.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return obj
+
+    return x
 
 
 @router.put(
@@ -98,18 +99,18 @@ async def update_task(
 ) -> Task | None:
     task_in_db = TaskInDB(**task.model_dump(), updated_by=current_user.user_id)
 
-    obj = db.update_task(task_in_db)
-    
-    if obj:
+    x = db.update_task(task_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_task",
-            obj.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return obj
+
+    return x
 
 
 @router.delete(
@@ -121,21 +122,20 @@ async def delete_task(
     project_id: UUID,
     task_id: UUID,
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
-    bg_task: BackgroundTasks
+    bg_task: BackgroundTasks,
 ) -> Task | None:
-    
-    obj = db.delete_task(account_id, opportunity_id, project_id, task_id)
-    
-    if obj:
+    x = db.delete_task(account_id, opportunity_id, project_id, task_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_task",
-            obj.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return obj
+
+    return x
 
 
 # Attachments

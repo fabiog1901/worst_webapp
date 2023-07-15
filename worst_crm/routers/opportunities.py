@@ -13,13 +13,13 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "opportunities"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
 
-# CRUD
 @router.get(
     "",
     dependencies=[Security(dep.get_current_user)],
@@ -66,18 +66,18 @@ async def create_opportunity(
     if not opportunity_in_db.opportunity_id:
         opportunity_in_db.opportunity_id = uuid4()
 
-    opp = db.create_opportunity(opportunity_in_db)
-    
-    if opp:
+    x = db.create_opportunity(opportunity_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_opportunity",
-            opp.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return opp
+
+    return x
 
 
 @router.put(
@@ -92,18 +92,18 @@ async def update_opportunity(
         **opportunity.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    opp = db.update_opportunity(opportunity_in_db)
-    
-    if opp:
+    x = db.update_opportunity(opportunity_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
             "update_opportunity",
-            opp.model_dump_json()
+            x.model_dump_json(),
         )
-        
-    return opp
+
+    return x
 
 
 @router.delete(
@@ -115,19 +115,18 @@ async def delete_opportunity(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> Opportunity | None:
-    
-    opp = db.delete_opportunity(account_id, opportunity_id)
-    
-    if opp:
+    x = db.delete_opportunity(account_id, opportunity_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
             "delete_opportunity",
-            opp.model_dump_json()
+            x.model_dump_json(),
         )
-    
-    return opp
+
+    return x
 
 
 # Attachements

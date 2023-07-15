@@ -10,13 +10,13 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "contacts"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
 
-# CRUD
 @router.get(
     "",
     dependencies=[Security(dep.get_current_user)],
@@ -63,19 +63,19 @@ async def create_contact(
 
     if not contact_in_db.contact_id:
         contact_in_db.contact_id = uuid4()
-        
-    con = db.create_contact(contact_in_db)
-    
-    if con:
+
+    x = db.create_contact(contact_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_contact",
-            con.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return con
+
+    return x
 
 
 @router.put(
@@ -90,18 +90,18 @@ async def update_contact(
         **contact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    con = db.update_contact(contact_in_db)
-    
-    if con:
+    x = db.update_contact(contact_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_contact",
-            con.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return con
+
+    return x
 
 
 @router.delete(
@@ -113,16 +113,15 @@ async def delete_contact(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> Contact | None:
-    
-    con = db.delete_contact(account_id, contact_id)
-    
-    if con:
+    x = db.delete_contact(account_id, contact_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_contact",
-            con.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return con
+
+    return x

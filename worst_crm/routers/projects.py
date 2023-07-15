@@ -14,8 +14,9 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "projects"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -82,18 +83,18 @@ async def create_project(
     if not project_in_db.project_id:
         project_in_db.project_id = uuid4()
 
-    pro = db.create_project(project_in_db)
-    
-    if pro:
+    x = db.create_project(project_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_project",
-            pro.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return pro
+
+    return x
 
 
 @router.put(
@@ -102,24 +103,24 @@ async def create_project(
 async def update_project(
     project: UpdatedProject,
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
-    bg_task = BackgroundTasks,
+    bg_task: BackgroundTasks,
 ) -> Project | None:
     project_in_db = ProjectInDB(
         **project.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    pro = db.update_project(project_in_db)
-    
-    if pro:
+    x = db.update_project(project_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_project",
-            pro.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return pro
+
+    return x
 
 
 @router.delete(
@@ -132,19 +133,18 @@ async def delete_project(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> Project | None:
-    
-    pro = db.delete_project(account_id, opportunity_id, project_id)
-    
-    if pro:
+    x = db.delete_project(account_id, opportunity_id, project_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_project",
-            pro.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-    
-    return pro
+
+    return x
 
 
 # Attachements

@@ -13,14 +13,14 @@ ARTIFACT_SCHEMA_ID = "ART-SCHEMA-1"
 
 
 def test_get_artifact_schemas_non_auth():
-    r = client.get("/artifact-schemas")
+    r = client.get("/artifact_schemas")
 
     assert r.status_code == 401
 
 
 def test_create_artifact_schema(login):
     r = client.post(
-        "/artifact-schemas",
+        "/artifact_schemas",
         headers={"Authorization": f"Bearer {login}"},
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
@@ -52,7 +52,7 @@ def test_create_artifact_schema(login):
 def test_load_artifact_schemas(login):
     for _ in range(10):
         r = client.post(
-            "/artifact-schemas",
+            "/artifact_schemas",
             headers={"Authorization": f"Bearer {login}"},
             json={
                 "artifact_schema_id": "ARTSCHEMA-" + str(random.randint(000, 999)),
@@ -80,7 +80,7 @@ def test_load_artifact_schemas(login):
 
 def test_update_artifact_schema(login):
     r = client.put(
-        f"/artifact-schemas",
+        f"/artifact_schemas",
         headers={"Authorization": f"Bearer {login}"},
         json={
             "artifact_schema_id": ARTIFACT_SCHEMA_ID,
@@ -108,7 +108,7 @@ def test_update_artifact_schema(login):
 
     # fetch stored artifact_schema
     r = client.get(
-        f"/artifact-schemas/{ARTIFACT_SCHEMA_ID}",
+        f"/artifact_schemas/{ARTIFACT_SCHEMA_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
 
@@ -139,7 +139,7 @@ def test_get_all_artifact_schemas(
     login,
 ):
     r = client.get(
-        "/artifact-schemas",
+        "/artifact_schemas",
         headers={"Authorization": f"Bearer {login}"},
     )
 
@@ -151,13 +151,13 @@ def test_get_all_artifact_schemas(
 
 def test_delete_artifact_schema(login):
     r = client.get(
-        f"/artifact-schemas/{ARTIFACT_SCHEMA_ID}",
+        f"/artifact_schemas/{ARTIFACT_SCHEMA_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
     acc = ArtifactSchema(**r.json())
 
     r = client.delete(
-        f"/artifact-schemas/{ARTIFACT_SCHEMA_ID}",
+        f"/artifact_schemas/{ARTIFACT_SCHEMA_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
 
@@ -166,14 +166,14 @@ def test_delete_artifact_schema(login):
 
     # a get returns null
     r = client.get(
-        f"/artifact-schemas/{ARTIFACT_SCHEMA_ID}",
+        f"/artifact_schemas/{ARTIFACT_SCHEMA_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
     assert r.json() is None
 
     # a second delete return null
     r = client.delete(
-        f"/artifact-schemas/{ARTIFACT_SCHEMA_ID}",
+        f"/artifact_schemas/{ARTIFACT_SCHEMA_ID}",
         headers={"Authorization": f"Bearer {login}"},
     )
     assert r.json() is None

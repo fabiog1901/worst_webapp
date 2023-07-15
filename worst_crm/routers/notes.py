@@ -20,8 +20,9 @@ from worst_crm.models import (
     User,
 )
 import worst_crm.dependencies as dep
+import inspect
 
-NAME = "notes"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -67,17 +68,17 @@ async def create_account_note(
     if not note_in_db.note_id:
         note_in_db.note_id = uuid4()
 
-    note = db.create_account_note(note_in_db)
-    if note:
+    x = db.create_account_note(note_in_db)
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_account_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.put(
@@ -90,18 +91,18 @@ async def update_account_note(
 ) -> AccountNote | None:
     note_in_db = AccountNoteInDB(**note.model_dump(), updated_by=current_user.user_id)
 
-    note = db.update_account_note(note_in_db)
-    
-    if note:
+    x = db.update_account_note(note_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_account_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.delete(
@@ -113,19 +114,18 @@ async def delete_account_note(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> AccountNote | None:
-    
-    note = db.delete_account_note(account_id, note_id)
-    
-    if note:
+    x = db.delete_account_note(account_id, note_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_account_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.get(
@@ -214,18 +214,18 @@ async def create_opportunity_note(
     if not note_in_db.note_id:
         note_in_db.note_id = uuid4()
 
-    note = db.create_opportunity_note(note_in_db)
-    
-    if note:
+    x = db.create_opportunity_note(note_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_opportunity_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.put(
@@ -240,18 +240,18 @@ async def update_opportunity_note(
         **note.model_dump(), updated_by=current_user.user_id
     )
 
-    note = db.update_opportunity_note(note_in_db)
-    
-    if note:
+    x = db.update_opportunity_note(note_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_opportunity_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.delete(
@@ -264,19 +264,18 @@ async def delete_opportunity_note(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> OpportunityNote | None:
-    
-    note = db.delete_opportunity_note(account_id, opportunity_id, note_id)
-    
-    if note:
+    x = db.delete_opportunity_note(account_id, opportunity_id, note_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_opportunity_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-    
-    return note
+
+    return x
 
 
 @router.get(
@@ -393,18 +392,18 @@ async def create_project_note(
     if not note_in_db.note_id:
         note_in_db.note_id = uuid4()
 
-    note = db.create_project_note(note_in_db)
-    
-    if note:
+    x = db.create_project_note(note_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_project_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.put(
@@ -419,18 +418,18 @@ async def update_project_note(
         **note.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    note = db.update_project_note(note_in_db)
-    
-    if note:
+    x = db.update_project_note(note_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_project_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.delete(
@@ -444,19 +443,18 @@ async def delete_project_note(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> ProjectNote | None:
-    
-    note = db.delete_project_note(account_id, opportunity_id, project_id, note_id)
-    
-    if note:
+    x = db.delete_project_note(account_id, opportunity_id, project_id, note_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_project_note",
-            note.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return note
+
+    return x
 
 
 @router.get(

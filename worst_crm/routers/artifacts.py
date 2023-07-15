@@ -15,8 +15,9 @@ from worst_crm.models import (
 import worst_crm.dependencies as dep
 from worst_crm.models import build_model_tuple, extend_model
 from pydantic import BaseModel, ValidationError
+import inspect
 
-NAME = "artifacts"
+NAME = __name__.split(".")[-1]
 
 router = dep.get_api_router(NAME)
 
@@ -117,18 +118,18 @@ async def create_artifact(
         artifact_in_db.artifact_schema_id, artifact_in_db.payload
     )
 
-    art = db.create_artifact(artifact_in_db)
-    
-    if art:
+    x = db.create_artifact(artifact_in_db)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "create_artifact",
-            art.model_json_schema(),
+            inspect.currentframe().f_code.co_name,
+            x.model_json_schema(),
         )
-        
-    return art
+
+    return x
 
 
 @router.put(
@@ -147,19 +148,18 @@ async def update_artifact(
         artifact_in_db.artifact_schema_id, artifact_in_db.payload
     )
 
-    art = db.update_artifact(artifact_in_db)
+    x = db.update_artifact(artifact_in_db)
 
-    if art:
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_artifact",
-            art.model_json_schema(),
+            inspect.currentframe().f_code.co_name,
+            x.model_json_schema(),
         )
-        
-    return art
 
+    return x
 
 
 @router.delete(
@@ -172,16 +172,15 @@ async def delete_artifact(
     current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
     bg_task: BackgroundTasks,
 ) -> Artifact | None:
-    
-    art = db.delete_artifact(account_id, opportunity_id, artifact_id)
-    
-    if art:
+    x = db.delete_artifact(account_id, opportunity_id, artifact_id)
+
+    if x:
         bg_task.add_task(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_artifact",
-            art.model_dump_json()
+            inspect.currentframe().f_code.co_name,
+            x.model_dump_json(),
         )
-        
-    return art
+
+    return x
