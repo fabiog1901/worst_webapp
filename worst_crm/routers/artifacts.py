@@ -125,8 +125,8 @@ async def create_artifact(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
-            x.model_json_schema(),
+            inspect.currentframe().f_code.co_name,  # type: ignore
+            x.model_dump_json(),
         )
 
     return x
@@ -155,8 +155,8 @@ async def update_artifact(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
-            x.model_json_schema(),
+            inspect.currentframe().f_code.co_name,  # type: ignore
+            x.model_dump_json(),
         )
 
     return x
@@ -179,7 +179,7 @@ async def delete_artifact(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 

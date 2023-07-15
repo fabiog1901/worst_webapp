@@ -69,12 +69,21 @@ INSERT INTO task_status (name) VALUES ('NEW'), ('OPEN'), ('ON HOLD'), ('PENDING'
 CREATE TABLE models (
     -- pk
     name STRING NOT NULL,
+    -- audit info
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by STRING NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+    updated_by STRING NULL,
     -- fields
-    model_def JSONB,
-    CONSTRAINT pk PRIMARY KEY (name)
+    skema JSONB,
+    CONSTRAINT pk PRIMARY KEY (name),
+    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
-INSERT INTO models VALUES 
-    ('account', '{}'),
+INSERT INTO models (name, skema) VALUES 
+    ('account', '{"properties": {}}'),
     ('opportunity', '{}'),
     ('artifact', '{}'),
     ('project', '{}'),

@@ -42,6 +42,8 @@ from worst_crm.models import (
     ProjectOverview,
     ProjectOverviewWithAccountName,
     ProjectOverviewWithOpportunityName,
+    Model,
+    ModelInDB,
     Status,
     Task,
     TaskFilters,
@@ -103,15 +105,19 @@ def get_all_account_status() -> list[Status]:
     return execute_stmt("SELECT name FROM account_status", model=Status, is_list=True)
 
 
-def create_account_status(status: str):
-    execute_stmt(
-        "UPSERT INTO account_status(name) VALUES (%s)", (status,), returning_rs=False
+def create_account_status(status: str) -> Status | None:
+    return execute_stmt(
+        "INSERT INTO account_status(name) VALUES (%s) RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
-def delete_account_status(status: str):
-    execute_stmt(
-        "DELETE FROM account_status WHERE name = %s", (status,), returning_rs=False
+def delete_account_status(status: str) -> Status | None:
+    return execute_stmt(
+        "DELETE FROM account_status WHERE name = %s RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
@@ -119,15 +125,19 @@ def get_all_project_status() -> list[Status]:
     return execute_stmt("SELECT name FROM project_status", model=Status, is_list=True)
 
 
-def create_project_status(status: str):
-    execute_stmt(
-        "UPSERT INTO project_status(name) VALUES (%s)", (status,), returning_rs=False
+def create_project_status(status: str) -> Status | None:
+    return execute_stmt(
+        "INSERT INTO project_status(name) VALUES (%s) RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
-def delete_project_status(status: str):
-    execute_stmt(
-        "DELETE FROM project_status WHERE name = %s", (status,), returning_rs=False
+def delete_project_status(status: str) -> Status | None:
+    return execute_stmt(
+        "DELETE FROM project_status WHERE name = %s RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
@@ -135,15 +145,19 @@ def get_all_task_status() -> list[Status]:
     return execute_stmt("SELECT name FROM task_status", model=Status, is_list=True)
 
 
-def create_task_status(status: str):
-    execute_stmt(
-        "UPSERT INTO task_status(name) VALUES (%s)", (status,), returning_rs=False
+def create_task_status(status: str) -> Status | None:
+    return execute_stmt(
+        "INSERT INTO task_status(name) VALUES (%s) RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
-def delete_task_status(status: str):
-    execute_stmt(
-        "DELETE FROM task_status WHERE name = %s", (status,), returning_rs=False
+def delete_task_status(status: str) -> Status | None:
+    return execute_stmt(
+        "DELETE FROM task_status WHERE name = %s RETURNING name",
+        (status,),
+        model=Status,
     )
 
 
@@ -295,6 +309,14 @@ def __get_where_clause(
 
 
 # ADMIN/MODELS
+
+
+# ACCOUNTS
+MODEL_IN_DB_COLS = get_fields(ModelInDB)
+MODEL_IN_DB_PLACEHOLDERS = get_placeholders(ModelInDB)
+MODEL_COLS = get_fields(Model)
+
+
 def get_type(json_data_type: str) -> str:
     """
     Maps a python type to a column data type
@@ -307,17 +329,18 @@ def get_type(json_data_type: str) -> str:
     }[json_data_type]
 
 
-def get_model(name: str) -> dict:
+def get_model(name: str) -> Model:
     return execute_stmt(
-        """
-        SELECT model_def 
+        f"""
+        SELECT {MODEL_COLS} 
         FROM models
         WHERE name = %s""",
         (name,),
-    )[0]
+        Model,
+    )
 
 
-def update_model(name: str, model: dict) -> dict:
+def update_model(model_in_db: ModelInDB) -> Model | None:
     def get_table_name(name: str) -> str:
         return {
             "account": "accounts",
@@ -331,24 +354,24 @@ def update_model(name: str, model: dict) -> dict:
             "contact": "contacts",
         }[name]
 
-    old_model = get_model(name)
+    old_model = get_model(model_in_db.name)
 
     additions: dict[str, str] = {}
     removals: list[str] = []
 
-    for k in old_model.get("properties", {}).keys():
-        if k not in model.get("properties", {}).keys():
+    for k in old_model.skema.properties.keys():
+        if k not in model_in_db.skema.properties.keys():
             removals.append(k)
 
-    for k, v in model.get("properties", {}).items():
-        if k not in old_model.get("properties", {}).keys():
+    for k, v in model_in_db.skema.properties.items():
+        if k not in old_model.skema.properties.keys():
             additions[k] = v["type"]
 
     # drop column stmts have to be executed in their own transaction
     for x in removals:
         execute_stmt(
             f"""SET sql_safe_updates = false;
-            ALTER TABLE {get_table_name(name)} DROP COLUMN {x};
+            ALTER TABLE {get_table_name(model_in_db.name)} DROP COLUMN {x};
             SET sql_safe_updates = true;
             """,
             returning_rs=False,
@@ -356,17 +379,19 @@ def update_model(name: str, model: dict) -> dict:
 
     for x, y in additions.items():
         execute_stmt(
-            f"ALTER TABLE {get_table_name(name)} ADD COLUMN {x} {get_type(y)};",
+            f"ALTER TABLE {get_table_name(model_in_db.name)} ADD COLUMN {x} {get_type(y)};",
             returning_rs=False,
         )
 
     new_model = execute_stmt(
-        """UPDATE models 
-        SET model_def = %s 
+        f"""
+        UPDATE models SET
+            ({MODEL_IN_DB_COLS}) = ({MODEL_IN_DB_PLACEHOLDERS})
         WHERE name = %s 
-        RETURNING model_def""",
-        (model, name),
-    )[0]
+        RETURNING {MODEL_COLS}""",
+        (*tuple(model_in_db.model_dump().values()), model_in_db.name),
+        Model,
+    )
 
     # trigger async App restart
     update_watch()
@@ -493,7 +518,7 @@ CONTACT_COLS = get_fields(Contact)
 
 
 def get_all_contacts() -> list[ContactWithAccountName]:
-    fully_qualified = ", ".join([f"contacts.{x}" for x in Contact.__fields__.keys()])
+    fully_qualified = ", ".join([f"contacts.{x}" for x in Contact.model_fields.keys()])
 
     return execute_stmt(
         f"""
@@ -602,7 +627,7 @@ def get_all_opportunities(
     )
 
     fully_qualified = ", ".join(
-        [f"opportunities.{x}" for x in OpportunityOverview.__fields__.keys()]
+        [f"opportunities.{x}" for x in OpportunityOverview.model_fields.keys()]
     )
     return execute_stmt(
         f"""
@@ -829,7 +854,7 @@ def get_all_artifacts(
     )
 
     fully_qualified = ", ".join(
-        [f"artifacts.{x}" for x in ArtifactOverview.__fields__.keys()]
+        [f"artifacts.{x}" for x in ArtifactOverview.model_fields.keys()]
     )
 
     return execute_stmt(
@@ -861,7 +886,7 @@ def get_all_artifacts_for_account_id(
     )
 
     fully_qualified = ", ".join(
-        [f"artifacts.{x}" for x in ArtifactOverview.__fields__.keys()]
+        [f"artifacts.{x}" for x in ArtifactOverview.model_fields.keys()]
     )
 
     return execute_stmt(
@@ -983,7 +1008,7 @@ def get_all_projects(
     )
 
     fully_qualified = ", ".join(
-        [f"projects.{x}" for x in ProjectOverview.__fields__.keys()]
+        [f"projects.{x}" for x in ProjectOverview.model_fields.keys()]
     )
 
     return execute_stmt(
@@ -1015,7 +1040,7 @@ def get_all_projects_for_account_id(
     )
 
     fully_qualified = ", ".join(
-        [f"projects.{x}" for x in ProjectOverview.__fields__.keys()]
+        [f"projects.{x}" for x in ProjectOverview.model_fields.keys()]
     )
 
     return execute_stmt(
@@ -1164,7 +1189,9 @@ def get_all_tasks_for_opportunity_id(
         task_filters, table_name="tasks", include_where=False
     )
 
-    fully_qualified = ", ".join([f"tasks.{x}" for x in TaskOverview.__fields__.keys()])
+    fully_qualified = ", ".join(
+        [f"tasks.{x}" for x in TaskOverview.model_fields.keys()]
+    )
 
     return execute_stmt(
         f"""
@@ -1738,6 +1765,9 @@ def execute_stmt(
                     rs = cur.fetchone()
                     if rs:
                         if model:
+                            print(model.__name__, "here")
+
+                            print(rs)
                             return model(**{k: rs[i] for i, k in enumerate(col_names)})
                         else:
                             return rs

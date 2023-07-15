@@ -1,12 +1,8 @@
-from fastapi import APIRouter, Security
+from fastapi import APIRouter
 
-from worst_crm import dependencies as dep
 from . import users, status, models
 
-router = APIRouter(
-    prefix="/admin",
-    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
-)
+router = APIRouter(prefix="/admin")
 
 
 router.include_router(users.router)

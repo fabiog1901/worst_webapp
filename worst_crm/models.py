@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import create_model, BaseModel, EmailStr, Field
 from pydantic.fields import FieldInfo
 from uuid import UUID
@@ -24,7 +25,7 @@ def fetch_model_definition(model_name: str) -> dict[str, dict]:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT model_def 
+                SELECT skema 
                 FROM models
                 WHERE name = %s""",
                 (to_snake_case(model_name),),
@@ -192,6 +193,38 @@ class Status(BaseModel):
     name: str = Field(min_length=3, max_length=20)
 
 
+# MODELS
+
+
+class ModelName(str, Enum):
+    account = "account"
+    artifact = "artifact"
+    contact = "contact"
+    opportunity = "opportunity"
+    project = "project"
+    task = "task"
+
+
+class PydanticModel(BaseModel):
+    properties: dict
+    required: list[str] | None = None
+    title: str | None = None
+    type: str | None = None
+
+
+class UpdatedModel(BaseModel):
+    name: ModelName
+    skema: PydanticModel
+
+
+class ModelInDB(UpdatedModel, CommonInDB):
+    pass
+
+
+class Model(DBComputed, ModelInDB):
+    pass
+
+
 # ACCOUNT
 class UpdatedAccount(Basic1, Text):
     account_id: UUID | None = None
@@ -308,7 +341,7 @@ class UpdatedArtifact(Name):
     opportunity_id: UUID
     artifact_id: UUID | None = None
     artifact_schema_id: str
-    payload: dict | None = None
+    payload: dict
     tags: set[str] | None = None
 
 

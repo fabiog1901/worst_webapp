@@ -73,7 +73,7 @@ async def create_opportunity(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -99,7 +99,7 @@ async def update_opportunity(
             db.log_event,
             NAME,
             current_user.user_id,
-            "update_opportunity",
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -122,7 +122,7 @@ async def delete_opportunity(
             db.log_event,
             NAME,
             current_user.user_id,
-            "delete_opportunity",
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 

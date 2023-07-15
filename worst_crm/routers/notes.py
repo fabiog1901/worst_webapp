@@ -74,7 +74,7 @@ async def create_account_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -98,7 +98,7 @@ async def update_account_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -121,7 +121,7 @@ async def delete_account_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -221,7 +221,7 @@ async def create_opportunity_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -247,7 +247,7 @@ async def update_opportunity_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -271,7 +271,7 @@ async def delete_opportunity_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -399,7 +399,7 @@ async def create_project_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -425,7 +425,7 @@ async def update_project_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 
@@ -450,7 +450,7 @@ async def delete_project_note(
             db.log_event,
             NAME,
             current_user.user_id,
-            inspect.currentframe().f_code.co_name,
+            inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
 

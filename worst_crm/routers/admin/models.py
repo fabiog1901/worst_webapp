@@ -1,71 +1,42 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Security, BackgroundTasks
 from worst_crm import db
+import worst_crm.dependencies as dep
+from typing import Annotated
+from worst_crm.models import User, ModelName, Model, ModelInDB, UpdatedModel
+import inspect
+
+NAME = __name__.split(".", 2)[-1]
+
+router = APIRouter(prefix="/models", tags=[NAME])
 
 
-router = APIRouter(prefix="/models", tags=["admin/models"])
+@router.get(
+    "{name}",
+    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
+)
+async def get_model(name: ModelName) -> Model | None:
+    return db.get_model(name)
 
 
-# ACCOUNT
-@router.get("/account")
-async def get_account_model() -> dict:
-    return db.get_model("account")
+@router.put("")
+async def update_model(
+    model: UpdatedModel,
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["admin"])],
+    bg_task: BackgroundTasks,
+) -> Model | None:
+    model_in_db = ModelInDB(
+        **model.model_dump(exclude_unset=True), updated_by=current_user.user_id
+    )
 
+    x = db.update_model(model_in_db)
 
-@router.put("/account")
-async def update_account_model(model: dict) -> dict:
-    return db.update_model("account", model)
+    if x:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            inspect.currentframe().f_code.co_name,  # type: ignore
+            x.model_dump_json(),
+        )
 
-
-# OPPORTUNITY
-@router.get("/opportunity")
-async def get_opportunity_model() -> dict:
-    return db.get_model("opportunity")
-
-
-@router.put("/opportunity")
-async def update_opportunity_model(model: dict) -> dict:
-    return db.update_model("opportunity", model)
-
-
-# ARTIFACT
-@router.get("/artifact")
-async def get_artifact_model() -> dict:
-    return db.get_model("artifact")
-
-
-@router.put("/artifact")
-async def update_artifact_model(model: dict) -> dict:
-    return db.update_model("artifact", model)
-
-
-# PROJECT
-@router.get("/project")
-async def get_project_model() -> dict:
-    return db.get_model("project")
-
-
-@router.put("/project")
-async def update_project_model(model: dict) -> dict:
-    return db.update_model("project", model)
-
-
-# TASK
-@router.get("/task")
-async def get_task_model() -> dict:
-    return db.get_model("task")
-
-
-@router.put("/task")
-async def update_task_model(model: dict) -> dict:
-    return db.update_model("task", model)
-
-
-# CONTACT
-@router.get("/contact")
-async def get_contact_model() -> dict:
-    return db.get_model("contact")
-
-
-@router.put("/contact")
-async def update_contact_model(model: dict) -> dict:
-    return db.update_model("contact", model)
+    return x
