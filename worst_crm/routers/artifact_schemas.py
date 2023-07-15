@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import Security, BackgroundTasks
 from typing import Annotated
 from worst_crm import db
 from worst_crm.models import (
@@ -9,31 +9,34 @@ from worst_crm.models import (
 )
 import worst_crm.dependencies as dep
 
-router = APIRouter(
-    prefix="/artifact-schemas",
-    dependencies=[Depends(dep.get_current_user)],
-    tags=["artifact-schemas"],
+NAME = "artifact-schemas"
+
+router = dep.get_api_router(NAME)
+
+
+@router.get(
+    "",
+    dependencies=[Security(dep.get_current_user)],
 )
-
-
-# CRUD
-@router.get("")
 async def get_all_artifacts() -> list[ArtifactSchema]:
     return db.get_all_artifact_schemas()
 
 
-@router.get("/{artifact_schema_id}")
+@router.get(
+    "/{artifact_schema_id}",
+    dependencies=[Security(dep.get_current_user)],
+)
 async def get_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
     return db.get_artifact_schema(artifact_schema_id)
 
 
 @router.post(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def create_artifact_schema(
     artifact_schema: UpdatedArtifactSchema,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> ArtifactSchema | None:
     artifact_in_db = ArtifactSchemaInDB(
         **artifact_schema.model_dump(exclude_unset=True),
@@ -41,27 +44,62 @@ async def create_artifact_schema(
         updated_by=current_user.user_id
     )
 
-    return db.create_artifact_schema(artifact_in_db)
+    art = db.create_artifact_schema(artifact_in_db)
+
+    if art:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "create_artifact_schema",
+            art.model_json_schema(),
+        )
+
+    return art
 
 
 @router.put(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_artifact_schema(
     artifact: UpdatedArtifactSchema,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> ArtifactSchema | None:
     artifact_in_db = ArtifactSchemaInDB(
         **artifact.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
 
-    return db.update_artifact_schema(artifact_in_db)
+    art = db.update_artifact_schema(artifact_in_db)
+
+    if art:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "update_artifact_schema",
+            art.model_json_schema(),
+        )
+
+    return art
 
 
 @router.delete(
     "/{artifact_schema_id}",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def delete_artifact_schema(artifact_schema_id: str) -> ArtifactSchema | None:
-    return db.delete_artifact_schema(artifact_schema_id)
+async def delete_artifact_schema(
+    artifact_schema_id: str,
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
+) -> ArtifactSchema | None:
+    art = db.delete_artifact_schema(artifact_schema_id)
+    if art:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "delete_artifact_schema",
+            art.model_dump_json(),
+        )
+
+    return art

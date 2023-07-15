@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, BackgroundTasks, APIRouter
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -47,6 +47,13 @@ minio_client = minio.Minio(
 )
 
 
+def get_api_router(name: str) -> APIRouter:
+    return APIRouter(
+        prefix=f"/{name}",
+        tags=[name],
+    )
+
+
 def get_presigned_get_url(filename: str) -> str:
     data = minio_client.presigned_get_object(
         S3_BUCKET,
@@ -86,7 +93,7 @@ def get_password_hash(password: str) -> str:
 
 
 def authenticate_user(username: str, password: str) -> UserInDB | None:
-    user: UserInDB | None = db.get_user_with_hash(username)
+    user: UserInDB = db.get_user_with_hash(username)
 
     if not user:
         return None
@@ -98,6 +105,10 @@ def authenticate_user(username: str, password: str) -> UserInDB | None:
     if not verify_password(password, user.hashed_password):
         db.increase_failed_attempt_count(user.user_id)
         return None
+
+    if user.failed_attempts != 0:
+        db.reset_failed_attempt_count(user.user_id)
+
     return user
 
 
@@ -140,7 +151,7 @@ async def get_current_user(
     if not token_username:
         raise credentials_exception
 
-    user: UserInDB | None = db.get_user_with_hash(token_username)
+    user: UserInDB = db.get_user_with_hash(token_username)
 
     if not user:
         raise credentials_exception
@@ -149,7 +160,7 @@ async def get_current_user(
         if scope not in token_scopes:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
+                detail=f"Not enough permissions. Missing scopes: {security_scopes.scopes}",
                 headers={"WWW-Authenticate": authenticate_value},
             )
 

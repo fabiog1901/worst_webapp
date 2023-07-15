@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Security
+from fastapi import Security, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -14,34 +14,39 @@ from worst_crm.models import (
 )
 import worst_crm.dependencies as dep
 
-router = APIRouter(
-    prefix="/accounts",
-    dependencies=[Depends(dep.get_current_user)],
-    tags=["accounts"],
+NAME = "accounts"
+
+router = dep.get_api_router(NAME)
+
+
+@router.get(
+    "",
+    dependencies=[Security(dep.get_current_user)],
 )
-
-
-# CRUD
-@router.get("")
 async def get_all_accounts(
     account_filters: AccountFilters | None = None,
 ) -> list[AccountOverview]:
     return db.get_all_accounts(account_filters)
 
 
-@router.get("/{account_id}")
-async def get_account(account_id: UUID) -> Account | None:
+@router.get(
+    "/{account_id}",
+    dependencies=[Security(dep.get_current_user)],
+)
+async def get_account(
+    account_id: UUID,
+) -> Account | None:
     return db.get_account(account_id)
 
 
 @router.post(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     description="`account_id` will be generated if not provided by client.",
 )
 async def create_account(
     account: UpdatedAccount,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> Account | None:
     acc_in_db = AccountInDB(
         **account.model_dump(exclude_unset=True),
@@ -52,33 +57,78 @@ async def create_account(
     if not acc_in_db.account_id:
         acc_in_db.account_id = uuid4()
 
-    return db.create_account(acc_in_db)
+    acc = db.create_account(acc_in_db)
+
+    if acc:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "create_account",
+            acc.model_dump_json(),
+        )
+
+    return acc
 
 
-@router.put("", dependencies=[Security(dep.get_current_user, scopes=["rw"])])
+@router.put(
+    "",
+)
 async def update_account(
-    acc: UpdatedAccount,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    account: UpdatedAccount,
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> Account | None:
     acc_in_db = AccountInDB(
-        **acc.model_dump(exclude_unset=True), updated_by=current_user.user_id
+        **account.model_dump(exclude_unset=True), updated_by=current_user.user_id
     )
-    return db.update_account(acc_in_db)
+
+    acc = db.update_account(acc_in_db)
+
+    if acc:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "update_account",
+            acc.model_dump_json(),
+        )
+
+    return acc
 
 
 @router.delete(
-    "/{account_id}", dependencies=[Security(dep.get_current_user, scopes=["rw"])]
+    "/{account_id}",
 )
-async def delete_account(account_id: UUID) -> Account | None:
-    return db.delete_account(account_id)
+async def delete_account(
+    account_id: UUID,
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
+) -> Account | None:
+    acc = db.delete_account(account_id)
+
+    if acc:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "delete_account",
+            acc.model_dump_json()
+        )
+
+    return acc
 
 
 # Attachements
 @router.get(
     "/{account_id}/presigned-get-url/{filename}",
     name="Get pre-signed URL for downloading an attachment",
+    dependencies=[Security(dep.get_current_user)],
 )
-async def get_presigned_get_url(account_id: UUID, filename: str):
+async def get_presigned_get_url(
+    account_id: UUID,
+    filename: str,
+):
     s3_object_name = str(account_id) + "/" + filename
     data = dep.get_presigned_get_url(s3_object_name)
     return HTMLResponse(content=data)
@@ -89,7 +139,10 @@ async def get_presigned_get_url(account_id: UUID, filename: str):
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     name="Get pre-signed URL for uploading an attachment",
 )
-async def get_presigned_put_url(account_id: UUID, filename: str):
+async def get_presigned_put_url(
+    account_id: UUID,
+    filename: str,
+):
     s3_object_name = str(account_id) + "/" + filename
     db.add_account_attachment(account_id, filename)
     data = dep.get_presigned_put_url(s3_object_name)
@@ -100,7 +153,10 @@ async def get_presigned_put_url(account_id: UUID, filename: str):
     "/{account_id}/attachments/{filename}",
     dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
-async def delete_attachement(account_id: UUID, filename: str):
+async def delete_attachement(
+    account_id: UUID,
+    filename: str,
+):
     s3_object_name = str(account_id) + "/" + filename
     db.remove_account_attachment(account_id, filename)
     dep.s3_remove_object(s3_object_name)

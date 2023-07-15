@@ -425,3 +425,11 @@ CREATE INVERTED INDEX project_notes_tags_gin ON project_notes(tags);
 
 
 
+CREATE TABLE events (
+    object STRING,
+    ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    username STRING,
+    action STRING,
+    details STRING,
+    CONSTRAINT pk PRIMARY KEY (object, ts, username)
+);

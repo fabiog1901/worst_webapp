@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Security
+from fastapi import Security, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -14,43 +14,56 @@ from worst_crm.models import (
 )
 import worst_crm.dependencies as dep
 
-router = APIRouter(
-    prefix="/tasks",
-    dependencies=[Depends(dep.get_current_user)],
-    tags=["tasks"],
+NAME = "tasks"
+
+router = dep.get_api_router(NAME)
+
+
+@router.get(
+    "/{account_id}/{opportunity_id}",
+    dependencies=[Security(dep.get_current_user)],
 )
-
-
-# CRUD
-@router.get("/{account_id}/{opportunity_id}")
 async def get_all_tasks_for_opportunity_id(
-    account_id: UUID, opportunity_id: UUID, task_filters: TaskFilters | None = None
+    account_id: UUID,
+    opportunity_id: UUID,
+    task_filters: TaskFilters | None = None,
 ) -> list[TaskOverviewWithProjectName]:
     return db.get_all_tasks_for_opportunity_id(account_id, opportunity_id, task_filters)
 
 
-@router.get("/{account_id}/{opportunity_id}/{project_id}")
+@router.get(
+    "/{account_id}/{opportunity_id}/{project_id}",
+    dependencies=[Security(dep.get_current_user)],
+)
 async def get_all_tasks_for_project_id(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
 ) -> list[TaskOverview]:
     return db.get_all_tasks_for_project_id(account_id, opportunity_id, project_id)
 
 
-@router.get("/{account_id}/{opportunity_id}/{project_id}/{task_id}")
+@router.get(
+    "/{account_id}/{opportunity_id}/{project_id}/{task_id}",
+    dependencies=[Security(dep.get_current_user)],
+)
 async def get_task(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_id: UUID
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
 ) -> Task | None:
     return db.get_task(account_id, opportunity_id, project_id, task_id)
 
 
 @router.post(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
     description="`task_id` will be generated if not provided by client.",
 )
 async def create_task(
     task: UpdatedTask,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> Task | None:
     task_in_db = TaskInDB(
         **task.model_dump(exclude_unset=True),
@@ -61,36 +74,75 @@ async def create_task(
     if not task_in_db.task_id:
         task_in_db.task_id = uuid4()
 
-    return db.create_task(task_in_db)
+    obj = db.create_task(task_in_db)
+    
+    if obj:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "create_task",
+            obj.model_dump_json()
+        )
+        
+    return obj
 
 
 @router.put(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def update_task(
     task: UpdatedTask,
-    current_user: Annotated[User, Depends(dep.get_current_user)],
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks,
 ) -> Task | None:
     task_in_db = TaskInDB(**task.model_dump(), updated_by=current_user.user_id)
 
-    return db.update_task(task_in_db)
+    obj = db.update_task(task_in_db)
+    
+    if obj:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "update_task",
+            obj.model_dump_json()
+        )
+        
+    return obj
 
 
 @router.delete(
     "/{account_id}/{opportunity_id}/{project_id}/{task_id}",
-    dependencies=[Security(dep.get_current_user, scopes=["rw"])],
 )
 async def delete_task(
-    account_id: UUID, opportunity_id: UUID, project_id: UUID, task_id: UUID
+    account_id: UUID,
+    opportunity_id: UUID,
+    project_id: UUID,
+    task_id: UUID,
+    current_user: Annotated[User, Security(dep.get_current_user, scopes=["rw"])],
+    bg_task: BackgroundTasks
 ) -> Task | None:
-    return db.delete_task(account_id, opportunity_id, project_id, task_id)
+    
+    obj = db.delete_task(account_id, opportunity_id, project_id, task_id)
+    
+    if obj:
+        bg_task.add_task(
+            db.log_event,
+            NAME,
+            current_user.user_id,
+            "delete_task",
+            obj.model_dump_json()
+        )
+        
+    return obj
 
 
 # Attachments
 @router.get(
     "/{account_id}/{opportunity_id}/{project_id}/{task_id}/presigned-get-url/{filename}",
     name="Get pre-signed URL for downloading an attachment",
+    dependencies=[Security(dep.get_current_user)],
 )
 async def get_presigned_get_url(
     account_id: UUID,

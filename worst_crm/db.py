@@ -62,6 +62,18 @@ if not DB_URL:
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
 
 
+def log_event(obj: str, username: str, action: str, details: str):
+    execute_stmt(
+        """UPSERT INTO 
+            events (object, ts, username, action, details) 
+        VALUES 
+            (%s, now(), %s, %s, %s)
+        """,
+        (obj, username, action, details),
+        returning_rs=False,
+    )
+
+
 def get_watch() -> int:
     return execute_stmt(
         "SELECT ts::INT8 FROM WATCH AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
@@ -155,6 +167,7 @@ def get_all_users() -> list[User]:
 
 
 def get_user_with_hash(user_id: str) -> UserInDB | None:
+    print("===================================================")
     return execute_stmt(
         f"""
         select {USERINDB_COLS}
@@ -195,11 +208,19 @@ def create_user(user: UserInDB) -> User | None:
 def increase_failed_attempt_count(user_id: str) -> UserInDB | None:
     return execute_stmt(
         f"""update users set
-            failed_attempts = failed_attempts +1 
+            failed_attempts = failed_attempts + 1 
         where user_id = %s
         returning {USERINDB_COLS}""",
         (user_id,),
         UserInDB,
+    )
+
+
+def reset_failed_attempt_count(user_id: str):
+    execute_stmt(
+        "UPDATE users SET failed_attempts = 0 WHERE user_id = %s",
+        (user_id,),
+        returning_rs=False,
     )
 
 
