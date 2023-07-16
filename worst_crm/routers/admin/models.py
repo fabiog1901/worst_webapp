@@ -11,7 +11,7 @@ router = APIRouter(prefix="/models", tags=[NAME])
 
 
 @router.get(
-    "{name}",
+    "/{name}",
     dependencies=[Security(dep.get_current_user, scopes=["admin"])],
 )
 async def get_model(name: ModelName) -> Model | None:
