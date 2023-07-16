@@ -1765,9 +1765,6 @@ def execute_stmt(
                     rs = cur.fetchone()
                     if rs:
                         if model:
-                            print(model.__name__, "here")
-
-                            print(rs)
                             return model(**{k: rs[i] for i, k in enumerate(col_names)})
                         else:
                             return rs
