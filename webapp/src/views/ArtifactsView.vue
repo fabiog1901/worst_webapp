@@ -1,11 +1,11 @@
 <template>
   <div class="flex">
-    <Channelbar />
+    <ContextBarArtifacts />
     <ContentContainer />
   </div>
 </template>
 
 <script setup lang="ts">
-import Channelbar from "@/components/ChannelBar.vue";
+import ContextBarArtifacts from "@/components/ContextBarArtifacts.vue";
 import ContentContainer from "@/components/ContentContainer.vue";
 </script>

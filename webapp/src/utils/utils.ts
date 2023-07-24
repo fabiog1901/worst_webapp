@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Job, Degree } from "@/types";
+import type { Account, Opportunity, Contact } from "@/types";
 
 export const nextElementInList = <T>(arr: T[], val: T): T => {
   const idx = arr.indexOf(val);
@@ -7,14 +7,23 @@ export const nextElementInList = <T>(arr: T[], val: T): T => {
   return arr[nextIdx];
 };
 
-export const getJobs = async (): Promise<Job[]> => {
-  const r = await axios.get<Job[]>(`${import.meta.env.VITE_APP_API_URL}/jobs`);
+export const getAccounts = async (): Promise<Account[]> => {
+  const r = await axios.get<Account[]>(
+    `${import.meta.env.VITE_APP_API_URL}/accounts`
+  );
   return r.data;
 };
 
-export const getDegrees = async (): Promise<Degree[]> => {
-  const r = await axios.get<Degree[]>(
-    `${import.meta.env.VITE_APP_API_URL}/degrees`
+export const getOpportunities = async (): Promise<Opportunity[]> => {
+  const r = await axios.get<Opportunity[]>(
+    `${import.meta.env.VITE_APP_API_URL}/opportunities`
+  );
+  return r.data;
+};
+
+export const getContacts = async (): Promise<Contact[]> => {
+  const r = await axios.get<Contact[]>(
+    `${import.meta.env.VITE_APP_API_URL}/contactswithaccountname`
   );
   return r.data;
 };

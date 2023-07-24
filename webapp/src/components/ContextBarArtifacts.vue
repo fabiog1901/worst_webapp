@@ -6,12 +6,29 @@
       <h5
         class="justify-center align-middle text-3xl tracking-wider text-gray-600 dark:text-gray-400"
       >
-        Accounts
+        {{ title }}
       </h5>
     </div>
+
     <div class="m-0 flex flex-col items-center justify-start p-1">
       <section class="pb-5">
-        <div class="flex justify-between">
+        <label
+          class="h-12 flex-auto pl-3 text-sm text-gray-600 dark:text-gray-400"
+          >Owned By</label
+        >
+        <div class="flex">
+          <select v-model="owned_by" class="flex flex-auto">
+            <option
+              v-for="x in store.get_unique_account_owners"
+              v-bind:key="x"
+              v-bind:value="x"
+            >
+              {{ x }}
+            </option>
+          </select>
+        </div>
+
+        <!--<div class="flex justify-between">
           <h3
             class="my-4 text-base font-semibold text-gray-600 dark:text-gray-400"
           >
@@ -21,33 +38,33 @@
             <action-button
               text="Clear Filters"
               btn-type="secondary"
-              v-on:click="userStore.clear_filters()"
+              v-on:click="store.clear_filters()"
             />
           </div>
         </div>
 
         <div class="mt-2 flex">
           <input
-            v-model.lazy.trim="userStore.searchTerm"
+            v-model.lazy.trim="store.searchTerm"
             type="text"
             class="border-brand-gray-1 shadow-gray h-12 flex-auto rounded border border-solid pl-3 text-sm"
             placeholder="Computer programming"
           />
         </div>
 
-        <collapsible-accordion header="Degree">
+         <collapsible-accordion header="Owner">
           <div class="mt-5">
             <fieldset>
               <ul class="flex flex-wrap">
                 <li v-for="x in UNIQUE_DEGREES" v-bind:key="x" class="h8 w-1/2">
                   <input
                     v-bind:id="x"
-                    v-model="userStore.selectedDegrees"
+                    v-model="store.selectedDegrees"
                     v-bind:value="x"
                     type="checkbox"
                     class="mr-3"
                     v-on:change="
-                      userStore.add_selected_degrees(userStore.selectedDegrees);
+                      store.add_selected_degrees(store.selectedDegrees);
                       backToPageOne();
                     "
                   />
@@ -69,14 +86,12 @@
                 >
                   <input
                     v-bind:id="x"
-                    v-model="userStore.selectedJobTypes"
+                    v-model="store.selectedJobTypes"
                     v-bind:value="x"
                     type="checkbox"
                     class="mr-3"
                     v-on:change="
-                      userStore.add_selected_job_types(
-                        userStore.selectedJobTypes
-                      );
+                      store.add_selected_job_types(store.selectedJobTypes);
                       backToPageOne();
                     "
                   />
@@ -98,12 +113,12 @@
                 >
                   <input
                     v-bind:id="x"
-                    v-model="userStore.selectedOrgs"
+                    v-model="store.selectedOrgs"
                     v-bind:value="x"
                     type="checkbox"
                     class="mr-3"
                     v-on:change="
-                      userStore.add_selected_orgs(userStore.selectedOrgs);
+                      store.add_selected_orgs(store.selectedOrgs);
                       backToPageOne();
                     "
                   />
@@ -112,7 +127,7 @@
               </ul>
             </fieldset>
           </div>
-        </collapsible-accordion>
+        </collapsible-accordion> -->
       </section>
     </div>
   </div>
@@ -123,29 +138,22 @@ import ActionButton from "@/components/ActionButton.vue";
 import CollapsibleAccordion from "@/components/CollapsibleAccordion.vue";
 
 import { useRouter } from "vue-router";
-import { computed, onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
-// import { useJobsStore } from "@/stores/jobs";
-import { useUserStore } from "@/stores/user";
-// import { useDegreeStore } from "@/stores/degree";
+import { useStore } from "@/stores/accountsStore";
 
-const userStore = useUserStore();
-// const jobsStore = useJobsStore();
-// const degreeStore = useDegreeStore();
 
+const owned_by = ref("");
+
+const store = useStore();
 const router = useRouter();
 
-// const UNIQUE_ORGANIZATIONS = computed(() => jobsStore.get_unique_orgs);
-// const UNIQUE_JOB_TYPES = computed(() => jobsStore.get_unique_job_types);
-// const UNIQUE_DEGREES = computed(() => degreeStore.get_unique_degrees);
-
 onMounted(() => {
-  const route = useRoute();
-  userStore.searchTerm = route.query.role as string;
-});
+  store.get_accounts();
 
-const backToPageOne = () => {
-  router.push({ name: "JobResults" });
-};
+  const route = useRoute();
+
+  store.searchTerm = route.query.role as string;
+});
 </script>

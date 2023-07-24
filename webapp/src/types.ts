@@ -1,17 +1,38 @@
-export interface Job {
-  id: number;
-  title: string;
-  organization: string;
-  degree: string;
-  jobType: string;
-  locations: string[];
-  minimumQualifications: string[];
-  preferredQualifications: string[];
-  description: string[];
-  dateAdded: string;
+export interface Account {
+  account_id: string;
+  name: string;
+  owned_by: string;
+  status: string;
+  due_date: string;
+  tags: string[];
+  text: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updaded_by: string;
+  attachments: string[];
 }
 
-export interface Degree {
-  id: number;
-  degree: string;
+export interface Opportunity {
+  account_id: string;
+  opportunity_id: string;
+  name: string;
+  owned_by: string;
+}
+
+export interface ContactWithAccountName {
+  account_id: string;
+  account_name: string;
+  contact_id: string;
+  fname: string;
+  lname: string;
+  role_title: string;
+  email: string;
+  telephone_number: string;
+  tags: string[];
+  business_card: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updaded_by: string;
 }
