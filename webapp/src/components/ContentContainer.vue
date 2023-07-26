@@ -3,6 +3,15 @@
     class="m-0 flex h-full w-full flex-col overflow-hidden bg-gray-300 dark:bg-gray-700"
   >
     <TopNavigation />
+
+    <section>
+      <TableGrid
+        v-bind:data="store.accounts"
+        v-bind:columns="store.acc_cols"
+        v-bind:filter-key="store.filterKey"
+      />
+    </section>
+
     <div
       class="mx-auto ml-0 mt-0 flex h-screen w-full flex-col items-center overflow-y-scroll px-0 pb-12"
     ></div>
@@ -19,5 +28,15 @@
 </template>
 
 <script setup lang="ts">
+import { useStore } from "@/stores/accountsStore";
+import { onMounted, ref } from "vue";
 import TopNavigation from "@/components/TopNavigation.vue";
+import TableGrid from "@/components/TableGrid.vue";
+
+const store = useStore();
+
+onMounted(async () => {
+  await store.get_all_accounts();
+  await store.get_account_model();
+});
 </script>

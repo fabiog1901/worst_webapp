@@ -1,7 +1,7 @@
 <template>
   <div class="flex">
     <ContextBarOpportunities />
-    <ContentContainer />
+    <!-- <ContentContainer /> -->
   </div>
 </template>
 

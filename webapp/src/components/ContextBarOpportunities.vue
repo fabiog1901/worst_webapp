@@ -19,7 +19,7 @@
         <div class="flex">
           <select v-model="owned_by" class="flex flex-auto">
             <option
-              v-for="x in store.get_unique_account_owners"
+              v-for="x in store.get_unique_opportunity_owners"
               v-bind:key="x"
               v-bind:value="x"
             >
@@ -141,7 +141,7 @@ import { useRouter } from "vue-router";
 import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { useStore } from "@/stores/accountsStore";
+import { useStore } from "@/stores/opportunitiesStore";
 
 
 
@@ -151,7 +151,7 @@ const store = useStore();
 const router = useRouter();
 
 onMounted(() => {
-  store.get_accounts();
+  store.get_all_opportunities();
 
   const route = useRoute();
 

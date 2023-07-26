@@ -1,15 +1,17 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import axios from "axios";
 
-import { getOpportunities } from "@/utils/utils";
-
-import type { Opportunity } from "@/types";
+import type { OpportunityOverviewWithAccountName } from "@/types";
 
 export const useStore = defineStore("opportunities", () => {
-  const opportunities = ref<Opportunity[]>([]);
+  const opportunities = ref<OpportunityOverviewWithAccountName[]>([]);
 
-  const get_opportunities = async () => {
-    opportunities.value = await getOpportunities();
+  const get_all_opportunities = async () => {
+    const r = await axios.get<OpportunityOverviewWithAccountName[]>(
+      `${import.meta.env.VITE_APP_API_URL}/opportunities`
+    );
+    opportunities.value = r.data;
   };
 
   const get_unique_opportunity_owners = computed(() => {
@@ -19,7 +21,7 @@ export const useStore = defineStore("opportunities", () => {
   });
 
   return {
-    get_opportunities,
+    get_all_opportunities,
     get_unique_opportunity_owners,
   };
 });

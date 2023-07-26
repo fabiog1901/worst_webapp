@@ -151,7 +151,7 @@ const store = useStore();
 const router = useRouter();
 
 onMounted(() => {
-  store.get_contacts();
+  store.get_all_contacts();
 
   const route = useRoute();
 

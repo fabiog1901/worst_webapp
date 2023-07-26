@@ -18,6 +18,7 @@
         >
         <div class="flex">
           <select v-model="owned_by" class="flex flex-auto">
+            <option value="-">Any</option>
             <option
               v-for="x in store.get_unique_account_owners"
               v-bind:key="x"
@@ -26,6 +27,10 @@
               {{ x }}
             </option>
           </select>
+        </div>
+
+        <div id="search" class="flex">
+          Search <input v-model="store.filterKey" />
         </div>
 
         <!--<div class="flex justify-between">
@@ -134,25 +139,12 @@
 </template>
 
 <script setup lang="ts">
-import ActionButton from "@/components/ActionButton.vue";
-import CollapsibleAccordion from "@/components/CollapsibleAccordion.vue";
-
-import { useRouter } from "vue-router";
 import { onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
-
 import { useStore } from "@/stores/accountsStore";
 
 const owned_by = ref("");
 
 const store = useStore();
-const router = useRouter();
 
-onMounted(() => {
-  store.get_accounts();
-
-  const route = useRoute();
-
-  // store.searchTerm = route.query.role as string;
-});
+onMounted(() => {});
 </script>

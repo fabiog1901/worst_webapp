@@ -1,3 +1,17 @@
+export interface AccountOverview {
+  account_id: string;
+  name: string;
+  owned_by: string;
+  status: string;
+  due_date: string;
+  tags: string[];
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updaded_by: string;
+  attachments: string[];
+}
+
 export interface Account {
   account_id: string;
   name: string;
@@ -13,7 +27,7 @@ export interface Account {
   attachments: string[];
 }
 
-export interface Opportunity {
+export interface OpportunityOverviewWithAccountName {
   account_id: string;
   opportunity_id: string;
   name: string;

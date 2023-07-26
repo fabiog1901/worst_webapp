@@ -1,15 +1,29 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-
-import { getAccounts } from "@/utils/utils";
-
-import type { Account } from "@/types";
+import axios from "axios";
+import type { AccountOverview } from "@/types";
 
 export const useStore = defineStore("accounts", () => {
-  const accounts = ref<Account[]>([]);
+  const accounts = ref<AccountOverview[]>([]);
 
-  const get_accounts = async () => {
-    accounts.value = await getAccounts();
+  const account_model = ref({});
+
+  const acc_cols = computed(() => Object.keys(account_model.value));
+
+  const filterKey = ref("");
+
+  const get_all_accounts = async () => {
+    const r = await axios.get<AccountOverview[]>(
+      `${import.meta.env.VITE_APP_API_URL}/account-overview`
+    );
+    accounts.value = r.data;
+  };
+
+  const get_account_model = async () => {
+    const r = await axios.get(
+      `${import.meta.env.VITE_APP_API_URL}/account-model`
+    );
+    account_model.value = r.data;
   };
 
   const get_unique_account_owners = computed(() => {
@@ -19,7 +33,12 @@ export const useStore = defineStore("accounts", () => {
   });
 
   return {
-    get_accounts,
+    accounts,
+    account_model,
+    acc_cols,
+    filterKey,
+    get_all_accounts,
+    get_account_model,
     get_unique_account_owners,
   };
 });
