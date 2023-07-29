@@ -5,10 +5,9 @@
     <TopNavigation />
 
     <section>
-      <TableGrid
-        v-bind:data="store.accounts"
-        v-bind:columns="store.acc_cols"
-        v-bind:filter-key="store.filterKey"
+      <TableSuper
+        v-bind:data="store.get_filtered_accounts()"
+        v-bind:model="store.account_model"
       />
     </section>
 
@@ -29,14 +28,14 @@
 
 <script setup lang="ts">
 import { useStore } from "@/stores/accountsStore";
-import { onMounted, ref } from "vue";
+import { onMounted } from "vue";
 import TopNavigation from "@/components/TopNavigation.vue";
-import TableGrid from "@/components/TableGrid.vue";
+import TableSuper from "@/components/TableSuper.vue";
 
 const store = useStore();
 
 onMounted(async () => {
-  await store.get_all_accounts();
-  await store.get_account_model();
+  await store.fetch_all_accounts();
+  await store.fetch_account_model();
 });
 </script>

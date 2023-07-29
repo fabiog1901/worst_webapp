@@ -1,8 +1,16 @@
 <template>
-  <h1>Account View ID: {{ account_id }}</h1>
+  <div class="flex">
+    <ContextBarAccounts />
+    <h1>{{ account_id }}</h1>
+  </div>
 </template>
 
+
+
 <script setup lang="ts">
+import ContextBarAccounts from "@/components/ContextBarAccounts.vue";
+import ContentContainer from "@/components/ContentContainer.vue";
+
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 
