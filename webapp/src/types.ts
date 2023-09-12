@@ -12,6 +12,13 @@ export interface AccountOverview {
   attachments: string[];
 }
 
+export interface Model {
+  field: string;
+  header: string;
+  visible: boolean;
+  type: string;
+}
+
 export interface Account {
   account_id: string;
   name: string;

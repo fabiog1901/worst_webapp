@@ -1,8 +1,8 @@
 <template>
-  <SideBar />
+  <SidebarView />
   <router-view />
 </template>
 
 <script setup lang="ts">
-import SideBar from "./components/SideBar.vue";
+import SidebarView from "./views/SidebarView.vue";
 </script>

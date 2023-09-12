@@ -1,6 +1,8 @@
-import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import { defineStore } from "pinia";
+
 import axios from "axios";
+
 import type { AccountOverview, Account } from "@/types";
 
 export const useStore = defineStore("account", () => {
@@ -19,7 +21,8 @@ export const useStore = defineStore("account", () => {
 
   const fetch_account = async (account_id: string) => {
     const r = await axios.get<Account>(
-      `${import.meta.env.VITE_APP_API_URL}/account/${account_id}`
+      // `${import.meta.env.VITE_APP_API_URL}/account/${account_id}`
+      `${import.meta.env.VITE_APP_API_URL}/account`
     );
     console.info(`accountStore: fetched account ${account_id}`);
     return r.data;
