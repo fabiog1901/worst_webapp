@@ -1,12 +1,10 @@
 <template>
-  <div
-    class="m-0 flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 shadow-lg dark:bg-gray-700"
+  <section
+    class="m-0 flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 shadow-lg dark:bg-gray-800"
   >
     <h5
       class="my-auto ml-2 mr-auto text-xl font-semibold tracking-wider text-gray-600 text-opacity-80 transition duration-300 ease-in-out dark:text-gray-400"
-    >
-      Account1
-    </h5>
+    ></h5>
     <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">
       <svg
         v-if="userTheme === 'dark'"
@@ -101,7 +99,7 @@
         />
       </svg>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

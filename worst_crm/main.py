@@ -1,27 +1,27 @@
+from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+from typing import Annotated
+from worst_crm import db
+from worst_crm.api_router import APIRouter
+from worst_crm.models import (
+    Account,
+    UpdatedAccount,
+    AccountInDB,
+    AccountOverview,
+    UserInDB,
+    Token,
+    User,
+    UpdatedUserInDB,
+)
+from worst_crm.routers.admin import admin
+import os
 import threading
 import time
-from fastapi.responses import FileResponse
-from worst_crm import db
-from fastapi import FastAPI, Depends, HTTPException, Query, status
-from fastapi.security import OAuth2PasswordRequestForm
-from typing import Annotated
-from worst_crm.models import UserInDB, Token, User, UpdatedUserInDB
-from worst_crm.routers import (
-    accounts,
-    contacts,
-    opportunities,
-    artifacts,
-    artifact_schemas,
-    projects,
-    notes,
-    tasks,
-)
-import os
-from pathlib import Path
 import worst_crm.dependencies as dep
-from worst_crm.routers.admin import admin
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 
 JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
@@ -109,15 +109,15 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     return Token(access_token=access_token, token_type="bearer")
 
 
-app.include_router(accounts.router)
-app.include_router(contacts.router)
-app.include_router(opportunities.router)
-app.include_router(artifacts.router)
-app.include_router(artifact_schemas.router)
-app.include_router(projects.router)
-app.include_router(tasks.router)
-app.include_router(notes.router)
+router = APIRouter(
+    name="account",
+    return_model=Account,
+    overview_model=AccountOverview,
+    update_model=UpdatedAccount,
+    model_in_db=AccountInDB,
+)
 
+app.include_router(router)
 
 # ADMIN
 app.include_router(admin.router)
@@ -145,3 +145,20 @@ def watch_it(watch_epoch: int):
 
 # periodically check if a restart is needed
 threading.Thread(target=watch_it, args=(watch_epoch,), daemon=True).start()
+
+
+# from psycopg_pool import ConnectionPool
+
+# DB_URL = os.getenv("DB_URL")
+
+# if not DB_URL:
+#     raise EnvironmentError("DB_URL env variable not found!")
+
+
+# # the pool starts connecting immediately.
+# pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
+
+
+# def get_pool():
+#     return pool
+
