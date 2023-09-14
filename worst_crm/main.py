@@ -6,16 +6,14 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Annotated
 from worst_crm import db
+from worst_crm import service as svc
 from worst_crm.api_router import APIRouter
 from worst_crm.models import (
-    Account,
-    UpdatedAccount,
-    AccountInDB,
-    AccountOverview,
     UserInDB,
     Token,
     User,
     UpdatedUserInDB,
+    pyd_models,
 )
 from worst_crm.routers.admin import admin
 import os
@@ -32,6 +30,7 @@ app = FastAPI(
     docs_url="/api",
     openapi_url="/worst_crm.openapi.json",
 )
+
 
 app.mount("/static", StaticFiles(directory="webapp/dist"), name="static")
 
@@ -109,18 +108,21 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
     return Token(access_token=access_token, token_type="bearer")
 
 
-router = APIRouter(
-    name="account",
-    return_model=Account,
-    overview_model=AccountOverview,
-    update_model=UpdatedAccount,
-    model_in_db=AccountInDB,
-)
+# add routers dynamically
+for k, v in pyd_models.items():
+    router = APIRouter(
+        obj_name=k,
+        return_model=v["default"],
+        overview_model=v["default"],
+        update_model=v["update"],
+        model_in_db=v["default"],
+    )
 
-app.include_router(router)
+    app.include_router(router)
 
 # ADMIN
 app.include_router(admin.router)
+
 
 # uvicorn server is started and configured to reload
 # if file 'watch.txt' changes.
@@ -161,4 +163,3 @@ threading.Thread(target=watch_it, args=(watch_epoch,), daemon=True).start()
 
 # def get_pool():
 #     return pool
-

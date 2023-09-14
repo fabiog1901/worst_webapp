@@ -6,5 +6,5 @@ router = APIRouter(prefix="/admin")
 
 
 router.include_router(users.router)
-router.include_router(status.router)
+# router.include_router(status.router)
 router.include_router(models.router)

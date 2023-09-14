@@ -59,70 +59,72 @@ CREATE TABLE watch (
 );
 INSERT INTO watch (id) VALUES (1);
 
-CREATE TABLE accounts (
+CREATE TABLE account (
     -- pk
-    account_id UUID NOT NULL,
+    id UUID NOT NULL,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
-    -- fields not nullable
-    -- fields nullable
-    name STRING NULL,
-    owned_by STRING NULL,
-    due_date DATE NULL,
-    text STRING NULL,
-    status STRING(20) NULL,
+    -- default fields
+    name STRING NOT NULL,
+    owned_by STRING NOT NULL,
+    permissions STRING NOT NULL,
     tags STRING [] NULL DEFAULT ARRAY[],
+    parent_type STRING,
+    parent_id UUID,
+
     -- not in models
     attachments STRING[] NULL DEFAULT ARRAY[],
+    industry STRING,
+    ticker STRING,
     -- PK
-    CONSTRAINT pk PRIMARY KEY (account_id),
+    CONSTRAINT pk PRIMARY KEY (id)
     -- other FKs
-    CONSTRAINT status_in_status FOREIGN KEY (status)
-        REFERENCES account_status(name) ON DELETE SET NULL,
-    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
-        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
-        REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
-        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+    -- CONSTRAINT status_in_status FOREIGN KEY (status)
+    --     REFERENCES account_status(name) ON DELETE SET NULL,
+    -- CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+    --     REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    -- CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
+    --     REFERENCES users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    -- CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+    --     REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE INDEX accounts_owned_by ON accounts(owned_by);
-CREATE INVERTED INDEX accounts_tags_gin ON accounts(tags);
+-- CREATE INDEX accounts_owned_by ON accounts(owned_by);
+-- CREATE INVERTED INDEX accounts_tags_gin ON accounts(tags);
 
 
-CREATE TABLE contacts (
-    -- pk
-    account_id UUID NOT NULL,
-    contact_id UUID NOT NULL,
-    -- audit info
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_by STRING NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
-    updated_by STRING NULL,
-    -- fields not nullable
-    -- fields nullable
-    fname STRING NULL,
-    lname STRING NULL,
-    role_title STRING NULL,
-    email STRING NULL,
-    telephone_number STRING NULL,
-    business_card STRING NULL,
-    tags STRING [] NULL DEFAULT ARRAY[],
-    -- PK
-    CONSTRAINT pk PRIMARY KEY (account_id, contact_id),
-    -- PK related FK
-    CONSTRAINT fk_accounts FOREIGN KEY (account_id) 
-        REFERENCES accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    -- other FKs
-    CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
-        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
-        REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
-);
+-- CREATE TABLE contacts (
+--     -- pk
+--     account_id UUID NOT NULL,
+--     contact_id UUID NOT NULL,
+--     -- audit info
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+--     created_by STRING NULL,
+--     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
+--     updated_by STRING NULL,
+--     -- fields not nullable
+--     -- fields nullable
+--     fname STRING NULL,
+--     lname STRING NULL,
+--     role_title STRING NULL,
+--     email STRING NULL,
+--     telephone_number STRING NULL,
+--     business_card STRING NULL,
+--     tags STRING [] NULL DEFAULT ARRAY[],
+--     -- PK
+--     CONSTRAINT pk PRIMARY KEY (account_id, contact_id),
+--     -- PK related FK
+--     CONSTRAINT fk_accounts FOREIGN KEY (account_id) 
+--         REFERENCES accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE,
+--     -- other FKs
+--     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+--         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+--     CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+--         REFERENCES users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+-- );
 
 
 
@@ -134,3 +136,21 @@ CREATE TABLE events (
     details STRING,
     CONSTRAINT pk PRIMARY KEY (object, ts, username)
 );
+
+insert into models (name, skema) values ('account', '{
+    "properties": {
+        "industry": {"type": "string", "default": ""},
+        "ticker": {"maxLength": 30, "type": "string", "default": ""}
+    },
+    "title": "Account",
+    "type": "object"
+}');
+
+insert into models (name, skema) values ('opportunity', '{
+    "properties": {
+        "col0": {"type": "string", "default": ""},
+        "col1": {"maxLength": 30, "type": "string", "default": ""}
+    },
+    "title": "Opportunity",
+    "type": "object"
+}');

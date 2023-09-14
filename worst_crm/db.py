@@ -5,18 +5,7 @@ from typing import Any
 from uuid import UUID
 import os
 
-from worst_crm.models import (
-    Account,
-    AccountFilters,
-    AccountInDB,
-    AccountOverview,
-    Contact,
-    ContactInDB,
-    ContactWithAccountName,
-    Model,
-    ModelInDB,
-    Status,
-)
+from worst_crm.models import Model, ModelInDB, pyd_models
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
 
@@ -66,67 +55,6 @@ def get_placeholders(model) -> str:
     return ("%s, " * len(tuple(model.__fields__.keys())))[:-2]
 
 
-# STATUS
-def get_all_account_status() -> list[Status]:
-    return execute_stmt("SELECT name FROM account_status", model=Status, is_list=True)
-
-
-def create_account_status(status: str) -> Status | None:
-    return execute_stmt(
-        "INSERT INTO account_status(name) VALUES (%s) RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
-def delete_account_status(status: str) -> Status | None:
-    return execute_stmt(
-        "DELETE FROM account_status WHERE name = %s RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
-def get_all_project_status() -> list[Status]:
-    return execute_stmt("SELECT name FROM project_status", model=Status, is_list=True)
-
-
-def create_project_status(status: str) -> Status | None:
-    return execute_stmt(
-        "INSERT INTO project_status(name) VALUES (%s) RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
-def delete_project_status(status: str) -> Status | None:
-    return execute_stmt(
-        "DELETE FROM project_status WHERE name = %s RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
-def get_all_task_status() -> list[Status]:
-    return execute_stmt("SELECT name FROM task_status", model=Status, is_list=True)
-
-
-def create_task_status(status: str) -> Status | None:
-    return execute_stmt(
-        "INSERT INTO task_status(name) VALUES (%s) RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
-def delete_task_status(status: str) -> Status | None:
-    return execute_stmt(
-        "DELETE FROM task_status WHERE name = %s RETURNING name",
-        (status,),
-        model=Status,
-    )
-
-
 # ADMIN/USERS
 USERS_COLS = get_fields(User)
 USERINDB_COLS = get_fields(UserInDB)
@@ -147,7 +75,6 @@ def get_all_users() -> list[User]:
 
 
 def get_user_with_hash(user_id: str) -> UserInDB | None:
-    print("===================================================")
     return execute_stmt(
         f"""
         select {USERINDB_COLS}
@@ -277,7 +204,7 @@ def __get_where_clause(
 # ADMIN/MODELS
 
 
-# ACCOUNTS
+# MODELS
 MODEL_IN_DB_COLS = get_fields(ModelInDB)
 MODEL_IN_DB_PLACEHOLDERS = get_placeholders(ModelInDB)
 MODEL_COLS = get_fields(Model)
@@ -365,90 +292,88 @@ def update_model(model_in_db: ModelInDB) -> Model | None:
     return new_model
 
 
-# ACCOUNTS
-ACCOUNT_IN_DB_COLS = get_fields(AccountInDB)
-ACCOUNT_IN_DB_PLACEHOLDERS = get_placeholders(AccountInDB)
-ACCOUNT_OVERVIEW_COLS = get_fields(AccountOverview)
-ACCOUNTS_COLS = get_fields(Account)
-
-
 def add_model_accounts(d):
     pass
 
 
-def get_all_accounts(account_filters: AccountFilters | None) -> list[AccountOverview]:
-    where_clause, bind_params = __get_where_clause(account_filters, "accounts")
+def get_all(obj_name: str) -> list:
     return execute_stmt(
         f"""
-        SELECT {ACCOUNT_OVERVIEW_COLS}
-        FROM accounts
-        {where_clause} 
+        SELECT *
+        FROM {obj_name}
         ORDER BY name
         """,
-        bind_params,
-        AccountOverview,
+        (),
+        pyd_models[obj_name]["default"],
         True,
     )
 
 
-def get_account(account_id: UUID) -> Account | None:
+def get(obj_name: str, id: UUID) -> Any | None:
     return execute_stmt(
         f"""
-        SELECT {ACCOUNTS_COLS} 
-        FROM accounts 
-        WHERE account_id = %s
+        SELECT *
+        FROM {obj_name}
+        WHERE id = %s
         """,
-        (account_id,),
-        Account,
+        (id,),
+        pyd_models[obj_name]["default"],
     )
 
 
-def create_account(account_in_db: AccountInDB) -> Account | None:
+def create(obj_name: str, in_db: Any) -> Any | None:
+    cols = get_fields(pyd_models[obj_name]["default"])
+    ph = get_placeholders(pyd_models[obj_name]["default"])
+
     return execute_stmt(
         f"""
-        INSERT INTO accounts 
-            ({ACCOUNT_IN_DB_COLS})
+        INSERT INTO {obj_name}
+            ({cols})
         VALUES
-            ({ACCOUNT_IN_DB_PLACEHOLDERS})
-        RETURNING {ACCOUNTS_COLS}
+            ({ph})
+        RETURNING {cols}
         """,
-        tuple(account_in_db.model_dump().values()),
-        Account,
+        tuple(in_db.model_dump().values()),
+        pyd_models[obj_name]["default"],
     )
 
 
-def update_account(account_in_db: AccountInDB) -> Account | None:
-    if account_in_db.account_id:
-        old_acc = get_account(account_in_db.account_id)
+def update(obj_name: str, in_db: Any) -> Any | None:
+    cols = get_fields(pyd_models[obj_name]["default"])
+    ph = get_placeholders(pyd_models[obj_name]["default"])
+
+    if in_db.id:
+        old_obj = get(obj_name, in_db.id)
     else:
         return None
 
-    if old_acc:
-        old_acc = AccountInDB(**old_acc.model_dump())
-        update_data = account_in_db.model_dump(exclude_unset=True)
-        new_acc = old_acc.model_copy(update=update_data)
+    if old_obj:
+        old_obj = pyd_models[obj_name]["default"](**old_obj.model_dump())
+        update_data = in_db.model_dump(exclude_unset=True)
+        new_obj = old_obj.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
-            UPDATE accounts SET 
-                ({ACCOUNT_IN_DB_COLS}) = ({ACCOUNT_IN_DB_PLACEHOLDERS})
-            WHERE account_id = %s
-            RETURNING {ACCOUNTS_COLS}
+            UPDATE {obj_name} SET
+                ({cols}) = ({ph})
+            WHERE id = %s
+            RETURNING {cols}
             """,
-            (*tuple(new_acc.model_dump().values()), account_in_db.account_id),
-            Account,
+            (*tuple(new_obj.model_dump().values()), in_db.id),
+            pyd_models[obj_name]["default"],
         )
 
 
-def delete_account(account_id: UUID) -> Account | None:
+def delete(obj_name: str, id: UUID) -> Any | None:
+    cols = get_fields(pyd_models[obj_name]["default"])
     return execute_stmt(
         f"""
-        DELETE FROM accounts
-        WHERE account_id = %s
-        RETURNING {ACCOUNTS_COLS}
+        DELETE FROM {obj_name}
+        WHERE id = %s
+        RETURNING {cols}
         """,
-        (account_id,),
-        Account,
+        (id,),
+        pyd_models[obj_name]["default"],
     )
 
 
@@ -473,108 +398,6 @@ def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
         """,
         (s3_object_name, account_id),
         returning_rs=False,
-    )
-
-
-# CONTACTS
-CONTACT_IN_DB_COLS = get_fields(ContactInDB)
-CONTACT_IN_DB_PLACEHOLDERS = get_placeholders(ContactInDB)
-CONTACT_OVERVIEW_COLS = get_fields(Contact)
-CONTACT_COLS = get_fields(Contact)
-
-
-def get_all_contacts() -> list[ContactWithAccountName]:
-    fully_qualified = ", ".join([f"contacts.{x}" for x in Contact.model_fields.keys()])
-
-    return execute_stmt(
-        f"""
-        SELECT {fully_qualified}, accounts.name AS account_name
-        FROM accounts JOIN contacts
-            ON accounts.account_id = contacts.account_id
-        ORDER BY account_name, contacts.fname
-        """,
-        (),
-        ContactWithAccountName,
-        True,
-    )
-
-
-def get_all_contacts_for_account_id(account_id: UUID) -> list[Contact]:
-    return execute_stmt(
-        f"""
-        SELECT {CONTACT_COLS}
-        FROM contacts
-        WHERE account_id = %s
-        ORDER BY fname
-        """,
-        (account_id,),
-        Contact,
-        True,
-    )
-
-
-def get_contact(account_id: UUID, contact_id: UUID) -> Contact | None:
-    return execute_stmt(
-        f"""
-        SELECT {CONTACT_COLS}
-        FROM contacts 
-        WHERE (account_id, contact_id) = (%s, %s)
-        """,
-        (account_id, contact_id),
-        Contact,
-    )
-
-
-def create_contact(contact_in_db: ContactInDB) -> Contact | None:
-    return execute_stmt(
-        f"""
-        INSERT INTO contacts 
-            ({CONTACT_IN_DB_COLS})
-        VALUES
-            ({CONTACT_IN_DB_PLACEHOLDERS})
-        RETURNING {CONTACT_COLS}
-        """,
-        tuple(contact_in_db.model_dump().values()),
-        Contact,
-    )
-
-
-def update_contact(contact_in_db: ContactInDB) -> Contact | None:
-    if contact_in_db.contact_id:
-        old_contact = get_contact(contact_in_db.account_id, contact_in_db.contact_id)
-    else:
-        return None
-
-    if old_contact:
-        old_contact = ContactInDB(**old_contact.model_dump())
-        update_data = contact_in_db.model_dump(exclude_unset=True)
-        new_contact = old_contact.model_copy(update=update_data)
-
-        return execute_stmt(
-            f"""
-            UPDATE contacts SET 
-                ({CONTACT_IN_DB_COLS}) = ({CONTACT_IN_DB_PLACEHOLDERS})
-            WHERE (account_id, contact_id) = (%s, %s)
-            RETURNING {CONTACT_COLS}
-            """,
-            (
-                *tuple(new_contact.model_dump().values()),
-                contact_in_db.account_id,
-                contact_in_db.contact_id,
-            ),
-            Contact,
-        )
-
-
-def delete_contact(account_id: UUID, contact_id: UUID) -> Contact | None:
-    return execute_stmt(
-        f"""
-        DELETE FROM contacts
-        WHERE (account_id, contact_id) = (%s, %s)
-        RETURNING {CONTACT_COLS}
-        """,
-        (account_id, contact_id),
-        Contact,
     )
 
 

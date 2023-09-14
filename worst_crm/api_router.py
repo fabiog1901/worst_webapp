@@ -25,15 +25,15 @@ class Base(BaseModel):
 class APIRouter(APIRouter):
     def __init__(
         self,
-        name: str,
+        obj_name: str,
         return_model: Type[Base],
         overview_model: Type[Base],
         model_in_db: Type[Base],
         update_model: Type[Base],
     ) -> None:
         super().__init__(
-            prefix=f"/{name}",
-            tags=[name],
+            prefix=f"/{obj_name}",
+            tags=[obj_name],
         )
 
         @self.get(
@@ -41,7 +41,7 @@ class APIRouter(APIRouter):
             dependencies=[Security(dep.get_current_user)],
         )
         async def get_all() -> list[overview_model] | None:
-            return svc.get_all()
+            return svc.get_all(obj_name)
 
         @self.get(
             "/{id}",
@@ -50,7 +50,7 @@ class APIRouter(APIRouter):
         async def get(
             id: UUID,
         ) -> return_model | None:
-            return svc.get(id)
+            return svc.get(obj_name, id)
 
         @self.post(
             "",
@@ -67,23 +67,25 @@ class APIRouter(APIRouter):
                 **model.model_dump(exclude_unset=True),
                 created_by=current_user.user_id,
                 updated_by=current_user.user_id,
+                created_at=dt.datetime.utcnow(),
+                updated_at=dt.datetime.utcnow(),
             )
 
             if not in_db.id:
                 in_db.id = uuid4()
 
-            x: return_model = svc.create(in_db)
+            x: return_model = svc.create(obj_name, in_db)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    name,
+                    obj_name,
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
                 )
 
-            return None
+            return x
 
         @self.put(
             "",
@@ -96,15 +98,17 @@ class APIRouter(APIRouter):
             bg_task: BackgroundTasks,
         ) -> return_model | None:
             in_db = model_in_db(
-                **model.model_dump(exclude_unset=True), updated_by=current_user.user_id
+                **model.model_dump(exclude_unset=True),
+                updated_by=current_user.user_id,
+                updated_at=dt.datetime.utcnow(),
             )
 
-            x: return_model = svc.update(in_db)
+            x: return_model = svc.update(obj_name, in_db)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    name,
+                    obj_name,
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -122,12 +126,12 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> return_model | None:
-            x: return_model = svc.delete(id)
+            x: return_model = svc.delete(obj_name, id)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    name,
+                    obj_name,
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -145,7 +149,7 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = str(id) + "/" + filename
+            s3_object_name = "/".join([obj_name, str(id), filename])
             data = dep.get_presigned_get_url(s3_object_name)
             return HTMLResponse(content=data)
 
@@ -158,8 +162,8 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = str(id) + "/" + filename
-            svc.add_account_attachment(id, filename)
+            s3_object_name = "/".join([obj_name, str(id), filename])
+            svc.add_attachment(obj_name, id, filename)
             data = dep.get_presigned_put_url(s3_object_name)
             return HTMLResponse(content=data)
 
@@ -171,6 +175,6 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = str(id) + "/" + filename
-            svc.remove_account_attachment(id, filename)
+            s3_object_name = "/".join([obj_name, str(id), filename])
+            svc.remove_attachment(obj_name, id, filename)
             dep.s3_remove_object(s3_object_name)

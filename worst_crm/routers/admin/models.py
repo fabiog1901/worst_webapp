@@ -2,7 +2,7 @@ from fastapi import APIRouter, Security, BackgroundTasks
 from worst_crm import db
 import worst_crm.dependencies as dep
 from typing import Annotated
-from worst_crm.models import User, ModelName, Model, ModelInDB, UpdatedModel
+from worst_crm.models import User, Model, ModelInDB, UpdatedModel
 import inspect
 
 NAME = __name__.split(".", 2)[-1]
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/models", tags=[NAME])
     "/{name}",
     dependencies=[Security(dep.get_current_user, scopes=["admin"])],
 )
-async def get_model(name: ModelName) -> Model | None:
+async def get_model(name: str) -> Model | None:
     return db.get_model(name)
 
 
