@@ -1,35 +1,21 @@
 from fastapi import APIRouter, BackgroundTasks, Security
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
 from typing import Annotated, Type
 from uuid import UUID, uuid4
-from worst_crm.models import User
+from worst_crm.models import User, BaseFields
 import inspect
 import worst_crm.dependencies as dep
 import worst_crm.service as svc
 import datetime as dt
 
 
-class Base(BaseModel):
-    id: UUID
-    name: str
-    owned_by: str
-    permissions: dict
-    tags: set[str]
-    created_by: str
-    updated_by: str
-    created_at: dt.datetime
-    updated_at: dt.datetime
-
-
 class APIRouter(APIRouter):
     def __init__(
         self,
         obj_name: str,
-        return_model: Type[Base],
-        overview_model: Type[Base],
-        model_in_db: Type[Base],
-        update_model: Type[Base],
+        default_model: Type[BaseFields],
+        overview_model: Type[BaseFields],
+        update_model: Type[BaseFields],
     ) -> None:
         super().__init__(
             prefix=f"/{obj_name}",
@@ -49,7 +35,7 @@ class APIRouter(APIRouter):
         )
         async def get(
             id: UUID,
-        ) -> return_model | None:
+        ) -> default_model | None:
             return svc.get(obj_name, id)
 
         @self.post(
@@ -62,8 +48,8 @@ class APIRouter(APIRouter):
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
-        ) -> return_model | None:
-            in_db = model_in_db(
+        ) -> default_model | None:
+            m = default_model(
                 **model.model_dump(exclude_unset=True),
                 created_by=current_user.user_id,
                 updated_by=current_user.user_id,
@@ -71,10 +57,10 @@ class APIRouter(APIRouter):
                 updated_at=dt.datetime.utcnow(),
             )
 
-            if not in_db.id:
-                in_db.id = uuid4()
+            if not m.id:
+                m.id = uuid4()
 
-            x: return_model = svc.create(obj_name, in_db)
+            x: default_model = svc.create(obj_name, m)
 
             if x:
                 bg_task.add_task(
@@ -96,14 +82,14 @@ class APIRouter(APIRouter):
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
-        ) -> return_model | None:
-            in_db = model_in_db(
+        ) -> default_model | None:
+            m = default_model(
                 **model.model_dump(exclude_unset=True),
                 updated_by=current_user.user_id,
                 updated_at=dt.datetime.utcnow(),
             )
 
-            x: return_model = svc.update(obj_name, in_db)
+            x: default_model = svc.update(obj_name, m)
 
             if x:
                 bg_task.add_task(
@@ -125,8 +111,8 @@ class APIRouter(APIRouter):
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
-        ) -> return_model | None:
-            x: return_model = svc.delete(obj_name, id)
+        ) -> default_model | None:
+            x: default_model = svc.delete(obj_name, id)
 
             if x:
                 bg_task.add_task(

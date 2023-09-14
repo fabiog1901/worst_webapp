@@ -112,10 +112,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 for k, v in pyd_models.items():
     router = APIRouter(
         obj_name=k,
-        return_model=v["default"],
-        overview_model=v["default"],
+        default_model=v["default"],
+        overview_model=v["overview"],
         update_model=v["update"],
-        model_in_db=v["default"],
     )
 
     app.include_router(router)

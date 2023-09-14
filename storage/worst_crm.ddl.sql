@@ -139,11 +139,13 @@ CREATE TABLE events (
 
 insert into models (name, skema) values ('account', '{
     "properties": {
+        "text": {"type": "string", "default": ""},
         "industry": {"type": "string", "default": ""},
         "ticker": {"maxLength": 30, "type": "string", "default": ""}
     },
     "title": "Account",
-    "type": "object"
+    "type": "object",
+    "omit_from_overview": ["text"]
 }');
 
 insert into models (name, skema) values ('opportunity', '{

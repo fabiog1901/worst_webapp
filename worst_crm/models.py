@@ -17,7 +17,7 @@ if not DB_URL:
     raise EnvironmentError("DB_URL env variable not found!")
 
 
-def build_model_tuple(d: dict[str, dict[str, dict]]) -> dict:
+def build_model_tuple(d: dict[str, dict[str, dict]], is_overview: bool = False) -> dict:
     def get_type(x):
         return {"string": str, "integer": int, "null": None}[x]
 
@@ -30,13 +30,14 @@ def build_model_tuple(d: dict[str, dict[str, dict]]) -> dict:
 
     fields = {}
     for k, v in d.get("properties", {}).items():
-        if v.get("anyOf", None):
-            fields[k] = (
-                get_type(v["anyOf"][0]["type"]) | get_type(v["anyOf"][1]["type"]),
-                get_fieldinfo(v),
-            )
-        else:
-            fields[k] = (get_type(v["type"]), get_fieldinfo(v))
+        if not is_overview or (is_overview and k not in d.get("omit_from_overview", [])):
+            if v.get("anyOf", None):
+                fields[k] = (
+                    get_type(v["anyOf"][0]["type"]) | get_type(v["anyOf"][1]["type"]),
+                    get_fieldinfo(v),
+                )
+            else:
+                fields[k] = (get_type(v["type"]), get_fieldinfo(v))
 
     return fields
 
@@ -68,6 +69,7 @@ with psycopg.connect(DB_URL, autocommit=True) as conn:
 
 # for each model, create the Pydantic models
 
+
 class AuditFields(BaseModel):
     created_by: str | None = None
     created_at: dt.datetime
@@ -80,31 +82,32 @@ class BaseFields(BaseModel):
     name: str | None = Field(default="", max_length=50)
     owned_by: str | None = None
     permissions: str | None = None
-    attachments: list[str] | None = None
     tags: set[str] | None = None
     parent_type: str | None = None
     parent_id: UUID | None = None
 
+class Attachments(BaseModel):
+    attachments: list[str] | None = None
 
 pyd_models: dict = {}
 
 for n, s in skemas.items():
     pyd_models[n] = {}
-    
+
     # ModelUpdate
     f = build_model_tuple(s)
     model_update = extend_model(f"{n}Update", BaseFields, f)
     pyd_models[n]["update"] = model_update
 
     # Model
-    model = extend_model(f"{n}", (model_update, AuditFields), {})
+    model = extend_model(n, (model_update, AuditFields, Attachments), {})
     pyd_models[n]["default"] = model
 
-    # Model
-    # model = extend_model(n, (model_in_db, AuditFields), {})
-    # pyd_models[n]["return"] = model
-
     # ModelOverview
+    f = build_model_tuple(s, True)
+    model = extend_model(f"{n}Overview", (BaseFields, AuditFields), f)
+    pyd_models[n]["overview"] = model
+
 
 
 ###################
