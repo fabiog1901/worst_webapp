@@ -30,7 +30,9 @@ def build_model_tuple(d: dict[str, dict[str, dict]], is_overview: bool = False) 
 
     fields = {}
     for k, v in d.get("properties", {}).items():
-        if not is_overview or (is_overview and k not in d.get("omit_from_overview", [])):
+        if not is_overview or (
+            is_overview and k not in d.get("omit_from_overview", [])
+        ):
             if v.get("anyOf", None):
                 fields[k] = (
                     get_type(v["anyOf"][0]["type"]) | get_type(v["anyOf"][1]["type"]),
@@ -60,7 +62,7 @@ def extend_model(name: str, base: type, dict_def: dict):
 # get all model defs from database
 with psycopg.connect(DB_URL, autocommit=True) as conn:
     with conn.cursor() as cur:
-        rs = cur.execute("SELECT name, skema FROM models", ()).fetchall()
+        rs = cur.execute("SELECT name, skema FROM worst_models", ()).fetchall()
         skemas: dict = {}
         if rs:
             for n, s in rs:
@@ -71,9 +73,9 @@ with psycopg.connect(DB_URL, autocommit=True) as conn:
 
 
 class AuditFields(BaseModel):
-    created_by: str | None = None
+    created_by: str
     created_at: dt.datetime
-    updated_by: str | None = None
+    updated_by: str
     updated_at: dt.datetime
 
 
@@ -86,8 +88,10 @@ class BaseFields(BaseModel):
     parent_type: str | None = None
     parent_id: UUID | None = None
 
+
 class Attachments(BaseModel):
-    attachments: list[str] | None = None
+    attachments: list[str] = []
+
 
 pyd_models: dict = {}
 
@@ -107,7 +111,6 @@ for n, s in skemas.items():
     f = build_model_tuple(s, True)
     model = extend_model(f"{n}Overview", (BaseFields, AuditFields), f)
     pyd_models[n]["overview"] = model
-
 
 
 ###################
@@ -158,14 +161,10 @@ class PydanticModel(BaseModel):
     type: str | None = None
 
 
-class UpdatedModel(BaseModel):
+class ModelUpdate(BaseModel):
     name: str
     skema: PydanticModel
 
 
-class ModelInDB(UpdatedModel, AuditFields):
-    pass
-
-
-class Model(ModelInDB):
+class Model(ModelUpdate, AuditFields):
     pass

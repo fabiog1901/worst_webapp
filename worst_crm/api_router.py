@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated, Type
-from uuid import UUID, uuid4
+from uuid import UUID
 from worst_crm.models import User, BaseFields
 import inspect
 import worst_crm.dependencies as dep
@@ -49,23 +49,13 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            m = default_model(
-                **model.model_dump(exclude_unset=True),
-                created_by=current_user.user_id,
-                updated_by=current_user.user_id,
-                created_at=dt.datetime.utcnow(),
-                updated_at=dt.datetime.utcnow(),
-            )
-
-            if not m.id:
-                m.id = uuid4()
-
-            x: default_model = svc.create(obj_name, m)
+            x = svc.create(obj_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
                     obj_name,
+                    dt.datetime.utcnow(),
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -83,13 +73,7 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            m = default_model(
-                **model.model_dump(exclude_unset=True),
-                updated_by=current_user.user_id,
-                updated_at=dt.datetime.utcnow(),
-            )
-
-            x: default_model = svc.update(obj_name, m)
+            x = svc.update(obj_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(

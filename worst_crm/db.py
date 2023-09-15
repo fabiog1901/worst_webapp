@@ -4,12 +4,111 @@ from psycopg.types.json import Jsonb, JsonbDumper
 from typing import Any
 from uuid import UUID
 import os
-
-from worst_crm.models import Model, ModelInDB, pyd_models
+import datetime as dt
+from worst_crm.models import Model, pyd_models
 from worst_crm.models import User, UserInDB, UpdatedUserInDB
 
 
 DB_URL = os.getenv("DB_URL")
+
+SQL_RESERVED_WORDS = [
+    "all",
+    "analyse",
+    "analyze",
+    "and",
+    "any",
+    "array",
+    "as",
+    "asc",
+    "asymmetric",
+    "both",
+    "case",
+    "cast",
+    "check",
+    "collate",
+    "column",
+    "concurrently",
+    "constraint",
+    "create",
+    "current_catalog",
+    "current_date",
+    "current_role",
+    "current_schema",
+    "current_time",
+    "current_timestamp",
+    "current_user",
+    "default",
+    "deferrable",
+    "desc",
+    "distinct",
+    "do",
+    "else",
+    "end",
+    "except",
+    "false",
+    "fetch",
+    "for",
+    "foreign",
+    "from",
+    "grant",
+    "group",
+    "having",
+    "in",
+    "index",
+    "initially",
+    "intersect",
+    "into",
+    "lateral",
+    "leading",
+    "limit",
+    "localtime",
+    "localtimestamp",
+    "not",
+    "nothing",
+    "null",
+    "offset",
+    "on",
+    "only",
+    "or",
+    "order",
+    "placing",
+    "primary",
+    "references",
+    "returning",
+    "select",
+    "session_user",
+    "some",
+    "symmetric",
+    "table",
+    "then",
+    "to",
+    "trailing",
+    "true",
+    "union",
+    "unique",
+    "user",
+    "using",
+    "variadic",
+    "when",
+    "where",
+    "window",
+    "with",
+]
+
+RESERVED_WORDS = [
+    "id",
+    "created_at",
+    "created_by",
+    "updated_at",
+    "updated_by",
+    "name",
+    "owned_by",
+    "permissions",
+    "tags",
+    "parent_type",
+    "parent_id",
+    "attachments",
+] + SQL_RESERVED_WORDS
 
 if not DB_URL:
     raise EnvironmentError("DB_URL env variable not found!")
@@ -19,27 +118,27 @@ if not DB_URL:
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
 
 
-def log_event(obj: str, username: str, action: str, details: str):
+def log_event(obj_name: str, ts: dt.datetime, username: str, action: str, details: str):
     execute_stmt(
         """UPSERT INTO 
-            events (object, ts, username, action, details) 
+            worst_events (object, ts, username, action, details) 
         VALUES 
-            (%s, now(), %s, %s, %s)
+            (%s, %s, %s, %s, %s)
         """,
-        (obj, username, action, details),
+        (obj_name, ts, username, action, details),
         returning_rs=False,
     )
 
 
 def get_watch() -> int:
     return execute_stmt(
-        "SELECT ts::INT8 FROM WATCH AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
+        "SELECT ts::INT8 FROM worst_watch AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
     )[0]
 
 
 def update_watch() -> None:
     # just refresh the entry to update column 'ts'
-    execute_stmt("UPDATE watch SET id=1 WHERE true", returning_rs=False)
+    execute_stmt("UPDATE worst_watch SET id=1 WHERE true", returning_rs=False)
 
 
 def load_schema(ddl_filename):
@@ -65,7 +164,7 @@ def get_all_users() -> list[User]:
     return execute_stmt(
         f"""
         SELECT {USERS_COLS} 
-        FROM users
+        FROM worst_users
         ORDER BY full_name
         """,
         (),
@@ -78,7 +177,7 @@ def get_user_with_hash(user_id: str) -> UserInDB | None:
     return execute_stmt(
         f"""
         select {USERINDB_COLS}
-        from users 
+        from worst_users 
         where user_id = %s
         """,
         (user_id,),
@@ -90,7 +189,7 @@ def get_user(user_id: str) -> User | None:
     return execute_stmt(
         f"""
         select {USERS_COLS}
-        from users 
+        from worst_users 
         where user_id = %s
         """,
         (user_id,),
@@ -101,7 +200,7 @@ def get_user(user_id: str) -> User | None:
 def create_user(user: UserInDB) -> User | None:
     return execute_stmt(
         f"""
-        insert into users 
+        insert into worst_users 
             ({USERINDB_COLS})
         values
             ({USERINDB_PLACEHOLDERS})
@@ -114,7 +213,7 @@ def create_user(user: UserInDB) -> User | None:
 
 def increase_failed_attempt_count(user_id: str) -> UserInDB | None:
     return execute_stmt(
-        f"""update users set
+        f"""update worst_users set
             failed_attempts = failed_attempts + 1 
         where user_id = %s
         returning {USERINDB_COLS}""",
@@ -125,7 +224,7 @@ def increase_failed_attempt_count(user_id: str) -> UserInDB | None:
 
 def reset_failed_attempt_count(user_id: str):
     execute_stmt(
-        "UPDATE users SET failed_attempts = 0 WHERE user_id = %s",
+        "UPDATE worst_users SET failed_attempts = 0 WHERE user_id = %s",
         (user_id,),
         returning_rs=False,
     )
@@ -141,7 +240,7 @@ def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
 
         return execute_stmt(
             f"""
-            update users set 
+            update worst_users set 
             ({USERINDB_COLS}) = 
                 ({USERINDB_PLACEHOLDERS})
             where user_id  = %s
@@ -155,7 +254,7 @@ def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
 def delete_user(user_id: str) -> User | None:
     return execute_stmt(
         f"""
-        delete from users
+        delete from worst_users
         where user_id = %s
         returning {USERS_COLS}
         """,
@@ -201,13 +300,9 @@ def __get_where_clause(
     return (where_clause[:-4], tuple(bind_params))
 
 
-# ADMIN/MODELS
-
-
-# MODELS
-MODEL_IN_DB_COLS = get_fields(ModelInDB)
-MODEL_IN_DB_PLACEHOLDERS = get_placeholders(ModelInDB)
+# WORST_MODELS
 MODEL_COLS = get_fields(Model)
+MODEL_PLACEHOLDERS = get_placeholders(Model)
 
 
 def get_type(json_data_type: str) -> str:
@@ -222,67 +317,112 @@ def get_type(json_data_type: str) -> str:
     }[json_data_type]
 
 
+def get_all_models() -> list[Model]:
+    return execute_stmt(
+        f"""
+        SELECT {MODEL_COLS} 
+        FROM worst_models
+        ORDER BY name""",
+        (),
+        Model,
+        True,
+    )
+
+
 def get_model(name: str) -> Model:
     return execute_stmt(
         f"""
         SELECT {MODEL_COLS} 
-        FROM models
+        FROM worst_models
         WHERE name = %s""",
         (name,),
         Model,
     )
 
 
-def update_model(model_in_db: ModelInDB) -> Model | None:
-    def get_table_name(name: str) -> str:
+def create_model(model: Model) -> Model | None:
+    def get_type(x):
         return {
-            "account": "accounts",
-            "opportunity": "opportunities",
-            "artifact": "artifacts",
-            "project": "projects",
-            "task": "tasks",
-            "account_note": "account_notes",
-            "opportunity_note": "opportunity_notes",
-            "project_note": "project_notes",
-            "contact": "contacts",
-        }[name]
+            "sting": "str",
+            "ineger": int,
+        }.get(x, x)
 
-    old_model = get_model(model_in_db.name)
-
+    # build the CREATE TABLE stmt
     additions: dict[str, str] = {}
-    removals: list[str] = []
 
-    for k in old_model.skema.properties.keys():
-        if k not in model_in_db.skema.properties.keys():
-            removals.append(k)
+    if model.name.lower() in RESERVED_WORDS:
+        print(model.name, "in reserved words list")
+        # TODO raise exeption
+        return None
 
-    for k, v in model_in_db.skema.properties.items():
-        if k not in old_model.skema.properties.keys():
-            additions[k] = v["type"]
+    for k, v in model.skema.properties.items():
+        if k.lower() in RESERVED_WORDS:
+            # TODO raise error as k in reserved word list
+            print(k, "in reserved words list")
+            return None
 
-    # drop column stmts have to be executed in their own transaction
-    for x in removals:
-        execute_stmt(
-            f"""SET sql_safe_updates = false;
-            ALTER TABLE {get_table_name(model_in_db.name)} DROP COLUMN {x};
-            SET sql_safe_updates = true;
-            """,
-            returning_rs=False,
-        )
+        # check if the model allows for null
+        if v.get("anyOf", None):
+            # we pick the 1st item in the list
+            additions[k] = get_type(v["anyOf"][0]["type"])
+        else:
+            additions[k] = get_type(v["type"])
 
-    for x, y in additions.items():
-        execute_stmt(
-            f"ALTER TABLE {get_table_name(model_in_db.name)} ADD COLUMN {x} {get_type(y)};",
-            returning_rs=False,
-        )
+    stmt = ""
+
+    for k, v in additions.items():
+        stmt += f"{k} {v},\n"
+
+    stmt_prefix = f"""
+    CREATE TABLE {model.name}(
+        -- pk
+        id UUID NOT NULL,
+        -- default fields
+        name STRING NOT NULL,
+        owned_by STRING NOT NULL,
+        permissions STRING NOT NULL,
+        tags STRING [] NULL DEFAULT ARRAY[],
+        parent_type STRING,
+        parent_id UUID,
+        attachments STRING[] NULL DEFAULT ARRAY[],
+        -- custom fields
+    """
+
+    stmt_suffix = f"""
+        -- audit info
+        created_at TIMESTAMPTZ NOT NULL,
+        created_by STRING NULL,
+        updated_at TIMESTAMPTZ NOT NULL,
+        updated_by STRING NULL,
+        -- PK
+        CONSTRAINT pk PRIMARY KEY (id),
+        -- other FKs
+        CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
+            REFERENCES worst_users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
+            REFERENCES worst_users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+        CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
+            REFERENCES worst_users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+        );
+        CREATE INDEX {model.name}_parent ON {model.name}(parent_type, parent_id);
+        CREATE INVERTED INDEX {model.name}_tags_gin ON {model.name}(tags);
+    """
+
+    # execute CREATE TABLE
+    execute_stmt(
+        stmt_prefix + stmt + stmt_suffix,
+        (),
+        returning_rs=False,
+    )
 
     new_model = execute_stmt(
         f"""
-        UPDATE models SET
-            ({MODEL_IN_DB_COLS}) = ({MODEL_IN_DB_PLACEHOLDERS})
-        WHERE name = %s 
+        INSERT INTO worst_models 
+            ({MODEL_COLS}) 
+        VALUES 
+            ({MODEL_PLACEHOLDERS})
         RETURNING {MODEL_COLS}""",
-        (*tuple(model_in_db.model_dump().values()), model_in_db.name),
+        (*tuple(model.model_dump().values()),),
         Model,
     )
 
@@ -292,10 +432,54 @@ def update_model(model_in_db: ModelInDB) -> Model | None:
     return new_model
 
 
-def add_model_accounts(d):
-    pass
+def update_model(model: Model) -> Model | None:
+    old_model = get_model(model.name)
 
+    additions: dict[str, str] = {}
+    removals: list[str] = []
 
+    for k in old_model.skema.properties.keys():
+        if k not in model.skema.properties.keys():
+            removals.append(k)
+
+    for k, v in model.skema.properties.items():
+        if k not in old_model.skema.properties.keys():
+            additions[k] = v["type"]
+
+    # drop column stmts have to be executed in their own transaction
+    for x in removals:
+        execute_stmt(
+            f"""SET sql_safe_updates = false;
+            ALTER TABLE {model.name} DROP COLUMN {x};
+            SET sql_safe_updates = true;
+            """,
+            returning_rs=False,
+        )
+
+    for x, y in additions.items():
+        execute_stmt(
+            f"ALTER TABLE {model.name} ADD COLUMN {x} {get_type(y)};",
+            returning_rs=False,
+        )
+
+    new_model = execute_stmt(
+        f"""
+        UPDATE worst_models SET
+            ({MODEL_COLS}) = ({MODEL_PLACEHOLDERS})
+        WHERE name = %s 
+        RETURNING {MODEL_COLS}""",
+        (*tuple(model.model_dump().values()), model.name),
+        Model,
+    )
+
+    # trigger async App restart
+    update_watch()
+
+    return new_model
+
+###################
+# CRUD FOR MODELS #
+###################
 def get_all(obj_name: str) -> list:
     return execute_stmt(
         f"""
@@ -377,26 +561,26 @@ def delete(obj_name: str, id: UUID) -> Any | None:
     )
 
 
-def add_account_attachment(account_id: UUID, s3_object_name: str) -> None:
+def add_attachment(obj_name: str, id: UUID, s3_object_name: str) -> None:
     return execute_stmt(
-        """
-        UPDATE accounts SET
+        f"""
+        UPDATE {obj_name} SET
             attachments = array_append(attachments, %s)
-        WHERE account_id = %s
+        WHERE id = %s
         """,
-        (s3_object_name, account_id),
+        (s3_object_name, id),
         returning_rs=False,
     )
 
 
-def remove_account_attachment(account_id: UUID, s3_object_name: str) -> None:
+def remove_attachment(obj_name: str, id: UUID, s3_object_name: str) -> None:
     return execute_stmt(
-        """
-        UPDATE accounts SET
+        f"""
+        UPDATE {obj_name} SET
             attachments = array_remove(attachments, %s)
-        WHERE account_id = %s
+        WHERE id = %s
         """,
-        (s3_object_name, account_id),
+        (s3_object_name, id),
         returning_rs=False,
     )
 
@@ -406,7 +590,6 @@ class DictJsonbDumper(JsonbDumper):
         return super().dump(Jsonb(obj))
 
 
-# ==============================================================================================
 def execute_stmt(
     stmt: str,
     args: tuple = (),
