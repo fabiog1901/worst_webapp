@@ -12,14 +12,14 @@ import datetime as dt
 class APIRouter(APIRouter):
     def __init__(
         self,
-        obj_name: str,
+        model_name: str,
         default_model: Type[BaseFields],
         overview_model: Type[BaseFields],
         update_model: Type[BaseFields],
     ) -> None:
         super().__init__(
-            prefix=f"/{obj_name}",
-            tags=[obj_name],
+            prefix=f"/{model_name}",
+            tags=[model_name],
         )
 
         @self.get(
@@ -27,7 +27,7 @@ class APIRouter(APIRouter):
             dependencies=[Security(dep.get_current_user)],
         )
         async def get_all() -> list[overview_model] | None:
-            return svc.get_all(obj_name)
+            return svc.get_all(model_name)
 
         @self.get(
             "/{id}",
@@ -36,7 +36,7 @@ class APIRouter(APIRouter):
         async def get(
             id: UUID,
         ) -> default_model | None:
-            return svc.get(obj_name, id)
+            return svc.get(model_name, id)
 
         @self.post(
             "",
@@ -49,12 +49,12 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.create(obj_name, current_user.user_id, model)
+            x = svc.create(model_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    obj_name,
+                    model_name,
                     dt.datetime.utcnow(),
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
@@ -73,12 +73,12 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.update(obj_name, current_user.user_id, model)
+            x = svc.update(model_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    obj_name,
+                    model_name,
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -96,12 +96,12 @@ class APIRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x: default_model = svc.delete(obj_name, id)
+            x: default_model = svc.delete(model_name, id)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    obj_name,
+                    model_name,
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -119,7 +119,7 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = "/".join([obj_name, str(id), filename])
+            s3_object_name = "/".join([model_name, str(id), filename])
             data = dep.get_presigned_get_url(s3_object_name)
             return HTMLResponse(content=data)
 
@@ -132,8 +132,8 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = "/".join([obj_name, str(id), filename])
-            svc.add_attachment(obj_name, id, filename)
+            s3_object_name = "/".join([model_name, str(id), filename])
+            svc.add_attachment(model_name, id, filename)
             data = dep.get_presigned_put_url(s3_object_name)
             return HTMLResponse(content=data)
 
@@ -145,6 +145,6 @@ class APIRouter(APIRouter):
             id: UUID,
             filename: str,
         ):
-            s3_object_name = "/".join([obj_name, str(id), filename])
-            svc.remove_attachment(obj_name, id, filename)
+            s3_object_name = "/".join([model_name, str(id), filename])
+            svc.remove_attachment(model_name, id, filename)
             dep.s3_remove_object(s3_object_name)

@@ -1,12 +1,18 @@
 from psycopg_pool import ConnectionPool
 from psycopg.types.array import ListDumper
 from psycopg.types.json import Jsonb, JsonbDumper
-from typing import Any
+from typing import Any, Type
 from uuid import UUID
 import os
 import datetime as dt
-from worst_crm.models import Model, pyd_models
-from worst_crm.models import User, UserInDB, UpdatedUserInDB
+from worst_crm.models import (
+    Model,
+    pyd_models,
+    User,
+    UserInDB,
+    UpdatedUserInDB,
+    BaseFields,
+)
 
 
 DB_URL = os.getenv("DB_URL")
@@ -118,14 +124,16 @@ if not DB_URL:
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
 
 
-def log_event(obj_name: str, ts: dt.datetime, username: str, action: str, details: str):
+def log_event(
+    model_name: str, ts: dt.datetime, username: str, action: str, details: str
+):
     execute_stmt(
         """UPSERT INTO 
             worst_events (object, ts, username, action, details) 
         VALUES 
             (%s, %s, %s, %s, %s)
         """,
-        (obj_name, ts, username, action, details),
+        (model_name, ts, username, action, details),
         returning_rs=False,
     )
 
@@ -477,94 +485,101 @@ def update_model(model: Model) -> Model | None:
 
     return new_model
 
+
 ###################
 # CRUD FOR MODELS #
 ###################
-def get_all(obj_name: str) -> list:
+def get_all(model_name: str) -> list[Type[BaseFields]]:
     return execute_stmt(
         f"""
         SELECT *
-        FROM {obj_name}
+        FROM {model_name}
         ORDER BY name
         """,
         (),
-        pyd_models[obj_name]["default"],
+        pyd_models[model_name]["default"],
         True,
     )
 
 
-def get(obj_name: str, id: UUID) -> Any | None:
+def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
     return execute_stmt(
         f"""
         SELECT *
-        FROM {obj_name}
+        FROM {model_name}
         WHERE id = %s
         """,
         (id,),
-        pyd_models[obj_name]["default"],
+        pyd_models[model_name]["default"],
     )
 
 
-def create(obj_name: str, in_db: Any) -> Any | None:
-    cols = get_fields(pyd_models[obj_name]["default"])
-    ph = get_placeholders(pyd_models[obj_name]["default"])
+def create(
+    model_name: str, model_instance: Type[BaseFields]
+) -> Type[BaseFields] | None:
+    cols = get_fields(pyd_models[model_name]["default"])
+    ph = get_placeholders(pyd_models[model_name]["default"])
 
     return execute_stmt(
         f"""
-        INSERT INTO {obj_name}
+        INSERT INTO {model_name}
             ({cols})
         VALUES
             ({ph})
         RETURNING {cols}
         """,
-        tuple(in_db.model_dump().values()),
-        pyd_models[obj_name]["default"],
+        tuple(model_instance.model_dump().values()),
+        pyd_models[model_name]["default"],
     )
 
 
-def update(obj_name: str, in_db: Any) -> Any | None:
-    cols = get_fields(pyd_models[obj_name]["default"])
-    ph = get_placeholders(pyd_models[obj_name]["default"])
+def update(
+    model_name: str, model_instance: Type[BaseFields]
+) -> Type[BaseFields] | None:
+    cols = get_fields(pyd_models[model_name]["default"])
+    ph = get_placeholders(pyd_models[model_name]["default"])
 
-    if in_db.id:
-        old_obj = get(obj_name, in_db.id)
+    if model_instance.id:
+        old_model_instance = get(model_name, model_instance.id)
     else:
         return None
 
-    if old_obj:
-        old_obj = pyd_models[obj_name]["default"](**old_obj.model_dump())
-        update_data = in_db.model_dump(exclude_unset=True)
-        new_obj = old_obj.model_copy(update=update_data)
+    if old_model_instance:
+        old_model_instance = pyd_models[model_name]["default"](
+            **old_model_instance.model_dump()
+        )
+        update_data = model_instance.model_dump(exclude_unset=True)
+        new_model_instance = old_model_instance.model_copy(update=update_data)
 
         return execute_stmt(
             f"""
-            UPDATE {obj_name} SET
+            UPDATE {model_name} SET
                 ({cols}) = ({ph})
             WHERE id = %s
             RETURNING {cols}
             """,
-            (*tuple(new_obj.model_dump().values()), in_db.id),
-            pyd_models[obj_name]["default"],
+            (*tuple(new_model_instance.model_dump().values()), model_instance.id),
+            pyd_models[model_name]["default"],
         )
 
 
-def delete(obj_name: str, id: UUID) -> Any | None:
-    cols = get_fields(pyd_models[obj_name]["default"])
+def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
+    cols = get_fields(pyd_models[model_name]["default"])
     return execute_stmt(
         f"""
-        DELETE FROM {obj_name}
+        DELETE FROM {model_name}
         WHERE id = %s
         RETURNING {cols}
         """,
         (id,),
-        pyd_models[obj_name]["default"],
+        pyd_models[model_name]["default"],
     )
 
 
-def add_attachment(obj_name: str, id: UUID, s3_object_name: str) -> None:
+def add_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
     return execute_stmt(
         f"""
-        UPDATE {obj_name} SET
+        UPDATE {model_name} SET
             attachments = array_append(attachments, %s)
         WHERE id = %s
         """,
@@ -573,10 +588,10 @@ def add_attachment(obj_name: str, id: UUID, s3_object_name: str) -> None:
     )
 
 
-def remove_attachment(obj_name: str, id: UUID, s3_object_name: str) -> None:
+def remove_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
     return execute_stmt(
         f"""
-        UPDATE {obj_name} SET
+        UPDATE {model_name} SET
             attachments = array_remove(attachments, %s)
         WHERE id = %s
         """,
@@ -593,10 +608,10 @@ class DictJsonbDumper(JsonbDumper):
 def execute_stmt(
     stmt: str,
     args: tuple = (),
-    model: Any = None,
+    model: Type[BaseFields] = None,
     is_list: bool = False,
     returning_rs: bool = True,
-) -> Any:
+) -> Type[BaseFields] | list[Type[BaseFields]] | None:
     with pool.connection() as conn:
         # convert a set to a psycopg list
         conn.adapters.register_dumper(set, ListDumper)

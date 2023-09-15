@@ -6,18 +6,18 @@ from worst_crm.models import BaseFields
 from worst_crm.models import pyd_models, Model, ModelUpdate
 
 
-def get_all(obj_name: str) -> list[Type[BaseFields]] | None:
-    return db.get_all(obj_name)
+def get_all(model_name: str) -> list[Type[BaseFields]] | None:
+    return db.get_all(model_name)
 
 
-def get(obj_name: str, id: UUID) -> Type[BaseFields] | None:
-    return db.get(obj_name, id)
+def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
+    return db.get(model_name, id)
 
 
 def create(
-    obj_name: str, user_id: str, model: Type[BaseFields]
+    model_name: str, user_id: str, model: Type[BaseFields]
 ) -> Type[BaseFields] | None:
-    m: Type[BaseFields] = pyd_models[obj_name]["default"](
+    m: Type[BaseFields] = pyd_models[model_name]["default"](
         **model.model_dump(exclude_unset=True),
         created_by=user_id,
         updated_by=user_id,
@@ -28,37 +28,37 @@ def create(
     if not m.id:
         m.id = uuid4()
 
-    return db.create(obj_name, m)
+    return db.create(model_name, m)
 
 
 def update(
-    obj_name: str, user_id: str, model: Type[BaseFields]
+    model_name: str, user_id: str, model: Type[BaseFields]
 ) -> Type[BaseFields] | None:
-    m: Type[BaseFields] = pyd_models[obj_name]["default"](
+    m: Type[BaseFields] = pyd_models[model_name]["default"](
         **model.model_dump(exclude_unset=True),
         updated_by=user_id,
         updated_at=dt.datetime.utcnow(),
     )
 
-    return db.update(obj_name, m)
+    return db.update(model_name, m)
 
 
-def delete(obj_name: str, id: UUID) -> Type[BaseFields] | None:
-    return db.delete(obj_name, id)
+def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
+    return db.delete(model_name, id)
 
 
-def add_attachment(obj_name: str, id: UUID, filename: str):
+def add_attachment(model_name: str, id: UUID, filename: str):
     print("Mona add_account_attachment")
     return None
 
 
-def remove_attachment(obj_name: str, id: UUID, filename: str):
+def remove_attachment(model_name: str, id: UUID, filename: str):
     print("Mona remove_account_attachment:")
     return None
 
 
-def log_event(obj_name: str, ts: dt.datetime, username: str, action: str, details: str):
-    return db.log_event(obj_name, ts, username, action, details)
+def log_event(model_name: str, ts: dt.datetime, username: str, action: str, details: str):
+    return db.log_event(model_name, ts, username, action, details)
 
 
 # MODEL
@@ -81,6 +81,9 @@ def create_model(
         created_at=dt.datetime.utcnow(),
         updated_at=dt.datetime.utcnow(),
     )
+    
+    # TODO sanitize incoming name
+    m.name = m.name.lower()
 
     return db.create_model(m)
 
