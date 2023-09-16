@@ -5,6 +5,7 @@ from worst_crm import dependencies as dep
 from worst_crm.models import NewUser, User, UserInDB, UpdatedUser, UpdatedUserInDB
 from typing import Annotated
 import inspect
+import datetime as dt
 
 NAME = __name__.split(".", 2)[-1]
 
@@ -47,6 +48,7 @@ async def create_user(
         bg_task.add_task(
             db.log_event,
             NAME,
+            dt.datetime.utcnow(),
             current_user.user_id,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(exclude="hashed_password"),  # type: ignore
@@ -73,6 +75,7 @@ async def update_user(
         bg_task.add_task(
             db.log_event,
             NAME,
+            dt.datetime.utcnow(),
             current_user.user_id,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(exclude="hashed_password"),  # type: ignore
@@ -93,6 +96,7 @@ async def delete_user(
         bg_task.add_task(
             db.log_event,
             NAME,
+            dt.datetime.utcnow(),
             current_user.user_id,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(exclude="hashed_password"),  # type: ignore

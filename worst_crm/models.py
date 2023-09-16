@@ -73,8 +73,8 @@ with psycopg.connect(DB_URL, autocommit=True) as conn:
 
 
 class AuditFields(BaseModel):
-    created_by: str
-    created_at: dt.datetime
+    created_by: str | None = None
+    created_at: dt.datetime | None = None
     updated_by: str
     updated_at: dt.datetime
 

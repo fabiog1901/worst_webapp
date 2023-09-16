@@ -443,6 +443,9 @@ def create_model(model: Model) -> Model | None:
 def update_model(model: Model) -> Model | None:
     old_model = get_model(model.name)
 
+    print(old_model)
+    print(model.name)
+
     additions: dict[str, str] = {}
     removals: list[str] = []
 
@@ -473,10 +476,10 @@ def update_model(model: Model) -> Model | None:
     new_model = execute_stmt(
         f"""
         UPDATE worst_models SET
-            ({MODEL_COLS}) = ({MODEL_PLACEHOLDERS})
+            (skema, updated_by, updated_at) = (%s, %s, %s)
         WHERE name = %s 
         RETURNING {MODEL_COLS}""",
-        (*tuple(model.model_dump().values()), model.name),
+        (model.skema.model_dump_json(), model.updated_by, model.updated_at, model.name),
         Model,
     )
 
@@ -484,6 +487,31 @@ def update_model(model: Model) -> Model | None:
     update_watch()
 
     return new_model
+
+
+def delete_model(model_name: str) -> Model | None:
+    # drop table
+    execute_stmt(
+        f"""SET sql_safe_updates = false;
+        DROP TABLE {model_name};
+        SET sql_safe_updates = true;
+        """,
+        returning_rs=False,
+    )
+
+    deleted_model = execute_stmt(
+        f"""
+        DELETE FROM worst_models 
+        WHERE name = %s 
+        RETURNING {MODEL_COLS}""",
+        (model_name,),
+        Model,
+    )
+
+    # trigger async App restart
+    update_watch()
+
+    return deleted_model
 
 
 ###################

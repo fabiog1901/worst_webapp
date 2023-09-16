@@ -66,6 +66,7 @@ async def update_model(
         bg_task.add_task(
             svc.log_event,
             NAME,
+            dt.datetime.utcnow(),
             current_user.user_id,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
@@ -89,6 +90,7 @@ async def delete_model(
         bg_task.add_task(
             svc.log_event,
             NAME,
+            dt.datetime.utcnow(),
             current_user.user_id,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
