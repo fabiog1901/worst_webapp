@@ -13,6 +13,12 @@ def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
     return db.get(model_name, id)
 
 
+def get_all_children(
+    model_name: str, id: UUID
+) -> dict[str, list[Type[BaseFields]]] | None:
+    return db.get_all_children(model_name, id)
+
+
 def create(
     model_name: str, user_id: str, model: Type[BaseFields]
 ) -> Type[BaseFields] | None:

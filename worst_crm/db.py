@@ -542,6 +542,30 @@ def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
     )
 
 
+def get_all_children(
+    model_name: str, id: UUID
+) -> dict[str, list[Type[BaseFields]]] | None:
+    models = get_all_models()
+
+    children = {}
+
+    for m in models:
+        children[m.name] = execute_stmt(
+            f"""
+            SELECT *
+            FROM {m.name}
+            WHERE parent_id = %s
+            """,
+            (id,),
+            pyd_models[m.name]["default"],
+            True,
+        )
+
+    print(children)
+    
+    return children
+
+
 def create(
     model_name: str, model_instance: Type[BaseFields]
 ) -> Type[BaseFields] | None:
@@ -635,8 +659,8 @@ class DictJsonbDumper(JsonbDumper):
 
 def execute_stmt(
     stmt: str,
-    args: tuple = (),
-    model: Type[BaseFields] = None,
+    bind_args: tuple = (),
+    returning_model: Type[BaseFields] = None,
     is_list: bool = False,
     returning_rs: bool = True,
 ) -> Type[BaseFields] | list[Type[BaseFields]] | None:
@@ -647,7 +671,7 @@ def execute_stmt(
 
         with conn.cursor() as cur:
             try:
-                cur.execute(stmt, args)  # type: ignore
+                cur.execute(stmt, bind_args)  # type: ignore
 
                 if not returning_rs:
                     return
@@ -659,9 +683,11 @@ def execute_stmt(
                 if is_list:
                     rsl = cur.fetchall()
 
-                    if model:
+                    if returning_model:
                         return [
-                            model(**{k: rs[i] for i, k in enumerate(col_names)})
+                            returning_model(
+                                **{k: rs[i] for i, k in enumerate(col_names)}
+                            )
                             for rs in rsl
                         ]
                     else:
@@ -669,8 +695,10 @@ def execute_stmt(
                 else:
                     rs = cur.fetchone()
                     if rs:
-                        if model:
-                            return model(**{k: rs[i] for i, k in enumerate(col_names)})
+                        if returning_model:
+                            return returning_model(
+                                **{k: rs[i] for i, k in enumerate(col_names)}
+                            )
                         else:
                             return rs
                     else:

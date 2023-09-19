@@ -8,6 +8,8 @@ import worst_crm.dependencies as dep
 import worst_crm.service as svc
 import datetime as dt
 
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 class APIRouter(APIRouter):
     def __init__(
@@ -37,6 +39,18 @@ class APIRouter(APIRouter):
             id: UUID,
         ) -> default_model | None:
             return svc.get(model_name, id)
+
+        @self.get(
+            "/{id}/children",
+            dependencies=[Security(dep.get_current_user)],
+        )
+        async def get_all_children(
+            id: UUID,
+        ) -> dict[str, list[Type[BaseFields]]] | None:
+            # return svc.get_all_children(model_name, id)
+        
+            json_compatible_item_data = jsonable_encoder(svc.get_all_children(model_name, id))
+            return JSONResponse(content=json_compatible_item_data)
 
         @self.post(
             "",
