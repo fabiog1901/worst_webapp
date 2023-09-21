@@ -525,7 +525,7 @@ def get_all(model_name: str) -> list[Type[BaseFields]]:
         ORDER BY name
         """,
         (),
-        pyd_models[model_name]["default"],
+        pyd_models[model_name]["overview"],
         True,
     )
 
@@ -562,7 +562,7 @@ def get_all_children(
         )
 
     print(children)
-    
+
     return children
 
 

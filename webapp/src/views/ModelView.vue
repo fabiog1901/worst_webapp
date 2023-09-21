@@ -8,7 +8,7 @@
           <h5
             class="justify-center align-middle text-3xl tracking-wider text-gray-600 dark:text-gray-400"
           >
-            Accounts
+            ModelViewh
           </h5>
         </div>
 

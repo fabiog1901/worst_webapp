@@ -11,6 +11,7 @@ import datetime as dt
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+
 class APIRouter(APIRouter):
     def __init__(
         self,
@@ -47,10 +48,9 @@ class APIRouter(APIRouter):
         async def get_all_children(
             id: UUID,
         ) -> dict[str, list[Type[BaseFields]]] | None:
-            # return svc.get_all_children(model_name, id)
-        
-            json_compatible_item_data = jsonable_encoder(svc.get_all_children(model_name, id))
-            return JSONResponse(content=json_compatible_item_data)
+            return JSONResponse(jsonable_encoder(
+                svc.get_all_children(model_name, id)
+            ))
 
         @self.post(
             "",
