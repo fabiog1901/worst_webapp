@@ -8,7 +8,7 @@
           <h5
             class="justify-center align-middle text-3xl tracking-wider text-gray-600 dark:text-gray-400"
           >
-            ModelViewh
+            {{ model_name.charAt(0).toUpperCase() + model_name.slice(1) }}
           </h5>
         </div>
 
@@ -48,7 +48,7 @@
                 v-on:change="store.add_selected_owners(store.selectedOwners)"
               >
                 <option
-                  v-for="x in store.get_unique_account_owners"
+                  v-for="x in store.get_unique_model_owners"
                   v-bind:key="x"
                   v-bind:value="x"
                 >
@@ -169,11 +169,11 @@
       <TopNav />
 
       <FabTable
-        v-bind:data="store.get_filtered_accounts()"
-        v-bind:model="store.account_model"
-        v-on:row-clicked="accountLink($event)"
-        v-on:delete-clicked="deleteAccount($event)"
-        v-on:new-clicked="createNewAccount()"
+        v-bind:data="store.get_filtered_models()"
+        v-bind:model="store.worst_models[model_name]['kk']"
+        v-on:row-clicked="modelLink($event)"
+        v-on:delete-clicked="deleteModel($event)"
+        v-on:new-clicked="createNewModel()"
       />
 
       <BottomNav />
@@ -182,34 +182,38 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useStore } from "@/stores/accountsStore";
+import { computed, onMounted } from "vue";
+
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "@/stores/modelStore";
 
 import BottomNav from "@/components/BottomNav.vue";
 import FabTable from "@/components/FabTable.vue";
 import TopNav from "@/components/TopNav.vue";
 
-import type { AccountOverview } from "@/types";
+import type { Model } from "@/types";
 
 const store = useStore();
 
 const router = useRouter();
 
-const createNewAccount = () => {
-  console.log("new account");
+const createNewModel = () => {
+  console.log(`new model ${model_name.value}`);
 };
 
-const deleteAccount = (acc: AccountOverview) => {
-  console.log(`delete account: ${acc.account_id}`);
+const deleteModel = (m: Model) => {
+  console.log(`delete model: ${model_name.value}/${m.id}`);
 };
 
-const accountLink = (acc: AccountOverview) => {
-  router.push(`/accounts/${acc.account_id}`);
+const modelLink = (m: Model) => {
+  router.push(`/${model_name.value}/${m.id}`);
 };
+
+const model_name = computed(() => {
+  return useRoute().params.model as string;
+});
 
 onMounted(async () => {
-  await store.fetch_all_accounts();
-  await store.fetch_account_model();
+  await store.fetch_all_instances(model_name.value);
 });
 </script>

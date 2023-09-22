@@ -8,7 +8,7 @@
           <h5
             class="justify-center align-middle text-3xl tracking-wider text-gray-600 dark:text-gray-400"
           >
-            {{ account.name }}
+            modelname: {{ model_name }} -  id: {{ id }}
           </h5>
         </div>
 
@@ -189,7 +189,7 @@ import TopNav from "@/components/TopNav.vue";
 import Button from "primevue/button";
 import Chip from "primevue/button";
 
-import type { Account } from "@/types";
+import type { Model } from "@/types";
 
 const store = useStore();
 
@@ -198,13 +198,17 @@ const value = ref("");
 
 const router = useRouter();
 
-const account_id = computed(() => {
-  return useRoute().params.account_id;
+const id = computed(() => {
+  return useRoute().params.id;
 });
 
-const account = ref<Account>({});
-
-onMounted(async () => {
-  account.value = await store.fetch_account(account_id.value);
+const model_name = computed(() => {
+  return useRoute().params.model;
 });
+
+const m = ref<Model>({});
+
+// onMounted(async () => {
+//   m.value = await store.fetch_model(id.value);
+// });
 </script>

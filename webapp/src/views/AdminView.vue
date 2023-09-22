@@ -1,11 +1,8 @@
 <template>
-  <div class="flex">
-    <ContextBarAdmin />
-    <ContentContainer />
-  </div>
+  <div class="flex">------------ADMINVIEW</div>
 </template>
 
 <script setup lang="ts">
-import ContextBarAdmin from "@/components/ContextBarAdmin.vue";
-import ContentContainer from "@/components/ContentContainer.vue";
+// import ContextBarAdmin from "@/components/ContextBarAdmin.vue";
+// import ContentContainer from "@/components/ContentContainer.vue";
 </script>
