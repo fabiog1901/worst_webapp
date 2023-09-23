@@ -1,4 +1,35 @@
 {
+  "account-model": [
+    { "field": "account_id", "header": "ID ", "visible": false, "type": "" },
+    { "field": "name", "header": "Name ", "visible": true, "type": "" },
+    {
+      "field": "due_date",
+      "header": "Due Date ",
+      "visible": true,
+      "type": "date"
+    },
+    { "field": "owned_by", "header": "Owned By ", "visible": true, "type": "" },
+    { "field": "status", "header": "Status ", "visible": true, "type": "tag" },
+    { "field": "tags", "header": "Tags ", "visible": true, "type": "tag" },
+    {
+      "field": "updated_at",
+      "header": "Last Updated ",
+      "visible": true,
+      "type": "date"
+    },
+    {
+      "field": "created_at",
+      "header": "Created At ",
+      "visible": true,
+      "type": "date"
+    },
+    {
+      "field": "updated_by",
+      "header": "Last Updated By ",
+      "visible": true,
+      "type": ""
+    }
+  ],
   "models": {
     "account": {
       "name": "account",

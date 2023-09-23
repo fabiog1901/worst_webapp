@@ -17,9 +17,15 @@ if not DB_URL:
     raise EnvironmentError("DB_URL env variable not found!")
 
 
-def build_model_tuple(d: dict[str, dict[str, dict]], is_overview: bool = False) -> dict:
+def build_model_tuple(fields: list[dict], is_overview: bool = False) -> dict:
     def get_type(x):
-        return {"string": str, "integer": int, "null": None}[x]
+        return {
+            "string": str,
+            "integer": int,
+            "date": dt.datetime,
+            "decimal": float,
+            "null": None,
+        }[x]
 
     def get_fieldinfo(meta: dict):
         fi = FieldInfo()
@@ -28,20 +34,17 @@ def build_model_tuple(d: dict[str, dict[str, dict]], is_overview: bool = False) 
         fi.metadata = fi._collect_metadata(meta)
         return fi
 
-    fields = {}
-    for k, v in d.get("properties", {}).items():
-        if not is_overview or (
-            is_overview and k not in d.get("omit_from_overview", [])
-        ):
-            if v.get("anyOf", None):
-                fields[k] = (
-                    get_type(v["anyOf"][0]["type"]) | get_type(v["anyOf"][1]["type"]),
-                    get_fieldinfo(v),
+    pyd_fields = {}
+    for f in fields:
+        if not is_overview or (is_overview and f["in_overview"]):
+            if f["nullable"]:
+                pyd_fields[f["name"]] = (get_type(f["type"]) | None), get_fieldinfo(
+                    f["args"]
                 )
             else:
-                fields[k] = (get_type(v["type"]), get_fieldinfo(v))
+                pyd_fields[f["name"]] = (get_type(f["type"]), get_fieldinfo(f["args"]))
 
-    return fields
+    return pyd_fields
 
 
 def extend_model(name: str, base: type, dict_def: dict):
@@ -99,7 +102,7 @@ for n, s in skemas.items():
     pyd_models[n] = {}
 
     # ModelUpdate
-    f = build_model_tuple(s)
+    f = build_model_tuple(s["fields"])
     model_update = extend_model(f"{n}Update", BaseFields, f)
     pyd_models[n]["update"] = model_update
 
@@ -107,8 +110,8 @@ for n, s in skemas.items():
     model = extend_model(n, (model_update, AuditFields, Attachments), {})
     pyd_models[n]["default"] = model
 
-    # ModelOverview
-    f = build_model_tuple(s, True)
+    # # ModelOverview
+    f = build_model_tuple(s["fields"], True)
     model = extend_model(f"{n}Overview", (BaseFields, AuditFields), f)
     pyd_models[n]["overview"] = model
 
@@ -154,16 +157,14 @@ class UserInDB(User):
 ###################
 
 
-class PydanticModel(BaseModel):
-    properties: dict
-    required: list[str] | None = None
-    title: str | None = None
-    type: str | None = None
+class Skema(BaseModel):
+    svg_path: str = ""
+    fields: list[dict]
 
 
 class ModelUpdate(BaseModel):
     name: str
-    skema: dict
+    skema: Skema
 
 
 class Model(ModelUpdate, AuditFields):

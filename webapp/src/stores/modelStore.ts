@@ -17,6 +17,7 @@ export const useStore = defineStore("model", () => {
     );
     console.info("modelStore: fetched all worst_models");
     worst_models.value = r.data;
+    console.log(worst_models.value['project']['skema']['fields']);
   };
 
   const fetch_all_instances = async (model_name: string) => {
@@ -25,6 +26,7 @@ export const useStore = defineStore("model", () => {
     );
     console.info(`modelStore: fetched all instances for '${model_name}'`);
     model_instances.value = r.data;
+    console.info(model_instances.value);
   };
 
   const add_selected_owners = (owners: string[]) => {
@@ -46,6 +48,7 @@ export const useStore = defineStore("model", () => {
   };
 
   const get_filtered_models = () => {
+    // console.log(model_instances.value.filter((x) => include_models_by_owners(x)));
     return model_instances.value.filter((x) => include_models_by_owners(x));
   };
 

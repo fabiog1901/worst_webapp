@@ -27,7 +27,7 @@ class APIRouter(APIRouter):
 
         @self.get(
             "",
-            dependencies=[Security(dep.get_current_user)],
+            # dependencies=[Security(dep.get_current_user)],
         )
         async def get_all() -> list[overview_model] | None:
             return svc.get_all(model_name)

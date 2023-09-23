@@ -363,18 +363,20 @@ def create_model(model: Model) -> Model | None:
         # TODO raise exeption
         return None
 
-    for k, v in model.skema.properties.items():
-        if k.lower() in RESERVED_WORDS:
-            # TODO raise error as k in reserved word list
-            print(k, "in reserved words list")
+    for f in model.skema.fields:
+        if f["name"].lower() in RESERVED_WORDS:
+            # TODO raise error as name is in reserved word list
+            print(f["name"], "in reserved words list")
             return None
 
-        # check if the model allows for null
-        if v.get("anyOf", None):
-            # we pick the 1st item in the list
-            additions[k] = get_type(v["anyOf"][0]["type"])
-        else:
-            additions[k] = get_type(v["type"])
+        # # check if the model allows for null
+        # if f["nullable"]:
+        #     # we pick the 1st item in the list
+        #     additions[k] = get_type(v["anyOf"][0]["type"])
+        # else:
+        #     additions[k] = get_type(v["type"])
+
+        additions[f["name"]] = f["type"]
 
     stmt = ""
 
@@ -449,12 +451,12 @@ def update_model(model: Model) -> Model | None:
     additions: dict[str, str] = {}
     removals: list[str] = []
 
-    for k in old_model.skema.properties.keys():
-        if k not in model.skema.properties.keys():
+    for k in old_model.fields.properties.keys():
+        if k not in model.fields.properties.keys():
             removals.append(k)
 
-    for k, v in model.skema.properties.items():
-        if k not in old_model.skema.properties.keys():
+    for k, v in model.fields.properties.items():
+        if k not in old_model.fields.properties.keys():
             additions[k] = v["type"]
 
     # drop column stmts have to be executed in their own transaction

@@ -87,9 +87,11 @@
       }"
     >
       <Column
-        v-for="col in props.model.filter((x) => x.visible)"
-        v-bind:key="col.field"
-        v-bind:field="col.field"
+        v-for="col in props.model
+          .concat(modelDefaultFields)
+          .filter((x) => x.visible)"
+        v-bind:key="col.name"
+        v-bind:field="col.name"
         v-bind:header="col.header"
         sortable
         v-bind:pt="{
@@ -100,7 +102,7 @@
       >
         <template v-if="col.type === 'tag'" v-slot:body="slotProps">
           <div
-            v-for="tag in slotProps.data[col.field].split(',')"
+            v-for="tag in slotProps.data[col.name]"
             v-bind:key="tag"
             class="p-1"
           >
@@ -115,7 +117,7 @@
 
         <template v-else-if="col.type === 'date'" v-slot:body="slotProps">
           <div class="p-1">
-            {{ formatDate(slotProps.data[col.field]) }}
+            {{ formatDate(slotProps.data[col.name]) }}
           </div>
         </template>
       </Column>
@@ -190,6 +192,10 @@ const props = defineProps({
     required: true,
   },
   model: {
+    type: Array<Model>,
+    required: true,
+  },
+  modelDefaultFields: {
     type: Array<Model>,
     required: true,
   },

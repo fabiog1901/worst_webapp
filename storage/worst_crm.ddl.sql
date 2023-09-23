@@ -35,13 +35,13 @@ CREATE TABLE worst_users (
 CREATE TABLE worst_models (
     -- pk
     name STRING NOT NULL,
+    -- fields
+    skema JSONB,
     -- audit info
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by STRING NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now() ON UPDATE now(),
     updated_by STRING NULL,
-    -- fields
-    skema JSONB,
     CONSTRAINT pk PRIMARY KEY (name),
     CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
         REFERENCES worst_users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
