@@ -163,7 +163,7 @@ class PydanticModel(BaseModel):
 
 class ModelUpdate(BaseModel):
     name: str
-    skema: PydanticModel
+    skema: dict
 
 
 class Model(ModelUpdate, AuditFields):
