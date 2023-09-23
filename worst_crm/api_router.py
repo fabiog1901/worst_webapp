@@ -48,9 +48,7 @@ class APIRouter(APIRouter):
         async def get_all_children(
             id: UUID,
         ) -> dict[str, list[Type[BaseFields]]] | None:
-            return JSONResponse(jsonable_encoder(
-                svc.get_all_children(model_name, id)
-            ))
+            return JSONResponse(jsonable_encoder(svc.get_all_children(model_name, id)))
 
         @self.post(
             "",

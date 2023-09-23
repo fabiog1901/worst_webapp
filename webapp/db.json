@@ -101,6 +101,57 @@
           "type": ""
         }
       ]
+    },
+    "task": {
+      "name": "task",
+      "svg_path": "M6 6.878V6a2.25 2.25 0 012.25-2.25h7.5A2.25 2.25 0 0118 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 004.5 9v.878m13.5-3A2.25 2.25 0 0119.5 9v.878m0 0a2.246 2.246 0 00-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0121 12v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6c0-.98.626-1.813 1.5-2.122",
+      "skema": {},
+      "kk": [
+        {
+          "field": "id",
+          "header": "ID ",
+          "visible": false,
+          "type": ""
+        },
+        { "field": "name", "header": "Name ", "visible": true, "type": "" },
+        {
+          "field": "due_date",
+          "header": "Due Date ",
+          "visible": true,
+          "type": "date"
+        },
+        {
+          "field": "owned_by",
+          "header": "Owned By ",
+          "visible": true,
+          "type": ""
+        },
+        {
+          "field": "status",
+          "header": "Status ",
+          "visible": true,
+          "type": "tag"
+        },
+        { "field": "tags", "header": "Tags ", "visible": true, "type": "tag" },
+        {
+          "field": "updated_at",
+          "header": "Last Updated ",
+          "visible": true,
+          "type": "date"
+        },
+        {
+          "field": "created_at",
+          "header": "Created At ",
+          "visible": true,
+          "type": "date"
+        },
+        {
+          "field": "updated_by",
+          "header": "Last Updated By ",
+          "visible": true,
+          "type": ""
+        }
+      ]
     }
   },
   "account": [
@@ -13122,7 +13173,7 @@
   "project": [
     {
       "id": "7fa6fa16-a207-4b76-8ac0-681289fdd3e3",
-      "name": "Koss-Fahey",
+      "name": "aaaKoss-Fahey",
       "owned_by": "Gillis",
       "status": "OPEN",
       "due_date": "2025-10-29T22:25:42Z",
@@ -13135,7 +13186,7 @@
     },
     {
       "id": "c338bed8-7006-458a-bb3b-b21d2935193b",
-      "name": "Schuster Group",
+      "name": "aaSchuster Group",
       "owned_by": "Crocombe",
       "status": "TLC",
       "due_date": "2025-09-20T18:11:46Z",
@@ -13148,7 +13199,7 @@
     },
     {
       "id": "f9e7a14e-a490-447b-a313-9c635c2521fb",
-      "name": "Satterfield LLC",
+      "name": "aaSatterfield LLC",
       "owned_by": "Izhak",
       "status": "OPEN",
       "due_date": "2026-06-18T03:28:22Z",
@@ -13174,7 +13225,7 @@
     },
     {
       "id": "a0f1144f-f823-4c0a-974f-6d20763a5506",
-      "name": "Crist Inc",
+      "name": "aaCrist Inc",
       "owned_by": "Halegarth",
       "status": "CLOSED",
       "due_date": "2025-09-01T22:44:54Z",
@@ -13187,7 +13238,7 @@
     },
     {
       "id": "f2f0f8c1-3fae-4660-bfdc-1c3a094b8708",
-      "name": "Rath, Johns and Zemlak",
+      "name": "dfdRath, Johns and Zemlak",
       "owned_by": "Coffelt",
       "status": "OPEN",
       "due_date": "2026-03-10T02:58:22Z",
@@ -13200,7 +13251,7 @@
     },
     {
       "id": "c422fed8-1618-4b4f-a27f-77b7c7ec9d42",
-      "name": "Koepp, Wunsch and Bauch",
+      "name": "fdfdKoepp, Wunsch and Bauch",
       "owned_by": "Gallienne",
       "status": "TLC",
       "due_date": "2026-03-07T17:59:47Z",
@@ -26119,6 +26170,34 @@
       "created_by": "Joret",
       "updated_by": "O'Shiel",
       "attachments": "att2"
+    }
+  ],
+  "task": [
+    {
+      "id": "7fa6fa16-a207-4b76-8ac0-681289fdd3e3",
+      "name": "task Koss-Fahey",
+      "owned_by": "Gillis",
+      "status": "OPEN",
+      "due_date": "2025-10-29T22:25:42Z",
+      "tags": "tag3,t11,TLC,CC",
+      "created_at": "2023-09-10T08:10:00Z",
+      "updated_at": "2023-07-14T04:01:22Z",
+      "created_by": "Billyeald",
+      "updated_by": "Bartolomeo",
+      "attachments": "att2"
+    },
+    {
+      "id": "c338bed8-7006-458a-bb3b-b21d2935193b",
+      "name": "task Schuster Group",
+      "owned_by": "Crocombe",
+      "status": "TLC",
+      "due_date": "2025-09-20T18:11:46Z",
+      "tags": "t1",
+      "created_at": "2022-09-08T22:01:44Z",
+      "updated_at": "2023-05-02T14:00:18Z",
+      "created_by": "Quested",
+      "updated_by": "Borton",
+      "attachments": "att3"
     }
   ]
 }

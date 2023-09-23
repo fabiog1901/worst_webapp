@@ -12,7 +12,9 @@ export const useStore = defineStore("model", () => {
   const selectedOwners = ref<string[]>([]);
 
   const fetch_all_worst_models = async () => {
-    const r = await axios.get<{}>(`${import.meta.env.VITE_APP_API_URL}/models`);
+    const r = await axios.get<{}>(
+      `${import.meta.env.VITE_APP_API_URL}/admin/models`
+    );
     console.info("modelStore: fetched all worst_models");
     worst_models.value = r.data;
   };
@@ -21,9 +23,7 @@ export const useStore = defineStore("model", () => {
     const r = await axios.get<Model[]>(
       `${import.meta.env.VITE_APP_API_URL}/${model_name}`
     );
-    console.info(
-      `modelStore: fetched all model instances for model ${model_name}`
-    );
+    console.info(`modelStore: fetched all instances for '${model_name}'`);
     model_instances.value = r.data;
   };
 

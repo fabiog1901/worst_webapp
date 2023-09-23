@@ -69,8 +69,15 @@ def log_event(
 
 
 # MODEL
-def get_all_models() -> list[Model] | None:
-    return db.get_all_models()
+def get_all_models() -> dict[str, Model] | None:
+    models = db.get_all_models()
+
+    m = {}
+
+    for x in models:
+        m[x.name] = x.model_dump(exclude="name")
+
+    return m
 
 
 def get_model(model_name: str) -> Model | None:

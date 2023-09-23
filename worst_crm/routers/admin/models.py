@@ -6,6 +6,10 @@ import worst_crm.dependencies as dep
 import worst_crm.service as svc
 import datetime as dt
 
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+
+
 NAME = __name__.split(".", 2)[-1]
 
 router = APIRouter(prefix="/models", tags=[NAME])
@@ -13,10 +17,10 @@ router = APIRouter(prefix="/models", tags=[NAME])
 
 @router.get(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
+    # dependencies=[Security(dep.get_current_user, scopes=["admin"])],
 )
-async def get_all_models() -> list[Model] | None:
-    return svc.get_all_models()
+async def get_all_models() -> dict[str, Model] | None:
+    return JSONResponse(jsonable_encoder(svc.get_all_models()))
 
 
 @router.get(
