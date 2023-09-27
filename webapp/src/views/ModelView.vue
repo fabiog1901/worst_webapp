@@ -1,4 +1,5 @@
 <template>
+  <SidebarView />
   <section class="flex h-screen">
     <section id="context-bar" class="flex w-88">---------context bar</section>
 
@@ -23,6 +24,8 @@
 </template>
 
 <script setup lang="ts">
+import SidebarView from "@/views/SidebarView.vue";
+
 import { computed, onMounted, watch } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
@@ -44,7 +47,6 @@ const defaultFields = [
   { name: "updated_at", header: "Last Updated ", visible: true, type: "date" },
   { name: "created_by", header: "Created By ", visible: true, type: "" },
   { name: "created_at", header: "Created At ", visible: true, type: "date" },
-  
 ];
 
 // "store.worst_models[model_name]['skema']['fields']"

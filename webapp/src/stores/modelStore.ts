@@ -2,6 +2,7 @@ import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 
 import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
 import type { Model } from "@/types";
 
@@ -11,22 +12,24 @@ export const useStore = defineStore("model", () => {
 
   const selectedOwners = ref<string[]>([]);
 
+  const authStore = useAuthStore();
+
   const fetch_all_worst_models = async () => {
     const r = await axios.get<{}>(
-      `${import.meta.env.VITE_APP_API_URL}/admin/models`
+      `${import.meta.env.VITE_APP_API_URL}/admin/models`,
+      { headers: { Authorization: `Bearer ${authStore.user.access_token}` } }
     );
     console.info("modelStore: fetched all worst_models");
     worst_models.value = r.data;
-    console.log(worst_models.value['project']['skema']['fields']);
   };
 
   const fetch_all_instances = async (model_name: string) => {
     const r = await axios.get<Model[]>(
-      `${import.meta.env.VITE_APP_API_URL}/${model_name}`
+      `${import.meta.env.VITE_APP_API_URL}/${model_name}`,
+      { headers: { Authorization: `Bearer ${authStore.user.access_token}` } }
     );
     console.info(`modelStore: fetched all instances for '${model_name}'`);
     model_instances.value = r.data;
-    console.info(model_instances.value);
   };
 
   const add_selected_owners = (owners: string[]) => {
