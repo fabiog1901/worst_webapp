@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 import type { Model } from "@/types";
 
-export const useStore = defineStore("model", () => {
+export const useModelStore = defineStore("model", () => {
   const worst_models: { [key: string]: any } = ref<{}>({});
   const model_instances = ref<Model[]>([]);
 

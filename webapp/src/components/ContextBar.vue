@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed left-0 top-0 flex h-screen w-16 flex-col bg-white shadow-lg dark:bg-gray-900"
+    class="left-0 top-0 flex h-screen w-16 flex-col bg-white shadow-lg dark:bg-gray-900"
   >
     <div id="home" class="sidebar-icon group">
       <router-link to="/"

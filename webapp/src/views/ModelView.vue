@@ -1,43 +1,34 @@
 <template>
-  <SidebarView />
-  <section class="flex h-screen">
-    <section id="context-bar" class="flex w-88">---------context bar</section>
+  <div class="flex h-full w-full">
+    <section id="context-bar" class="flex w-88">Context bar</section>
 
     <section
       id="content-container"
       class="flex h-full w-full flex-col bg-gray-300 dark:bg-gray-700"
     >
-      <TopNav />
-
       <FabTable
-        v-bind:data="store.get_filtered_models()"
-        v-bind:model="store.worst_models[model_name]['skema']['fields']"
+        v-bind:data="modelStore.get_filtered_models()"
+        v-bind:model="modelStore.worst_models[model_name]['skema']['fields']"
         v-bind:model-default-fields="defaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="deleteModel($event)"
         v-on:new-clicked="createNewModel()"
       />
-
-      <BottomNav />
     </section>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
-import SidebarView from "@/views/SidebarView.vue";
-
 import { computed, onMounted, watch } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
-import { useStore } from "@/stores/modelStore";
-
-import BottomNav from "@/components/BottomNav.vue";
+import { useModelStore } from "@/stores/modelStore";
 import FabTable from "@/components/FabTable.vue";
-import TopNav from "@/components/TopNav.vue";
 
 import type { Model } from "@/types";
 
-const store = useStore();
+const modelStore = useModelStore();
+
 const defaultFields = [
   { name: "id", header: "ID ", visible: false, type: "" },
   { name: "name", header: "Name ", visible: true, type: "" },
@@ -70,13 +61,13 @@ const model_name = computed(() => {
 });
 
 onMounted(async () => {
-  await store.fetch_all_instances(model_name.value);
+  await modelStore.fetch_all_instances(model_name.value);
 });
 
 watch(
   () => route.fullPath,
   async () => {
-    await store.fetch_all_instances(model_name.value);
+    await modelStore.fetch_all_instances(model_name.value);
   }
 );
 </script>

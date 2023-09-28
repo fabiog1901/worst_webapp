@@ -1,18 +1,19 @@
 <template>
   <section class="flex">
+    <SidebarView />
     <section id="context-bar" class="flex">
       <div
-        class="m-0 ml-16 h-screen w-80 overflow-hidden bg-gray-200 shadow-lg dark:bg-gray-700"
+        class="h-screen w-80 overflow-hidden bg-gray-200 shadow-lg dark:bg-gray-700"
       >
-        <div class="m-0 flex h-16 items-center justify-center p-0">
-          <h5
-            class="justify-center align-middle text-3xl tracking-wider text-gray-600 dark:text-gray-400"
+        <div class="flex h-16 items-center justify-center">
+          <h1
+            class="justify-center text-xs tracking-wider text-gray-600 dark:text-gray-400"
           >
-            modelname: {{ model_name }} -  id: {{ id }}
-          </h5>
+            Modelname: {{ model_name }} <br />id: {{ id }}
+          </h1>
         </div>
 
-        <div class="m-0 flex flex-col items-center justify-start p-1">
+        <div class="justify`-start flex flex-col items-center p-1">
           <section class="pb-5">
             <div
               id="clear-filter-button"
@@ -180,6 +181,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { onMounted } from "vue";
+import SidebarView from "@/views/SidebarView.vue";
+
 import { useStore } from "@/stores/accountsStore";
 import { useRoute, useRouter } from "vue-router";
 

@@ -146,9 +146,9 @@ const getMediaPreference = () => {
 <style scoped>
 .top-navigation-icon {
   @apply ml-4
-    mr-3 cursor-pointer
-    text-gray-600 transition duration-300 ease-in-out 
-    hover:text-pink-400 dark:text-gray-400 
-    dark:hover:text-pink-400;
+      mr-3 cursor-pointer
+      text-gray-600 transition duration-300 ease-in-out 
+      hover:text-pink-400 dark:text-gray-400 
+      dark:hover:text-pink-400;
 }
 </style>
