@@ -8,8 +8,10 @@
     >
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model="modelStore.worst_models[model_name]['skema']['fields']"
-        v-bind:model-default-fields="defaultFields"
+        v-bind:model-fields="
+          modelStore.worst_models[model_name]['skema']['fields']
+        "
+        v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="deleteModel($event)"
         v-on:new-clicked="createNewModel()"
@@ -29,15 +31,23 @@ import type { Model } from "@/types";
 
 const modelStore = useModelStore();
 
-const defaultFields = [
-  { name: "id", header: "ID ", visible: false, type: "" },
-  { name: "name", header: "Name ", visible: true, type: "" },
-  { name: "owned_by", header: "Owner ", visible: true, type: "" },
-  { name: "tags", header: "Tags ", visible: true, type: "tag" },
-  { name: "updated_by", header: "Updated By ", visible: true, type: "" },
-  { name: "updated_at", header: "Last Updated ", visible: true, type: "date" },
-  { name: "created_by", header: "Created By ", visible: true, type: "" },
-  { name: "created_at", header: "Created At ", visible: true, type: "date" },
+const modelDefaultFields = [
+  { name: "id", in_overview: false, type: "" },
+  { name: "name", in_overview: true, type: "" },
+  { name: "owned_by", in_overview: true, type: "" },
+  { name: "tags", in_overview: true, type: "tag" },
+  { name: "updated_by", in_overview: false, type: "" },
+  {
+    name: "updated_at",
+    in_overview: false,
+    type: "date",
+  },
+  { name: "created_by", header: "Created By ", in_overview: false, type: "" },
+  {
+    name: "created_at",
+    in_overview: false,
+    type: "date",
+  },
 ];
 
 // "store.worst_models[model_name]['skema']['fields']"
@@ -61,13 +71,17 @@ const model_name = computed(() => {
 });
 
 onMounted(async () => {
+  console.log("modelview-mount", model_name.value);
   await modelStore.fetch_all_instances(model_name.value);
 });
 
 watch(
   () => route.fullPath,
   async () => {
-    await modelStore.fetch_all_instances(model_name.value);
+    if (route.params.model && !route.params.id) {
+      console.info("modelview-watch", model_name.value);
+      await modelStore.fetch_all_instances(model_name.value);
+    }
   }
 );
 </script>

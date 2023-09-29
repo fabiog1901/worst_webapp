@@ -1,35 +1,38 @@
 import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 
-import axios from "axios";
-import { useAuthStore } from "@/stores/authStore";
+import { axiosWrapper } from "@/utils/utils";
 
 import type { Model } from "@/types";
 
 export const useModelStore = defineStore("model", () => {
   const worst_models: { [key: string]: any } = ref<{}>({});
   const model_instances = ref<Model[]>([]);
+  const model_instance = ref<Model>();
+  const model_instance_children = ref<any>();
 
   const selectedOwners = ref<string[]>([]);
 
-  const authStore = useAuthStore();
-
   const fetch_all_worst_models = async () => {
-    const r = await axios.get<{}>(
-      `${import.meta.env.VITE_APP_API_URL}/admin/models`,
-      { headers: { Authorization: `Bearer ${authStore.user.access_token}` } }
-    );
-    console.info("modelStore: fetched all worst_models");
-    worst_models.value = r.data;
+    worst_models.value = await axiosWrapper.get(`/admin/models`);
+    console.info("modelStore::fetch_all_worst_models");
   };
 
   const fetch_all_instances = async (model_name: string) => {
-    const r = await axios.get<Model[]>(
-      `${import.meta.env.VITE_APP_API_URL}/${model_name}`,
-      { headers: { Authorization: `Bearer ${authStore.user.access_token}` } }
+    model_instances.value = await axiosWrapper.get(`/${model_name}`);
+    console.info(`modelStore::fetch_all_instances(${model_name})`);
+  };
+
+  const fetch_instance = async (model_name: string, id: string) => {
+    model_instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
+    console.info(`modelStore::fetch_instance(${model_name}, ${id})`);
+  };
+
+  const fetch_instance_children = async (model_name: string, id: string) => {
+    model_instance_children.value = await axiosWrapper.get(
+      `/${model_name}/${id}/children`
     );
-    console.info(`modelStore: fetched all instances for '${model_name}'`);
-    model_instances.value = r.data;
+    console.info(`modelStore::fetch_instance_children(${model_name}, ${id})`);
   };
 
   const add_selected_owners = (owners: string[]) => {
@@ -63,6 +66,10 @@ export const useModelStore = defineStore("model", () => {
     fetch_all_worst_models,
     worst_models,
     fetch_all_instances,
+    fetch_instance,
+    fetch_instance_children,
     model_instances,
+    model_instance,
+    model_instance_children,
   };
 });

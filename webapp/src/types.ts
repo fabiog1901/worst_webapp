@@ -17,7 +17,7 @@ export interface Model {
   updated_at: string;
   updaded_by: string;
   attachments: string[];
-  visible: boolean;
+  in_overview: boolean;
   type: string;
   header: string;
 }

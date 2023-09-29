@@ -1,7 +1,6 @@
 <template>
   <div class="flex h-screen flex-col">
     <AppHeader />
-
     <div class="flex flex-grow">
       <AppSidebar />
       <div class="flex w-full">

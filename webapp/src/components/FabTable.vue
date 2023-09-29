@@ -86,13 +86,25 @@
         },
       }"
     >
+      <!-- <Column
+        field="name"
+        header="Name"
+        sortable
+        v-bind:pt="{
+          root: {
+            class: 'p-2',
+          },
+        }"
+      >
+      </Column> -->
+
       <Column
-        v-for="col in props.model
+        v-for="col in props.modelFields
           .concat(modelDefaultFields)
-          .filter((x) => x.visible)"
+          .filter((x) => x.in_overview)"
         v-bind:key="col.name"
         v-bind:field="col.name"
-        v-bind:header="col.header"
+        v-bind:header="col.name.toUpperCase()"
         sortable
         v-bind:pt="{
           root: {
@@ -182,8 +194,6 @@ import Column from "primevue/column";
 import DataTable from "primevue/datatable";
 import FabToolbar from "@/components/FabToolbar.vue";
 
-import type { Model } from "@/types";
-
 defineEmits(["row-clicked", "delete-clicked", "new-clicked"]);
 
 const props = defineProps({
@@ -191,12 +201,12 @@ const props = defineProps({
     type: Array<any>,
     required: true,
   },
-  model: {
-    type: Array<Model>,
+  modelFields: {
+    type: Array<any>,
     required: true,
   },
   modelDefaultFields: {
-    type: Array<Model>,
+    type: Array<any>,
     required: true,
   },
 });

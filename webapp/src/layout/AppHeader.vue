@@ -82,7 +82,7 @@
         />
       </svg>
     </div>
-    <div class="top-navigation-icon">
+    <div class="top-navigation-icon" v-on:click="authStore.logout">
       <svg
         id="user-circle-icon"
         xmlns="http://www.w3.org/2000/svg"
@@ -104,8 +104,10 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useAuthStore } from "@/stores/authStore";
 
 const userTheme = ref("light");
+const authStore = useAuthStore();
 
 onMounted(() => {
   const initUserTheme = getTheme() || getMediaPreference();

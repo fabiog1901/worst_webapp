@@ -9,18 +9,32 @@ def get_all(model_name: str) -> list[Type[BaseFields]] | None:
     return db.get_all(model_name)
 
 
-def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
+def get(
+    model_name: str,
+    id: UUID,
+) -> Type[BaseFields] | None:
     return db.get(model_name, id)
 
 
 def get_all_children(
-    model_name: str, id: UUID
+    model_name: str,
+    id: UUID,
 ) -> dict[str, list[Type[BaseFields]]] | None:
     return db.get_all_children(model_name, id)
 
 
+def get_all_children_for_model(
+    model_name: str,
+    id: UUID,
+    children_model_name: str,
+) -> list[Type[BaseFields]] | None:
+    return db.get_all_children_for_model(model_name, id, children_model_name)
+
+
 def create(
-    model_name: str, user_id: str, model: Type[BaseFields]
+    model_name: str,
+    user_id: str,
+    model: Type[BaseFields],
 ) -> Type[BaseFields] | None:
     m: Type[BaseFields] = pyd_models[model_name]["default"](
         **model.model_dump(exclude_unset=True),

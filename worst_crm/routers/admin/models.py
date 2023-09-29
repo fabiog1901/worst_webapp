@@ -17,7 +17,7 @@ router = APIRouter(prefix="/models", tags=[NAME])
 
 @router.get(
     "",
-    # dependencies=[Security(dep.get_current_user, scopes=["admin"])],
+    dependencies=[Security(dep.get_current_user, scopes=["admin"])],
 )
 async def get_all_models() -> dict[str, Model] | None:
     return JSONResponse(jsonable_encoder(svc.get_all_models()))

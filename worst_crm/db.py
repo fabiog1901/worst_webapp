@@ -545,7 +545,8 @@ def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
 
 
 def get_all_children(
-    model_name: str, id: UUID
+    model_name: str,
+    id: UUID,
 ) -> dict[str, list[Type[BaseFields]]] | None:
     models = get_all_models()
 
@@ -556,16 +557,31 @@ def get_all_children(
             f"""
             SELECT *
             FROM {m.name}
-            WHERE parent_id = %s
+            WHERE (parent_type, parent_id) = (%s, %s)
             """,
-            (id,),
-            pyd_models[m.name]["default"],
+            (model_name, id),
+            pyd_models[m.name]["overview"],
             True,
         )
 
-    print(children)
-
     return children
+
+
+def get_all_children_for_model(
+    model_name: str,
+    id: UUID,
+    children_model_name: str,
+) -> list[Type[BaseFields]] | None:
+    return execute_stmt(
+        f"""
+            SELECT *
+            FROM {children_model_name}
+            WHERE (parent_type, parent_id) = (%s, %s)
+            """,
+        (model_name, id),
+        pyd_models[children_model_name]["overview"],
+        True,
+    )
 
 
 def create(
