@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Annotated
 from worst_crm import db
 from worst_crm import service as svc
-from worst_crm.api_router import APIRouter
+from worst_crm.api_router import WorstRouter
 from worst_crm.models import (
     UserInDB,
     Token,
@@ -27,7 +27,7 @@ JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
 app = FastAPI(
     title="WorstCRM API",
     version="0.1.0",
-    docs_url="/api",
+    docs_url="/docs",
     openapi_url="/worst_crm.openapi.json",
 )
 
@@ -57,7 +57,7 @@ async def home() -> FileResponse:
 
 @app.get("/healthcheck")
 async def healthcheck() -> dict:
-    return {}
+    return {"hello": "mona"}
 
 
 @app.get("/me", dependencies=[Depends(dep.get_current_user)])
@@ -110,14 +110,14 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
 
 # add routers dynamically
 for k, v in pyd_models.items():
-    router = APIRouter(
-        model_name=k,
-        default_model=v["default"],
-        overview_model=v["overview"],
-        update_model=v["update"],
+    app.include_router(
+        WorstRouter(
+            model_name=k,
+            default_model=v["default"],
+            overview_model=v["overview"],
+            update_model=v["update"],
+        )
     )
-
-    app.include_router(router)
 
 # ADMIN
 app.include_router(admin.router)
@@ -146,19 +146,3 @@ def watch_it(watch_epoch: int):
 
 # periodically check if a restart is needed
 threading.Thread(target=watch_it, args=(watch_epoch,), daemon=True).start()
-
-
-# from psycopg_pool import ConnectionPool
-
-# DB_URL = os.getenv("DB_URL")
-
-# if not DB_URL:
-#     raise EnvironmentError("DB_URL env variable not found!")
-
-
-# # the pool starts connecting immediately.
-# pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
-
-
-# def get_pool():
-#     return pool

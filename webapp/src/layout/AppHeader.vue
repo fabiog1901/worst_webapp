@@ -2,9 +2,11 @@
   <section
     class="m-0 flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 shadow-lg dark:bg-gray-800"
   >
-    <h5
-      class="my-auto ml-2 mr-auto text-xl font-semibold tracking-wider text-gray-600 text-opacity-80 transition duration-300 ease-in-out dark:text-gray-400"
-    ></h5>
+    <FabBreadcrumb
+      v-bind:chain="modelStore.model_instance_parent_chain"
+      v-bind:worst-models="modelStore.worst_models"
+      v-on:clicked="routerLinker($event)"
+    />
     <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">
       <svg
         v-if="userTheme === 'dark'"
@@ -105,9 +107,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useAuthStore } from "@/stores/authStore";
+import { useModelStore } from "@/stores/modelStore";
+import FabBreadcrumb from "@/components/FabBreadcrumb.vue";
+import { useRouter } from "vue-router";
 
 const userTheme = ref("light");
 const authStore = useAuthStore();
+const modelStore = useModelStore();
+const router = useRouter();
 
 onMounted(() => {
   const initUserTheme = getTheme() || getMediaPreference();
@@ -141,6 +148,14 @@ const getMediaPreference = () => {
     return "dark";
   } else {
     return "light";
+  }
+};
+
+const routerLinker = (x: Array<any>) => {
+  if (x.length == 1) {
+    router.push(`/${x[0]}`);
+  } else {
+    router.push(`/${x[0]}/${x[1]}`);
   }
 };
 </script>

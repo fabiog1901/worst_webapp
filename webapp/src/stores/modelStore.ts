@@ -10,6 +10,7 @@ export const useModelStore = defineStore("model", () => {
   const model_instances = ref<Model[]>([]);
   const model_instance = ref<Model>();
   const model_instance_children = ref<any>();
+  const model_instance_parent_chain = ref<any[]>([]);
 
   const selectedOwners = ref<string[]>([]);
 
@@ -33,6 +34,13 @@ export const useModelStore = defineStore("model", () => {
       `/${model_name}/${id}/children`
     );
     console.info(`modelStore::fetch_instance_children(${model_name}, ${id})`);
+  };
+
+  const fetch_parent_chain = async (model_name: string, id: string) => {
+    model_instance_parent_chain.value = await axiosWrapper.get(
+      `/${model_name}/${id}/parent_chain`
+    );
+    console.info(`modelStore::fetch_parent_chain(${model_name}, ${id})`);
   };
 
   const add_selected_owners = (owners: string[]) => {
@@ -68,8 +76,10 @@ export const useModelStore = defineStore("model", () => {
     fetch_all_instances,
     fetch_instance,
     fetch_instance_children,
+    fetch_parent_chain,
     model_instances,
     model_instance,
     model_instance_children,
+    model_instance_parent_chain,
   };
 });

@@ -9,7 +9,7 @@ import worst_crm.service as svc
 import datetime as dt
 
 
-class APIRouter(APIRouter):
+class WorstRouter(APIRouter):
     def __init__(
         self,
         model_name: str,
@@ -46,7 +46,16 @@ class APIRouter(APIRouter):
             id: UUID,
         ) -> dict | None:
             return svc.get_all_children(model_name, id)
-
+        
+        @self.get(
+            "/{id}/parent_chain",
+            dependencies=[Security(dep.get_current_user)],
+        )
+        async def get_parent_chain(
+            id: UUID,
+        ) -> list | None:
+            return svc.get_parent_chain(model_name, id)
+        
         @self.get(
             "/{id}/{children_model_name}",
             dependencies=[Security(dep.get_current_user)],
@@ -56,6 +65,8 @@ class APIRouter(APIRouter):
             children_model_name: str,
         ) -> list | None:
             return svc.get_all_children_for_model(model_name, id, children_model_name)
+        
+        
 
         @self.post(
             "",

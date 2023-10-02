@@ -73,7 +73,6 @@ const model_name = computed(() => {
 onMounted(async () => {
   console.log("modelview-mount", model_name.value);
   await modelStore.fetch_all_instances(model_name.value);
-  modelStore.model_instance_parent_chain = [];
 });
 
 watch(

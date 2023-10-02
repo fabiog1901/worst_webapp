@@ -16,4 +16,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.js"],
   },
+  server: {
+    port: 8800,
+  },
 });

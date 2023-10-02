@@ -584,6 +584,31 @@ def get_all_children_for_model(
     )
 
 
+def get_parent_chain(
+    model_name: str,
+    id: UUID,
+) -> list | None:
+    chain = []
+
+    p = execute_stmt(
+        f"""
+        SELECT parent_type, parent_id::STRING, name
+        FROM {model_name}
+        WHERE id = %s
+        """,
+        (id,),
+    )
+
+    if p[0]:
+        chain.extend(get_parent_chain(p[0], p[1]))
+        chain.append(p)
+
+    else:
+        chain.append(p)
+    
+    return chain
+
+
 def create(
     model_name: str, model_instance: Type[BaseFields]
 ) -> Type[BaseFields] | None:
@@ -681,7 +706,7 @@ def execute_stmt(
     returning_model: Type[BaseFields] = None,
     is_list: bool = False,
     returning_rs: bool = True,
-) -> Type[BaseFields] | list[Type[BaseFields]] | None:
+) -> Type[BaseFields] | list[Type[BaseFields]] | list[tuple] | None:
     with pool.connection() as conn:
         # convert a set to a psycopg list
         conn.adapters.register_dumper(set, ListDumper)

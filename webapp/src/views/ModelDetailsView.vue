@@ -6,6 +6,10 @@
       id="content-container"
       class="flex h-full w-full flex-col bg-gray-300 dark:bg-gray-700"
     >
+      {{ modelStore.model_instance_parent_chain }}
+      <br />
+      <br />
+
       Modelname: {{ model_name }} <br />id: {{ id }}
       <br />
       <br />
@@ -54,6 +58,7 @@ const model_name = computed(() => {
 onMounted(async () => {
   await modelStore.fetch_instance(model_name.value, id.value);
   await modelStore.fetch_instance_children(model_name.value, id.value);
+  await modelStore.fetch_parent_chain(model_name.value, id.value);
 });
 
 watch(
@@ -63,6 +68,7 @@ watch(
       console.log("watch", id.value, route.params.id);
       await modelStore.fetch_instance(model_name.value, id.value);
       await modelStore.fetch_instance_children(model_name.value, id.value);
+      await modelStore.fetch_parent_chain(model_name.value, id.value);
     }
   }
 );
