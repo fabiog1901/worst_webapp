@@ -6,6 +6,11 @@
       id="content-container"
       class="flex h-full w-full flex-col bg-gray-300 dark:bg-gray-700"
     >
+      <div class="m-2 text-3xl dark:text-slate-300">
+        {{ titleCase(model_name) }}
+        <b> {{ titleCase(modelStore.model_instance.name) }}</b> -
+        {{ titleCase(child_model_name) }} List
+      </div>
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
         v-bind:model-fields="
@@ -55,15 +60,17 @@ const router = useRouter();
 const route = useRoute();
 
 const createNewModel = () => {
-  console.log(`new model ${model_name.value}`);
+  console.log(
+    `new model ${child_model_name.value} under ${model_name.value}/${id.value}`
+  );
 };
 
 const deleteModel = (m: Model) => {
-  console.log(`delete model: ${model_name.value}/${m.id}`);
+  console.log(`delete model: ${child_model_name.value}/${m.id}`);
 };
 
 const modelLink = (m: Model) => {
-  router.push(`/${model_name.value}/${m.id}`);
+  router.push(`/${child_model_name.value}/${m.id}`);
 };
 
 const model_name = computed(() => {
@@ -116,4 +123,9 @@ watch(
     }
   }
 );
+
+const titleCase = (s: string) =>
+  s
+    .replace(/^[-_]*(.)/, (_, c) => c.toUpperCase()) // Initial char (after -/_)
+    .replace(/[-_]+(.)/g, (_, c) => "_" + c.toUpperCase()); // First char after each -/_
 </script>

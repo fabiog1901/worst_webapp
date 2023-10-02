@@ -54,6 +54,7 @@ class WorstRouter(APIRouter):
         async def get_parent_chain(
             id: UUID,
         ) -> list | None:
+            print(model_name, id)
             return svc.get_parent_chain(model_name, id)
         
         @self.get(
