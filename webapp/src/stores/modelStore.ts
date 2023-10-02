@@ -29,6 +29,19 @@ export const useModelStore = defineStore("model", () => {
     console.info(`modelStore::fetch_instance(${model_name}, ${id})`);
   };
 
+  const fetch_instance_children_for_model = async (
+    model_name: string,
+    id: string,
+    child_model_name: string
+  ) => {
+    model_instances.value = await axiosWrapper.get(
+      `/${model_name}/${id}/${child_model_name}`
+    );
+    console.info(
+      `modelStore::fetch_instance_children_for_model(${model_name}, ${id}, ${child_model_name})`
+    );
+  };
+
   const fetch_instance_children = async (model_name: string, id: string) => {
     model_instance_children.value = await axiosWrapper.get(
       `/${model_name}/${id}/children`
@@ -76,6 +89,7 @@ export const useModelStore = defineStore("model", () => {
     fetch_all_instances,
     fetch_instance,
     fetch_instance_children,
+    fetch_instance_children_for_model,
     fetch_parent_chain,
     model_instances,
     model_instance,

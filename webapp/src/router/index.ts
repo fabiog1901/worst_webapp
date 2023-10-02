@@ -26,7 +26,7 @@ const router = createRouter({
           component: () => import("@/views/ModelDetailsView.vue"),
         },
         {
-          path: "/:model/:id/:child_model",
+          path: "/:model/:id/:child_model_name",
           component: () => import("@/views/ModelChildView.vue"),
         },
       ],

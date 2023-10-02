@@ -70,17 +70,49 @@ const model_name = computed(() => {
   return route.params.model as string;
 });
 
+const id = computed(() => {
+  return route.params.id as string;
+});
+
+const child_model_name = computed(() => {
+  return route.params.child_model_name as string;
+});
+
 onMounted(async () => {
-  console.log("modelview-mount", model_name.value);
-  await modelStore.fetch_all_instances(model_name.value);
+  console.log("modelchildview-mount", model_name.value, child_model_name.value);
+  await modelStore.fetch_instance_children_for_model(
+    model_name.value,
+    id.value,
+    child_model_name.value
+  );
+  modelStore.model_instance_parent_chain.push([
+    child_model_name.value,
+    "",
+    `${
+      child_model_name.value.charAt(0).toUpperCase() +
+      child_model_name.value.slice(1)
+    } List`,
+  ]);
 });
 
 watch(
   () => route.fullPath,
   async () => {
     if (route.params.model && !route.params.id) {
-      console.info("modelview-watch", model_name.value);
-      await modelStore.fetch_all_instances(model_name.value);
+      console.info("modelchildview-watch", model_name.value);
+      await modelStore.fetch_instance_children_for_model(
+        model_name.value,
+        id.value,
+        child_model_name.value
+      );
+      modelStore.model_instance_parent_chain.push([
+        child_model_name.value,
+        "",
+        `${
+          child_model_name.value.charAt(0).toUpperCase() +
+          child_model_name.value.slice(1)
+        } List`,
+      ]);
     }
   }
 );

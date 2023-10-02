@@ -48,6 +48,11 @@ const modelDefaultFields = [
     in_overview: false,
     type: "date",
   },
+  {
+    name: "attachments",
+    in_overview: false,
+    type: "list",
+  },
 ];
 
 // "store.worst_models[model_name]['skema']['fields']"

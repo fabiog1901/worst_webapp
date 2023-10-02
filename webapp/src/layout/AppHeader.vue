@@ -1,6 +1,6 @@
 <template>
   <section
-    class="m-0 flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 shadow-lg dark:bg-gray-800"
+    class="flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 p-2 shadow-lg dark:bg-gray-800"
   >
     <FabBreadcrumb
       v-bind:chain="modelStore.model_instance_parent_chain"
