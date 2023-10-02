@@ -73,7 +73,15 @@ const model_name = computed(() => {
 onMounted(async () => {
   console.log("modelview-mount", model_name.value);
   await modelStore.fetch_all_instances(model_name.value);
-  modelStore.model_instance_parent_chain = [];
+  modelStore.model_instance_parent_chain = [
+    [
+      model_name.value,
+      "",
+      `${
+        model_name.value.charAt(0).toUpperCase() + model_name.value.slice(1)
+      } Overview`,
+    ],
+  ];
 });
 
 watch(
@@ -82,6 +90,15 @@ watch(
     if (route.params.model && !route.params.id) {
       console.info("modelview-watch", model_name.value);
       await modelStore.fetch_all_instances(model_name.value);
+      modelStore.model_instance_parent_chain = [
+        [
+          model_name.value,
+          "",
+          `${
+            model_name.value.charAt(0).toUpperCase() + model_name.value.slice(1)
+          } Overview`,
+        ],
+      ];
     }
   }
 );

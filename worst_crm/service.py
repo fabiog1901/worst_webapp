@@ -40,8 +40,11 @@ def get_parent_chain(
     # [ [ null, null, "acc3" ], [ "account", "3fa85f64-5717-4562-b3fc-2c963f66afa4", "prog3-acc3" ] ]
 
     l = []
-    for i in range(len(raw_list) - 1):
-        l.append([raw_list[i + 1][0], raw_list[i + 1][1], raw_list[i][2]])
+    if raw_list:
+        for i in range(len(raw_list) - 1):
+            l.append([raw_list[i + 1][0], raw_list[i + 1][1], raw_list[i][2]])
+
+        l.append([model_name, str(id), raw_list[-1][2]])
 
     return l
 

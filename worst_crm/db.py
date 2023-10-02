@@ -606,6 +606,7 @@ def get_parent_chain(
     else:
         chain.append(p)
     
+    # print(chain)
     return chain
 
 
