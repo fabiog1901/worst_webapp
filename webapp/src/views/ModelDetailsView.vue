@@ -22,11 +22,11 @@
 
     <section
       id="content-container"
-      class="flex h-full w-full flex-col bg-gray-300 dark:bg-gray-700"
+      class="flex h-full w-full flex-wrap bg-gray-300 dark:bg-gray-700"
     >
       <div v-for="(v, k) in modelStore.model_instance" v-bind:key="k">
         <div class="m-2 text-lg font-semibold dark:text-slate-200">
-          {{ titleCase(k) }}
+          {{ k }}
         </div>
 
         <!-- <template v-if="modelStore.worst_models[model_name].skema.fields[].type === 'tag'">

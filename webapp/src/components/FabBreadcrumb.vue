@@ -3,7 +3,7 @@
     <router-link to="/">
       <div
         v-if="chain.length == 0"
-        class="flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-green-600 p-2 text-white"
+        class="flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-green-600 p-2 text-white hover:bg-green-300 hover:text-slate-700"
       >
         <svg
           id="home-icon"
@@ -23,7 +23,7 @@
       </div>
       <div
         v-else
-        class="flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-gray-600 p-2 text-white"
+        class="flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-gray-600 p-2 text-white hover:bg-green-300 hover:text-slate-700"
         v-on:click="$emit('clicked', ['/'])"
       >
         <svg
@@ -47,7 +47,7 @@
     <div
       v-for="x in chain"
       v-bind:key="x.name"
-      class="ml-1 flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-gray-600 p-2 text-white last:bg-green-600"
+      class="ml-1 flex h-9 cursor-pointer items-center rounded-r-full border-2 border-gray-50 bg-gray-600 p-2 text-white last:bg-green-600 hover:bg-green-300 hover:text-slate-700"
     >
       <router-link v-bind:to="'/' + x[0] + '/' + x[1]">
         <div class="flex items-center">

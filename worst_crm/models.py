@@ -72,9 +72,6 @@ with psycopg.connect(DB_URL, autocommit=True) as conn:
                 skemas[n] = s
 
 
-# for each model, create the Pydantic models
-
-
 class AuditFields(BaseModel):
     created_by: str | None = None
     created_at: dt.datetime | None = None
@@ -95,6 +92,8 @@ class BaseFields(BaseModel):
 class Attachments(BaseModel):
     attachments: list[str] = []
 
+
+# for each model, create the Pydantic models
 
 pyd_models: dict = {}
 

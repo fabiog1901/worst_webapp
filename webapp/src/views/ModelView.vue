@@ -16,18 +16,71 @@
         v-on:delete-clicked="deleteModel($event)"
         v-on:new-clicked="createNewModel()"
       />
+      <div
+        v-if="showModal"
+        class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
+      >
+        <div
+          class="absolute h-full w-full bg-gray-900 opacity-50"
+          v-on:click="showModal = false"
+        ></div>
+
+        <div class="absolute max-h-full max-w-xl">
+          <div class="container overflow-hidden bg-white md:rounded">
+            <div
+              class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none"
+            >
+              <h3>New {{ model_name }}</h3>
+              <div
+                class="cursor-pointer text-2xl hover:text-gray-600"
+                v-on:click="showModal = false"
+              >
+                &#215;
+              </div>
+            </div>
+
+            <div class="max-h-full px-4 py-4">
+              <p class="text-gray-800">Enter JSON string</p>
+              <textarea
+                id=""
+                v-model="m_json"
+                class="rounded-md border-2 border-gray-500"
+                name=""
+                cols="30"
+                rows="10"
+              ></textarea>
+
+              <div class="mt-4 text-right">
+                <button
+                  class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
+                  v-on:click="showModal = false"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="mr-2 rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-400 focus:outline-none"
+                  v-on:click="create_model"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, watch, ref, onBeforeUnmount } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 import FabTable from "@/components/FabTable.vue";
 
 import type { Model } from "@/types";
+import { axiosWrapper } from "@/utils/utils";
 
 const modelStore = useModelStore();
 
@@ -58,13 +111,23 @@ const modelDefaultFields = [
 // "store.worst_models[model_name]['skema']['fields']"
 const router = useRouter();
 const route = useRoute();
+const showModal = ref(false);
+const m_json = ref("");
 
 const createNewModel = () => {
   console.log(`new model ${model_name.value}`);
+  showModal.value = true;
 };
 
 const deleteModel = (m: Model) => {
+  modelStore.delete_model(model_name.value, m.id);
   console.log(`delete model: ${model_name.value}/${m.id}`);
+};
+
+const create_model = () => {
+  console.log(`create model: ${m_json.value}`);
+  modelStore.create_model(model_name.value, m_json.value);
+  showModal.value = false;
 };
 
 const modelLink = (m: Model) => {
@@ -107,4 +170,16 @@ watch(
     }
   }
 );
+
+const onEscape = (e: any) => {
+  if (e.key === "Esc" || e.key === "Escape") {
+    showModal.value = false;
+  }
+};
+
+document.addEventListener("keydown", onEscape);
+
+onBeforeUnmount(() => {
+  document.removeEventListener("keydown", onEscape);
+});
 </script>

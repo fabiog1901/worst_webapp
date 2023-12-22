@@ -11,8 +11,7 @@ const { user, logout } = useAuthStore();
 
 axios.defaults.baseURL = import.meta.env.VITE_APP_API_URL;
 axios.defaults.headers.common["Authorization"] = `Bearer ${user.access_token}`;
-axios.defaults.headers.post["Content-Type"] =
-  "application/x-www-form-urlencoded";
+axios.defaults.headers.post["Content-Type"] = "application/json";
 
 export const axiosWrapper = {
   get: request("GET"),
@@ -26,7 +25,8 @@ function request(method: string) {
     const config: any = {
       method: method,
       url: url,
-      data: new URLSearchParams(body),
+      data: body,
+      //data: new URLSearchParams(body),
     };
 
     return axios(config)
