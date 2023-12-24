@@ -13,8 +13,8 @@
         "
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
-        v-on:delete-clicked="deleteModel($event)"
-        v-on:new-clicked="createNewModel()"
+        v-on:delete-clicked="delete_instance($event)"
+        v-on:new-clicked="showModal = true"
       />
       <div
         v-if="showModal"
@@ -59,7 +59,7 @@
                 </button>
                 <button
                   class="mr-2 rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-400 focus:outline-none"
-                  v-on:click="create_model"
+                  v-on:click="create_instance"
                 >
                   Create
                 </button>
@@ -80,7 +80,6 @@ import { useModelStore } from "@/stores/modelStore";
 import FabTable from "@/components/FabTable.vue";
 
 import type { Model } from "@/types";
-import { axiosWrapper } from "@/utils/utils";
 
 const modelStore = useModelStore();
 
@@ -114,19 +113,14 @@ const route = useRoute();
 const showModal = ref(false);
 const m_json = ref("");
 
-const createNewModel = () => {
-  console.log(`new model ${model_name.value}`);
-  showModal.value = true;
-};
-
-const deleteModel = (m: Model) => {
-  modelStore.delete_model(model_name.value, m.id);
+const delete_instance = (m: Model) => {
+  modelStore.delete_instance(model_name.value, m.id);
   console.log(`delete model: ${model_name.value}/${m.id}`);
 };
 
-const create_model = () => {
+const create_instance = () => {
   console.log(`create model: ${m_json.value}`);
-  modelStore.create_model(model_name.value, m_json.value);
+  modelStore.create_instance(model_name.value, m_json.value);
   showModal.value = false;
 };
 
@@ -140,7 +134,7 @@ const model_name = computed(() => {
 
 onMounted(async () => {
   console.log("modelview-mount", model_name.value);
-  await modelStore.fetch_all_instances(model_name.value);
+  await modelStore.get_all_instances(model_name.value);
   modelStore.model_instance_parent_chain = [
     [
       model_name.value,
@@ -157,7 +151,7 @@ watch(
   async () => {
     if (route.params.model && !route.params.id) {
       console.info("modelview-watch", model_name.value);
-      await modelStore.fetch_all_instances(model_name.value);
+      await modelStore.get_all_instances(model_name.value);
       modelStore.model_instance_parent_chain = [
         [
           model_name.value,

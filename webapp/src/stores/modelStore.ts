@@ -14,24 +14,29 @@ export const useModelStore = defineStore("model", () => {
 
   const selectedOwners = ref<string[]>([]);
 
-  const fetch_all_instances = async (model_name: string) => {
+  const get_all_instances = async (model_name: string) => {
     model_instances.value = await axiosWrapper.get(`/${model_name}`);
-    console.info(`modelStore::fetch_all_instances(${model_name})`);
+    console.info(`modelStore::get_all_instances(${model_name})`);
   };
 
-  const create_model = async (model_name: string, m: string) => {
-    const new_m = await axiosWrapper.post(`/${model_name}`, m);
-    console.info(`modelStore::create_model(${model_name}): ${m}`);
-  };
-  
-  const delete_model = async (model_name: string, id: string) => {
-    const new_m = await axiosWrapper.delete(`/${model_name}/${id}`);
-    console.info(`modelStore::delete_model(${model_name}): ${id}`);
-  };
-
-  const fetch_instance = async (model_name: string, id: string) => {
+  const get_instance = async (model_name: string, id: string) => {
     model_instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
-    console.info(`modelStore::fetch_instance(${model_name}, ${id})`);
+    console.info(`modelStore::get_instance(${model_name}, ${id})`);
+  };
+
+  const create_instance = async (model_name: string, m: string) => {
+    const i = await axiosWrapper.post(`/${model_name}`, m);
+    console.info(`modelStore::create_instance(${model_name}): ${m}`);
+  };
+
+  const update_instance = async (model_name: string, m: string) => {
+    const i = await axiosWrapper.put(`/${model_name}`, m);
+    console.info(`modelStore::update_instance(${model_name}): ${m}`);
+  };
+
+  const delete_instance = async (model_name: string, id: string) => {
+    const i = await axiosWrapper.delete(`/${model_name}/${id}`);
+    console.info(`modelStore::delete_instance(${model_name}): ${id}`);
   };
 
   const fetch_instance_children_for_model = async (
@@ -64,6 +69,7 @@ export const useModelStore = defineStore("model", () => {
   const add_selected_owners = (owners: string[]) => {
     selectedOwners.value = owners;
   };
+
   const get_unique_owners = computed(() => {
     const s = new Set<string>();
     model_instances.value.forEach((instance) => s.add(instance.owned_by));
@@ -84,37 +90,50 @@ export const useModelStore = defineStore("model", () => {
     return model_instances.value.filter((x) => include_models_by_owners(x));
   };
 
-  const fetch_all_worst_models = async () => {
+  const get_all_models = async () => {
     worst_models.value = await axiosWrapper.get(`/admin/models`);
-    console.info("modelStore::fetch_all_worst_models");
+    console.info("modelStore::get_all_models");
   };
 
-  const delete_worst_model = async (m: string) => {
-    await axiosWrapper.delete(`/admin/models/${m}`);
-    console.info(`modelStore::delete_worst_model(${m})`);
+  const get_model = async (m: string) => {
+    worst_models.value = await axiosWrapper.get(`/admin/models/${m}`);
+    console.info(`modelStore::get_model(${m}`);
   };
 
-  const create_worst_model = async (m: string) => {
+  const create_model = async (m: string) => {
     await axiosWrapper.post(`/admin/models/`, m);
-    console.info(`modelStore::create_worst_model(${m})`);
+    console.info(`modelStore::create_model(${m})`);
+  };
+
+  const update_model = async (m: string) => {
+    await axiosWrapper.put(`/admin/models/`, m);
+    console.info(`modelStore::update_model`, m);
+  };
+
+  const delete_model = async (m: string) => {
+    await axiosWrapper.delete(`/admin/models/${m}`);
+    console.info(`modelStore::delete_model(${m})`);
   };
 
   return {
-    get_filtered_models,
+    get_all_models,
+    get_model,
     create_model,
+    update_model,
     delete_model,
+    get_all_instances,
+    get_instance,
+    create_instance,
+    update_instance,
+    delete_instance,
+    get_filtered_models,
     clear_filters,
     add_selected_owners,
     get_unique_owners,
-    fetch_all_worst_models,
     worst_models,
-    fetch_all_instances,
-    fetch_instance,
     fetch_instance_children,
     fetch_instance_children_for_model,
     fetch_parent_chain,
-    delete_worst_model,
-    create_worst_model,
     model_instances,
     model_instance,
     model_instance_children,

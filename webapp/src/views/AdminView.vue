@@ -46,11 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 
-import { useRoute, useRouter } from "vue-router";
+// import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
-import { space } from "postcss/lib/list";
 
 const modelStore = useModelStore();
 
@@ -61,16 +60,16 @@ const get_model = (m: string) => {
 };
 
 const delete_worst_model = (m: string) => {
-  modelStore.delete_worst_model(m);
-  modelStore.fetch_all_worst_models();
+  modelStore.delete_model(m);
+  modelStore.get_all_models();
 };
 
 const create_worst_model = () => {
-  modelStore.create_worst_model(m_json.value);
-  modelStore.fetch_all_worst_models();
+  modelStore.create_model(m_json.value);
+  modelStore.get_all_models();
 };
 
 onMounted(async () => {
-  await modelStore.fetch_all_worst_models();
+  await modelStore.get_all_models();
 });
 </script>
