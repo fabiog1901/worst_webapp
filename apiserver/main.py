@@ -27,7 +27,7 @@ JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
 app = FastAPI(
     title="Worst API",
     version="0.1.0",
-    docs_url="/docs",
+    docs_url="/api",
     openapi_url="/worst.openapi.json",
 )
 
