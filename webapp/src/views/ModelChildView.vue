@@ -8,14 +8,12 @@
     >
       <div class="m-2 text-3xl dark:text-slate-300">
         {{ titleCase(model_name) }}
-        <b> {{ modelStore.model_instance.name }}</b> -
+        <b> {{ modelStore.instance.name }}</b> -
         {{ titleCase(child_model_name) }} List
       </div>
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="
-          modelStore.worst_models[model_name]['skema']['fields']
-        "
+        v-bind:model-fields="modelStore.models[model_name]['skema']['fields']"
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="deleteModel($event)"
@@ -87,12 +85,12 @@ const child_model_name = computed(() => {
 
 onMounted(async () => {
   console.log("modelchildview-mount", model_name.value, child_model_name.value);
-  await modelStore.fetch_instance_children_for_model(
+  await modelStore.get_instance_children_for_model(
     model_name.value,
     id.value,
     child_model_name.value
   );
-  modelStore.model_instance_parent_chain.push([
+  modelStore.instance_parent_chain.push([
     child_model_name.value,
     "",
     `${
@@ -107,12 +105,12 @@ watch(
   async () => {
     if (route.params.model && !route.params.id) {
       console.info("modelchildview-watch", model_name.value);
-      await modelStore.fetch_instance_children_for_model(
+      await modelStore.get_instance_children_for_model(
         model_name.value,
         id.value,
         child_model_name.value
       );
-      modelStore.model_instance_parent_chain.push([
+      modelStore.instance_parent_chain.push([
         child_model_name.value,
         "",
         `${

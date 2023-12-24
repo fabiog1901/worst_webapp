@@ -2,7 +2,7 @@
   <section class="flex">
     <div class="mx-2">
       <div
-        v-for="m in Object.keys(modelStore.worst_models)"
+        v-for="m in Object.keys(modelStore.models)"
         id="models"
         v-bind:key="m"
         class="m-1"
@@ -22,7 +22,7 @@
 
     <div class="mx-2">
       <div
-        v-for="m in Object.keys(modelStore.worst_models)"
+        v-for="m in Object.keys(modelStore.models)"
         id="models"
         v-bind:key="m"
         class="m-1"
@@ -56,7 +56,7 @@ const modelStore = useModelStore();
 const m_json = ref();
 
 const get_model = (m: string) => {
-  m_json.value = JSON.stringify(modelStore.worst_models[m], undefined, 8);
+  m_json.value = JSON.stringify(modelStore.models[m], undefined, 8);
 };
 
 const delete_worst_model = (m: string) => {

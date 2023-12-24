@@ -12,6 +12,6 @@ const modelStore = useModelStore();
 
 onMounted(async () => {
   console.log("homeview-mount");
-  modelStore.model_instance_parent_chain = [];
+  modelStore.instance_parent_chain = [];
 });
 </script>

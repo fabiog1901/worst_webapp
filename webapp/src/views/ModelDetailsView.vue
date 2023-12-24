@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full w-full">
     <section id="context-bar" class="flex w-96 flex-col">
-      <div v-for="(v, k) in modelStore.model_instance_children" v-bind:key="k">
+      <div v-for="(v, k) in modelStore.instance_children" v-bind:key="k">
         <router-link v-bind:to="route.path + '/' + k"
           ><span
             class="m-1 flex w-32 cursor-pointer justify-center rounded border-b bg-red-500 p-2 align-middle text-white hover:font-bold"
@@ -13,7 +13,7 @@
           v-bind:key="n"
           class="m-2 mx-4 flex cursor-pointer justify-center rounded-full border-b bg-blue-500 p-2 align-middle text-white hover:font-bold"
         >
-          <router-link v-bind:to="'/' +   k + '/' + n.id">
+          <router-link v-bind:to="'/' + k + '/' + n.id">
             <span class="">{{ n.name }}</span>
           </router-link>
         </div>
@@ -24,7 +24,7 @@
       id="content-container"
       class="flex h-full w-full flex-wrap bg-gray-300 dark:bg-gray-700"
     >
-      <div v-for="(v, k) in modelStore.model_instance" v-bind:key="k">
+      <div v-for="(v, k) in modelStore.instance" v-bind:key="k">
         <div class="m-2 text-lg font-semibold dark:text-slate-200">
           {{ k }}
         </div>
@@ -151,9 +151,9 @@ const getLabel = (str: string) => {
 };
 
 onMounted(async () => {
-  await modelStore.fetch_instance(model_name.value, id.value);
-  await modelStore.fetch_instance_children(model_name.value, id.value);
-  await modelStore.fetch_parent_chain(model_name.value, id.value);
+  await modelStore.get_instance(model_name.value, id.value);
+  await modelStore.get_instance_children(model_name.value, id.value);
+  await modelStore.get_instance_parent_chain(model_name.value, id.value);
 });
 
 watch(
@@ -161,9 +161,9 @@ watch(
   async () => {
     if (id.value && !route.params.child_model_name) {
       console.log("modeldetailsview-watch", id.value, route.params);
-      await modelStore.fetch_instance(model_name.value, id.value);
-      await modelStore.fetch_instance_children(model_name.value, id.value);
-      await modelStore.fetch_parent_chain(model_name.value, id.value);
+      await modelStore.get_instance(model_name.value, id.value);
+      await modelStore.get_instance_children(model_name.value, id.value);
+      await modelStore.get_instance_parent_chain(model_name.value, id.value);
     }
   }
 );

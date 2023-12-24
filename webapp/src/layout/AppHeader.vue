@@ -3,8 +3,8 @@
     class="flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 p-2 shadow-lg dark:bg-gray-800"
   >
     <FabBreadcrumb
-      v-bind:chain="modelStore.model_instance_parent_chain"
-      v-bind:worst-models="modelStore.worst_models"
+      v-bind:chain="modelStore.instance_parent_chain"
+      v-bind:worst-models="modelStore.models"
       v-on:clicked="routerLinker($event)"
     />
     <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">

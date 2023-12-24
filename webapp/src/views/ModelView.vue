@@ -8,9 +8,7 @@
     >
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="
-          modelStore.worst_models[model_name]['skema']['fields']
-        "
+        v-bind:model-fields="modelStore.models[model_name]['skema']['fields']"
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="delete_instance($event)"
@@ -135,7 +133,7 @@ const model_name = computed(() => {
 onMounted(async () => {
   console.log("modelview-mount", model_name.value);
   await modelStore.get_all_instances(model_name.value);
-  modelStore.model_instance_parent_chain = [
+  modelStore.instance_parent_chain = [
     [
       model_name.value,
       "",
@@ -152,7 +150,7 @@ watch(
     if (route.params.model && !route.params.id) {
       console.info("modelview-watch", model_name.value);
       await modelStore.get_all_instances(model_name.value);
-      modelStore.model_instance_parent_chain = [
+      modelStore.instance_parent_chain = [
         [
           model_name.value,
           "",
