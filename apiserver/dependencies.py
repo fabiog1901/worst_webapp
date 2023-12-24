@@ -9,8 +9,8 @@ import os
 import minio
 import validators
 
-from worst_crm import db
-from worst_crm.models import UserInDB
+from apiserver import db
+from apiserver.models import UserInDB
 
 # to get a string like this run:
 # openssl rand -hex 32

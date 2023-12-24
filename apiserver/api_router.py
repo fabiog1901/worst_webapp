@@ -2,10 +2,10 @@ from fastapi import APIRouter, BackgroundTasks, Security
 from fastapi.responses import HTMLResponse
 from typing import Annotated, Type
 from uuid import UUID
-from worst_crm.models import User, BaseFields
+from apiserver.models import User, BaseFields
 import inspect
-import worst_crm.dependencies as dep
-import worst_crm.service as svc
+import apiserver.dependencies as dep
+import apiserver.service as svc
 import datetime as dt
 
 

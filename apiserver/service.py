@@ -1,7 +1,7 @@
 from typing import Type
 from uuid import UUID, uuid4
-from worst_crm import db
-from worst_crm.models import BaseFields, pyd_models, Model, ModelUpdate
+from apiserver import db
+from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate
 import datetime as dt
 
 

@@ -5,7 +5,7 @@ from typing import Any, Type
 from uuid import UUID
 import os
 import datetime as dt
-from worst_crm.models import (
+from apiserver.models import (
     Model,
     pyd_models,
     User,

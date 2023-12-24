@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
-from worst_crm.main import app
-from worst_crm.tests import utils
-from worst_crm.tests.utils import login, setup_test
+from apiserver.main import app
+from apiserver.tests import utils
+from apiserver.tests.utils import login, setup_test
 
 client = TestClient(app)
 

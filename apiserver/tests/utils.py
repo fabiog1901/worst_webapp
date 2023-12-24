@@ -1,13 +1,13 @@
 from fastapi.testclient import TestClient
-from worst_crm.main import app
-import worst_crm.db as db
-import worst_crm.dependencies as dep
+from apiserver.main import app
+import apiserver.db as db
+import apiserver.dependencies as dep
 import pytest
 import httpx
 import random
 from uuid import UUID
 
-from worst_crm.models import UserInDB
+from apiserver.models import UserInDB
 
 client = TestClient(app)
 
@@ -24,7 +24,7 @@ def login(username: str = "dummyadmin", password: str = "dummyadmin") -> str:
 
 @pytest.fixture(scope="session")
 def setup_test():
-    db.load_schema("storage/worst_crm.ddl.sql")
+    db.load_schema("storage/worst.ddl.sql")
 
     assert db.create_user(
         UserInDB(

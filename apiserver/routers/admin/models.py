@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Security, BackgroundTasks
 from typing import Annotated
-from worst_crm.models import User, Model, ModelUpdate
+from apiserver.models import User, Model, ModelUpdate
 import inspect
-import worst_crm.dependencies as dep
-import worst_crm.service as svc
+import apiserver.dependencies as dep
+import apiserver.service as svc
 import datetime as dt
 
 from fastapi.encoders import jsonable_encoder

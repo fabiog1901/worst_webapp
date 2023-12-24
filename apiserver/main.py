@@ -5,30 +5,30 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Annotated
-from worst_crm import db
-from worst_crm import service as svc
-from worst_crm.api_router import WorstRouter
-from worst_crm.models import (
+from apiserver import db
+from apiserver import service as svc
+from apiserver.api_router import WorstRouter
+from apiserver.models import (
     UserInDB,
     Token,
     User,
     UpdatedUserInDB,
     pyd_models,
 )
-from worst_crm.routers.admin import admin
+from apiserver.routers.admin import admin
 import os
 import threading
 import time
-import worst_crm.dependencies as dep
+import apiserver.dependencies as dep
 
 
 JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
 
 app = FastAPI(
-    title="WorstCRM API",
+    title="Worst API",
     version="0.1.0",
     docs_url="/docs",
-    openapi_url="/worst_crm.openapi.json",
+    openapi_url="/worst.openapi.json",
 )
 
 

@@ -1,12 +1,12 @@
 USE defaultdb;
 
-DROP DATABASE IF EXISTS worst_crm CASCADE;
+DROP DATABASE IF EXISTS worst CASCADE;
 
-CREATE DATABASE worst_crm;
+CREATE DATABASE worst;
 
-USE worst_crm;
+USE worst;
 
-ALTER DATABASE worst_crm CONFIGURE ZONE USING 
+ALTER DATABASE worst CONFIGURE ZONE USING 
     range_min_bytes = 134217728,
     range_max_bytes = 536870912,
     gc.ttlseconds = 600,

@@ -5,7 +5,7 @@
     <div
       class="m-8 flex justify-center text-5xl font-semibold text-gray-700 dark:text-gray-200"
     >
-      WorstCRM
+      Worst
     </div>
     <div class="flex justify-center">
       <Form

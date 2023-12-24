@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "worst_crm"
+name = "worst"
 version = "0.1.0"
 description = "WorstCRM is the worst CRM software."
 authors = ["Fabio Ghirardello"]
 readme = "README.md"
-packages = [{include = "worst_crm"}]
+packages = [{include = "apiserver"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

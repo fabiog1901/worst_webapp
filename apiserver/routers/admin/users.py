@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Security, BackgroundTasks
 
-from worst_crm import db
-from worst_crm import dependencies as dep
-from worst_crm.models import NewUser, User, UserInDB, UpdatedUser, UpdatedUserInDB
+from apiserver import db
+from apiserver import dependencies as dep
+from apiserver.models import NewUser, User, UserInDB, UpdatedUser, UpdatedUserInDB
 from typing import Annotated
 import inspect
 import datetime as dt

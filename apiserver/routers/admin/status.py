@@ -1,9 +1,9 @@
 # from fastapi import APIRouter, Security, BackgroundTasks
-# from worst_crm import db
-# from worst_crm.models import Status
-# import worst_crm.dependencies as dep
+# from worst import db
+# from worst.models import Status
+# import worst.dependencies as dep
 # from typing import Annotated
-# from worst_crm.models import User
+# from worst.models import User
 # import inspect
 
 # NAME = __name__.split(".", 2)[-1]
