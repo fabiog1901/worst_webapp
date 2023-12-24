@@ -17,6 +17,7 @@ export default defineConfig({
     setupFiles: ["./tests/setup.js"],
   },
   server: {
-    port: 8800,
+    port: 5500,
   },
+  base: "/app/",
 });

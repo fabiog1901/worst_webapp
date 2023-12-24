@@ -32,7 +32,7 @@ app = FastAPI(
 )
 
 
-app.mount("/static", StaticFiles(directory="webapp/dist"), name="static")
+app.mount("/app", StaticFiles(directory="webapp/dist"), name="app")
 
 origins = [
     "http://localhost",
@@ -57,7 +57,7 @@ async def home() -> FileResponse:
 
 @app.get("/healthcheck")
 async def healthcheck() -> dict:
-    return {"hello": "mona"}
+    return {"hello": "worst"}
 
 
 @app.get("/me", dependencies=[Depends(dep.get_current_user)])

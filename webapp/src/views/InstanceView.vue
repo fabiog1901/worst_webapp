@@ -151,6 +151,7 @@ const getLabel = (str: string) => {
 };
 
 onMounted(async () => {
+  console.log("instance-view-mount", model_name.value);
   await modelStore.get_instance(model_name.value, id.value);
   await modelStore.get_instance_children(model_name.value, id.value);
   await modelStore.get_instance_parent_chain(model_name.value, id.value);
@@ -160,7 +161,7 @@ watch(
   () => route.fullPath,
   async () => {
     if (id.value && !route.params.child_model_name) {
-      console.log("modeldetailsview-watch", id.value, route.params);
+      console.log("instance-view-watch", id.value, route.params);
       await modelStore.get_instance(model_name.value, id.value);
       await modelStore.get_instance_children(model_name.value, id.value);
       await modelStore.get_instance_parent_chain(model_name.value, id.value);

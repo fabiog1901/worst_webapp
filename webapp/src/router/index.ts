@@ -23,7 +23,7 @@ const router = createRouter({
         },
         {
           path: "/:model/:id",
-          component: () => import("@/views/ModelDetailsView.vue"),
+          component: () => import("@/views/InstanceView.vue"),
         },
         {
           path: "/:model/:id/:child_model_name",
