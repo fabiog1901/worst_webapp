@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "worst"
 version = "0.1.0"
-description = "WorstCRM is the worst CRM software."
+description = "Worst"
 authors = ["Fabio Ghirardello"]
 readme = "README.md"
 packages = [{include = "apiserver"}]

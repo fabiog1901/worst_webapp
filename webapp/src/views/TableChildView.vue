@@ -8,7 +8,7 @@
     >
       <div class="m-2 text-3xl dark:text-slate-300">
         {{ titleCase(model_name) }}
-        <b> {{ modelStore.instance.name }}</b> -
+        <b> {{ modelStore.instance?.name }}</b> -
         {{ titleCase(child_model_name) }} List
       </div>
       <FabTable
