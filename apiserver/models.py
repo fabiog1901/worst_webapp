@@ -25,7 +25,7 @@ def build_model_tuple(fields: list[dict], is_overview: bool = False) -> dict:
             "date": dt.datetime,
             "decimal": float,
             "null": None,
-        }[x]
+        }.get(x, str)
 
     def get_fieldinfo(meta: dict):
         fi = FieldInfo()

@@ -38,21 +38,42 @@
             {{ x.name }} [{{ x.type }}]
           </div>
           <div
-            v-if="x.type === 'enum'"
-            class="h-12 w-44 bg-slate-500 p-2 dark:text-white"
+            v-if="x.type === 'decimal'"
+            class="h-12 bg-slate-500 p-2 dark:text-white"
           >
-            {{ formatDate(modelStore.instance[x.name]) }}
+            {{ formatDecimal(modelStore.instance?.[x.name as keyof Model]) }}
           </div>
 
           <div
-            v-if="x.type === 'date'"
+            v-else-if="x.type === 'date'"
             class="h-12 bg-slate-500 p-2 dark:text-white"
           >
-            {{ formatDate(modelStore.instance[x.name]) }}
+            {{ formatDate(modelStore.instance?.[x.name as keyof Model]) }}
+          </div>
+          <div
+            v-else-if="x.type === 'enum'"
+            class="h-12 bg-slate-500 p-2 dark:text-white"
+          >
+            <div
+              class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
+              v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model])"
+            >
+              {{ modelStore.instance?.[x.name as keyof Model] }}
+            </div>
+          </div>
+          <div
+            v-else-if="x.type === 'text'"
+            class="max-h-80 w-full overflow-y-scroll dark:bg-slate-500 dark:text-white"
+          >
+            <FabMark
+              class="h-fit dark:bg-slate-500 dark:text-white"
+              v-bind:source="modelStore.instance[x.name]"
+              v-bind:theme="getTheme"
+            />
           </div>
 
           <div v-else class="h-12 bg-slate-500 p-2 dark:text-white">
-            {{ modelStore.instance[x.name] }}
+            {{ modelStore.instance?.[x.name as keyof Model] }}
           </div>
         </div>
       </div>
@@ -152,10 +173,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
+import FabMark from "@/components/FabMark.vue";
 
 import type { Model } from "@/types";
 
@@ -181,9 +203,20 @@ const id = computed(() => {
   return route.params.id as string;
 });
 
-const formatDate = (value: string) => {
+const formatDate = (value: any) => {
   if (value) {
     return new Date(value).toDateString();
+  }
+
+  return "";
+};
+
+const formatDecimal = (value: any) => {
+  if (value) {
+    return value.toLocaleString(undefined, {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    });
   }
 
   return "";
@@ -214,11 +247,21 @@ const ff = computed(() => {
           ].indexOf(key) === -1
       )
       .reduce((cur, key) => {
-        return Object.assign(cur, { [key]: modelStore.instance[key] });
+        return Object.assign(cur, {
+          [key]: modelStore.instance?.[key as keyof Model],
+        });
       }, {});
   } else {
     return {};
   }
+});
+
+const getTheme = computed(() => {
+  const theme = localStorage.getItem("user-theme");
+  if (!theme) {
+    return "dark";
+  }
+  return theme;
 });
 
 const editing = ref<boolean>(false);
@@ -265,8 +308,14 @@ const getLabel = (str: string) => {
   }
 };
 
-onBeforeMount(async () => {
-  console.log("instance-view-onBeforeMount", model_name.value);
+// created(async () => {
+//   console.log("instance-view-onMounted", model_name.value);
+//   await modelStore.get_instance(model_name.value, id.value);
+//   await modelStore.get_instance_children(model_name.value, id.value);
+//   await modelStore.get_instance_parent_chain(model_name.value, id.value);
+// });
+onMounted(async () => {
+  console.log("instance-view-onMounted", model_name.value);
   await modelStore.get_instance(model_name.value, id.value);
   await modelStore.get_instance_children(model_name.value, id.value);
   await modelStore.get_instance_parent_chain(model_name.value, id.value);
