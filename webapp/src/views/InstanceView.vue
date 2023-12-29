@@ -29,11 +29,7 @@
         <div class="bg-slate-500 p-2 text-xl font-semibold dark:text-white">
           {{ modelStore.instance?.name }}
         </div>
-        <div
-          v-for="x in modelStore.models[model_name]['skema']['fields']"
-          v-bind:key="x"
-          class=""
-        >
+        <div v-for="x in getSkemaFields" v-bind:key="x" class="">
           <div class="p-2 text-sm text-gray-700 dark:text-white">
             {{ x.name }} [{{ x.type }}]
           </div>
@@ -56,18 +52,18 @@
           >
             <div
               class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
-              v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model])"
+              v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model] as string)"
             >
               {{ modelStore.instance?.[x.name as keyof Model] }}
             </div>
           </div>
           <div
-            v-else-if="x.type === 'text'"
+            v-else-if="x.type === 'markdown'"
             class="max-h-80 w-full overflow-y-scroll dark:bg-slate-500 dark:text-white"
           >
             <FabMark
               class="h-fit dark:bg-slate-500 dark:text-white"
-              v-bind:source="modelStore.instance[x.name]"
+              v-bind:source="modelStore.instance?.[x.name]"
               v-bind:theme="getTheme"
             />
           </div>
@@ -173,88 +169,75 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 import FabMark from "@/components/FabMark.vue";
+
+import { formatDecimal, formatDate, getLabel } from "@/utils/utils";
 
 import type { Model } from "@/types";
 
 const modelStore = useModelStore();
-
-// "store.worst_models[model_name]['skema']['fields']"
-const router = useRouter();
+//const router = useRouter();
 const route = useRoute();
 
-const createNewModel = () => {
-  console.log(`new model ${model_name.value}`);
-};
+// const createNewModel = () => {
+//   console.log(`new model ${model_name.value}`);
+// };
 
-const deleteModel = (m: Model) => {
-  console.log(`delete model: ${model_name.value}/${m.id}`);
-};
+// const deleteModel = (m: Model) => {
+//   console.log(`delete model: ${model_name.value}/${m.id}`);
+// };
 
-const modelLink = (m: Model) => {
-  router.push(`/${model_name.value}/${m.id}`);
-};
+// const modelLink = (m: Model) => {
+//   router.push(`/${model_name.value}/${m.id}`);
+// };
 
 const id = computed(() => {
   return route.params.id as string;
 });
 
-const formatDate = (value: any) => {
-  if (value) {
-    return new Date(value).toDateString();
-  }
-
-  return "";
-};
-
-const formatDecimal = (value: any) => {
-  if (value) {
-    return value.toLocaleString(undefined, {
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 2,
-    });
-  }
-
-  return "";
-};
-
 const model_name = computed(() => {
   return route.params.model as string;
 });
 
-const ff = computed(() => {
-  if (modelStore.instance !== undefined) {
-    return Object.keys(modelStore.instance)
-      .filter(
-        (key) =>
-          [
-            "id",
-            "name",
-            "owned_by",
-            "permissions",
-            "parent_type",
-            "parent_id",
-            "created_by",
-            "created_at",
-            "updated_at",
-            "updated_by",
-            "attachments",
-            "tags",
-          ].indexOf(key) === -1
-      )
-      .reduce((cur, key) => {
-        return Object.assign(cur, {
-          [key]: modelStore.instance?.[key as keyof Model],
-        });
-      }, {});
-  } else {
-    return {};
-  }
+const getSkemaFields = computed(() => {
+  if (modelStore.models[model_name.value])
+    return modelStore.models[model_name.value]["skema"]["fields"];
+  return [];
 });
+
+// const ff = computed(() => {
+//   if (modelStore.instance !== undefined) {
+//     return Object.keys(modelStore.instance)
+//       .filter(
+//         (key) =>
+//           [
+//             "id",
+//             "name",
+//             "owned_by",
+//             "permissions",
+//             "parent_type",
+//             "parent_id",
+//             "created_by",
+//             "created_at",
+//             "updated_at",
+//             "updated_by",
+//             "attachments",
+//             "tags",
+//           ].indexOf(key) === -1
+//       )
+//       .reduce((cur, key) => {
+//         return Object.assign(cur, {
+//           [key]: modelStore.instance?.[key as keyof Model],
+//         });
+//       }, {});
+//   } else {
+//     return {};
+//   }
+// });
 
 const getTheme = computed(() => {
   const theme = localStorage.getItem("user-theme");
@@ -264,56 +247,8 @@ const getTheme = computed(() => {
   return theme;
 });
 
-const editing = ref<boolean>(false);
+//const editing = ref<boolean>(false);
 
-const titleCase = (s: string) =>
-  s
-    .replace(/^[-_]*(.)/, (_, c) => c.toUpperCase()) // Initial char (after -/_)
-    .replace(/[-_]+(.)/g, (_, c) => "_" + c.toUpperCase()); // First char after each -/_
-
-const hashCode = (str: string) => {
-  var hash = 0,
-    i,
-    chr;
-  if (str.length === 0) return hash;
-  for (i = 0; i < str.length; i++) {
-    chr = str.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-};
-
-const getLabel = (str: string) => {
-  const crc = hashCode(str);
-  switch (crc % 9) {
-    case 0:
-      return "bg-indigo-400 rounded-2xl p-2";
-    case 1:
-      return "bg-purple-600 rounded-2xl p-2";
-    case 2:
-      return "bg-teal-400 rounded-2xl p-2";
-    case 3:
-      return "bg-orange-400 rounded-2xl p-2";
-    case 4:
-      return "bg-rose-500 rounded-2xl p-2";
-    case 5:
-      return "bg-amber-400 rounded-2xl p-2";
-    case 6:
-      return "bg-lime-600 rounded-2xl p-2";
-    case 7:
-      return "bg-emerald-600 rounded-2xl p-2";
-    case 8:
-      return "bg-fuchsia-400 rounded-2xl p-2";
-  }
-};
-
-// created(async () => {
-//   console.log("instance-view-onMounted", model_name.value);
-//   await modelStore.get_instance(model_name.value, id.value);
-//   await modelStore.get_instance_children(model_name.value, id.value);
-//   await modelStore.get_instance_parent_chain(model_name.value, id.value);
-// });
 onMounted(async () => {
   console.log("instance-view-onMounted", model_name.value);
   await modelStore.get_instance(model_name.value, id.value);

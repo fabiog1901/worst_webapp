@@ -120,7 +120,7 @@
           >
             <div
               class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
-              v-bind:class="getStatusLabel(tag)"
+              v-bind:class="getLabel(tag)"
             >
               {{ tag }}
             </div>
@@ -194,6 +194,8 @@ import Column from "primevue/column";
 import DataTable from "primevue/datatable";
 import FabToolbar from "@/components/FabToolbar.vue";
 
+import { formatDate, getLabel, formatDecimal } from "@/utils/utils";
+
 defineEmits(["row-clicked", "delete-clicked", "new-clicked"]);
 
 const props = defineProps({
@@ -218,72 +220,8 @@ const filters = ref({
   global: { value: "", matchMode: FilterMatchMode.CONTAINS },
 });
 
-const formatDate = (value: string) => {
-  if (value) {
-    return new Date(value).toDateString();
-  }
-
-  return "";
-};
-
 const exportCSV = () => {
   dt.value.exportCSV();
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case "NEW":
-      return "bg-green-500 rounded-2xl p-2";
-
-    case "OPEN":
-      return "bg-blue-500 rounded-2xl p-2";
-
-    case "CLOSED":
-      return "bg-gray-500 rounded-2xl p-2";
-
-    case "ON HOLD":
-      return "bg-gray-500 rounded-2xl p-2";
-
-    default:
-      return getLabel(status);
-  }
-};
-
-const hashCode = (str: string) => {
-  var hash = 0,
-    i,
-    chr;
-  if (str.length === 0) return hash;
-  for (i = 0; i < str.length; i++) {
-    chr = str.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-};
-
-const getLabel = (str: string) => {
-  const crc = hashCode(str);
-  switch (crc % 9) {
-    case 0:
-      return "bg-indigo-400 rounded-2xl p-2";
-    case 1:
-      return "bg-purple-600 rounded-2xl p-2";
-    case 2:
-      return "bg-teal-400 rounded-2xl p-2";
-    case 3:
-      return "bg-orange-400 rounded-2xl p-2";
-    case 4:
-      return "bg-rose-500 rounded-2xl p-2";
-    case 5:
-      return "bg-amber-400 rounded-2xl p-2";
-    case 6:
-      return "bg-lime-600 rounded-2xl p-2";
-    case 7:
-      return "bg-emerald-600 rounded-2xl p-2";
-    case 8:
-      return "bg-fuchsia-400 rounded-2xl p-2";
-  }
 };
 </script>
 

@@ -130,16 +130,8 @@ const model_name = computed(() => {
   return route.params.model as string;
 });
 
-const formatDate = (value: string) => {
-  if (value) {
-    return new Date(value).toDateString();
-  }
-
-  return "";
-};
-
 onMounted(async () => {
-  console.log("modelview-mount", model_name.value);
+  console.log("tableview-onMounted", model_name.value);
   await modelStore.get_all_instances(model_name.value);
   modelStore.instance_parent_chain = [
     [

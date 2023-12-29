@@ -36,7 +36,7 @@ export const useModelStore = defineStore("model", () => {
 
   // instances
   const instances = ref<Model[]>([]);
-  const instance = ref<Model>();
+  const instance: { [index: string]: any } = ref<Model>({} as Model);
   const instance_children = ref<any>();
   const instance_parent_chain = ref<any[]>([]);
 
