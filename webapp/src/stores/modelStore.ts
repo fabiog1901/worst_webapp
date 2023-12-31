@@ -11,27 +11,27 @@ export const useModelStore = defineStore("model", () => {
 
   const get_all_models = async () => {
     models.value = await axiosWrapper.get(`/admin/models`);
-    console.info("modelStore::get_all_models");
+    console.info("GET /admin/models");
   };
 
   const get_model = async (m: string) => {
     models.value = await axiosWrapper.get(`/admin/models/${m}`);
-    console.info(`modelStore::get_model(${m}`);
+    console.info(`GET /admin/models/${m}`);
   };
 
   const create_model = async (m: string) => {
     await axiosWrapper.post(`/admin/models/`, m);
-    console.info(`modelStore::create_model(${m})`);
+    console.info(`POST /admin/models/ (${m})`);
   };
 
   const update_model = async (m: string) => {
     await axiosWrapper.put(`/admin/models/`, m);
-    console.info(`modelStore::update_model`, m);
+    console.info(`PUT /admin/models/`, m);
   };
 
   const delete_model = async (m: string) => {
     await axiosWrapper.delete(`/admin/models/${m}`);
-    console.info(`modelStore::delete_model(${m})`);
+    console.info(`DELETE /admin/models/${m}`);
   };
 
   // instances
@@ -42,19 +42,19 @@ export const useModelStore = defineStore("model", () => {
 
   const get_all_instances = async (model_name: string) => {
     instances.value = await axiosWrapper.get(`/${model_name}`);
-    console.info(`modelStore::get_all_instances(${model_name})`);
+    console.info(`GET /${model_name}`);
   };
 
   const get_instance = async (model_name: string, id: string) => {
     instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
-    console.info(`modelStore::get_instance(${model_name}, ${id})`);
+    console.info(`GET /${model_name}/${id}`);
   };
 
   const get_instance_children = async (model_name: string, id: string) => {
     instance_children.value = await axiosWrapper.get(
       `/${model_name}/${id}/children`
     );
-    console.info(`modelStore::get_instance_children(${model_name}, ${id})`);
+    console.info(`GET /${model_name}/${id}/children`);
   };
 
   const get_instance_children_for_model = async (
@@ -65,31 +65,62 @@ export const useModelStore = defineStore("model", () => {
     instances.value = await axiosWrapper.get(
       `/${model_name}/${id}/${child_model_name}`
     );
-    console.info(
-      `modelStore::get_instance_children_for_model(${model_name}, ${id}, ${child_model_name})`
-    );
+    console.info(`GET /${model_name}/${id}/${child_model_name}`);
   };
 
   const get_instance_parent_chain = async (model_name: string, id: string) => {
     instance_parent_chain.value = await axiosWrapper.get(
       `/${model_name}/${id}/parent_chain`
     );
-    console.info(`modelStore::get_instance_parent_chain(${model_name}, ${id})`);
+    console.info(`GET /${model_name}/${id}/parent_chain`);
+  };
+
+  const get_presigned_get_url = async (
+    model_name: string,
+    id: string,
+    filename: string
+  ) => {
+    console.info(`GET /${model_name}/${id}/presigned-get-url/${filename}`);
+    return await axiosWrapper.get(
+      `/${model_name}/${id}/presigned-get-url/${filename}`
+    );
+  };
+
+  const get_presigned_put_url = async (
+    model_name: string,
+    id: string,
+    filename: string
+  ) => {
+    console.info(`GET /${model_name}/${id}/presigned-put-url/${filename}`);
+    return await axiosWrapper.get(
+      `/${model_name}/${id}/presigned-put-url/${filename}`
+    );
+  };
+
+  const delete_attachment = async (
+    model_name: string,
+    id: string,
+    filename: string
+  ) => {
+    const i = await axiosWrapper.delete(
+      `/${model_name}/${id}/attachments/${filename}`
+    );
+    console.info(`DELETE /${model_name}/${id}/attachments/${filename}`);
   };
 
   const create_instance = async (model_name: string, m: string) => {
     const i = await axiosWrapper.post(`/${model_name}`, m);
-    console.info(`modelStore::create_instance(${model_name}): ${m}`);
+    console.info(`POST /${model_name}`, m);
   };
 
   const update_instance = async (model_name: string, m: string) => {
     const i = await axiosWrapper.put(`/${model_name}`, m);
-    console.info(`modelStore::update_instance(${model_name}): ${m}`);
+    console.info(`PUT /${model_name}`, m);
   };
 
   const delete_instance = async (model_name: string, id: string) => {
     const i = await axiosWrapper.delete(`/${model_name}/${id}`);
-    console.info(`modelStore::delete_instance(${model_name}): ${id}`);
+    console.info(`DELETE /${model_name}/${id}`);
   };
 
   // misc
@@ -138,6 +169,9 @@ export const useModelStore = defineStore("model", () => {
     get_instance_parent_chain,
     get_instance_children,
     get_instance_children_for_model,
+    get_presigned_get_url,
+    get_presigned_put_url,
+    delete_attachment,
     create_instance,
     update_instance,
     delete_instance,

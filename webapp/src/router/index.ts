@@ -55,7 +55,7 @@ router.beforeEach(async (to) => {
     // save where user wanted to go
     authStore.returnUrl = to.fullPath;
 
-    console.error("Not authorized or not logged in. Redirecting...");
+    console.warn("Not authorized or not logged in. Redirecting...");
     return "/login";
   }
 });

@@ -85,14 +85,12 @@ def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
 
 
 def add_attachment(model_name: str, id: UUID, filename: str):
-    print("Mona add_account_attachment")
-    return None
-
+    return db.add_attachment(model_name, id, filename)
+    
 
 def remove_attachment(model_name: str, id: UUID, filename: str):
-    print("Mona remove_account_attachment:")
-    return None
-
+    return db.remove_attachment(model_name, id, filename)
+    
 
 def log_event(
     model_name: str, ts: dt.datetime, username: str, action: str, details: str
