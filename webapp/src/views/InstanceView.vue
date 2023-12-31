@@ -129,6 +129,7 @@
             >
               <div
                 class="flex h-8 w-full items-center rounded bg-transparent pl-2 pr-4 font-sans font-semibold text-gray-400 outline-none hover:cursor-pointer hover:bg-gray-600 hover:underline"
+                v-on:click="download_file(att)"
               >
                 {{ att }}
               </div>
@@ -156,7 +157,7 @@
           </div>
         </div>
         <div class="border bg-green-500">
-          <input type="file" v-on:change="uploadfile" />
+          <input type="file" v-on:change="upload_file" />
         </div>
       </div>
       <div
@@ -185,7 +186,7 @@
             <div class="max-h-full px-4 py-4">
               <p class="text-gray-800">
                 Are you sure you want to delete:
-                <span class="font-semibold">{{ att }}</span> ?
+                <span class="font-semibold">{{ attachment }}</span> ?
               </p>
 
               <div class="mt-4 text-right">
@@ -248,6 +249,7 @@ import { useModelStore } from "@/stores/modelStore";
 import FabMark from "@/components/FabMark.vue";
 
 import { formatDecimal, formatDate, getLabel } from "@/utils/utils";
+import { saveAs } from "file-saver";
 
 import type { Model } from "@/types";
 
@@ -256,7 +258,7 @@ const modelStore = useModelStore();
 const route = useRoute();
 
 const showModal = ref(false);
-const att = ref("");
+const attachment = ref("");
 
 // const createNewModel = () => {
 //   console.log(`new model ${model_name.value}`);
@@ -265,7 +267,11 @@ const att = ref("");
 const delete_instance = async () => {
   showModal.value = false;
 
-  await modelStore.delete_attachment(model_name.value, id.value, att.value);
+  await modelStore.delete_attachment(
+    model_name.value,
+    id.value,
+    attachment.value
+  );
 
   // refresh to get updated list of attachments
   modelStore.get_instance(model_name.value, id.value);
@@ -289,7 +295,7 @@ const getSkemaFields = computed(() => {
   return [];
 });
 
-const uploadfile = async (e: any) => {
+const upload_file = async (e: any) => {
   const presigned_url = await modelStore.get_presigned_put_url(
     model_name.value,
     id.value,
@@ -304,9 +310,19 @@ const uploadfile = async (e: any) => {
   modelStore.get_instance(model_name.value, id.value);
 };
 
+const download_file = async (filename: string) => {
+  const presigned_url = await modelStore.get_presigned_get_url(
+    model_name.value,
+    id.value,
+    filename
+  );
+
+  saveAs(presigned_url, filename);
+};
+
 const confirm_delete_attachment = async (s: any) => {
   showModal.value = true;
-  att.value = s;
+  attachment.value = s;
 };
 
 // const ff = computed(() => {
