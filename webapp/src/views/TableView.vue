@@ -8,7 +8,7 @@
     >
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="modelStore.models[model_name]['skema']['fields']"
+        v-bind:model-fields="getSkemaFields"
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="confirm_delete_instance($event)"
@@ -193,6 +193,12 @@ const modelLink = (m: Model) => {
 
 const model_name = computed(() => {
   return route.params.model as string;
+});
+
+const getSkemaFields = computed(() => {
+  if (modelStore.models[model_name.value])
+    return modelStore.models[model_name.value]["skema"]["fields"];
+  return [];
 });
 
 onMounted(async () => {

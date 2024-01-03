@@ -26,17 +26,17 @@ class WorstRouter(APIRouter):
             "",
             dependencies=[Security(dep.get_current_user)],
         )
-        async def get_all() -> list[overview_model] | None:
-            return svc.get_all(model_name)
+        async def get_all_instances() -> list[overview_model] | None:
+            return svc.get_all_instances(model_name)
 
         @self.get(
             "/{id}",
             dependencies=[Security(dep.get_current_user)],
         )
-        async def get(
+        async def get_instance(
             id: UUID,
         ) -> default_model | None:
-            return svc.get(model_name, id)
+            return svc.get_instance(model_name, id)
 
         @self.get(
             "/{id}/children",
@@ -59,7 +59,6 @@ class WorstRouter(APIRouter):
         @self.get(
             "/{id}/attachment-list",
             dependencies=[Security(dep.get_current_user, scopes=["rw"])],
-            name="Get list of all objects in a folder",
         )
         async def get_attachment_list(
             id: UUID,
@@ -81,14 +80,14 @@ class WorstRouter(APIRouter):
             "",
             description="`id` will be generated if not provided by client.",
         )
-        async def create(
+        async def create_instance(
             model: update_model,
             current_user: Annotated[
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.create(model_name, current_user.user_id, model)
+            x = svc.create_instance(model_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(
@@ -105,14 +104,14 @@ class WorstRouter(APIRouter):
         @self.put(
             "",
         )
-        async def update(
+        async def update_instance(
             model: update_model,
             current_user: Annotated[
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.update(model_name, current_user.user_id, model)
+            x = svc.update_instance(model_name, current_user.user_id, model)
 
             if x:
                 bg_task.add_task(
@@ -129,14 +128,14 @@ class WorstRouter(APIRouter):
         @self.delete(
             "/{id}",
         )
-        async def delete(
+        async def delete_instance(
             id: UUID,
             current_user: Annotated[
                 User, Security(dep.get_current_user, scopes=["rw"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x: default_model = svc.delete(model_name, id)
+            x: default_model = svc.delete_instance(model_name, id)
 
             if x:
                 bg_task.add_task(

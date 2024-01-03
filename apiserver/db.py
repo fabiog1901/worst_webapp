@@ -519,7 +519,7 @@ def delete_model(model_name: str) -> Model | None:
 ###################
 # CRUD FOR MODELS #
 ###################
-def get_all(model_name: str) -> list[Type[BaseFields]]:
+def get_all_instances(model_name: str) -> list[Type[BaseFields]]:
     return execute_stmt(
         f"""
         SELECT *
@@ -532,7 +532,7 @@ def get_all(model_name: str) -> list[Type[BaseFields]]:
     )
 
 
-def get(model_name: str, id: UUID) -> Type[BaseFields] | None:
+def get_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
     return execute_stmt(
         f"""
         SELECT *
@@ -565,6 +565,26 @@ def get_all_children(
         )
 
     return children
+
+
+def set_parent_to_null(
+    model_name: str,
+    id: UUID,
+) -> None:
+    models = get_all_models()
+
+    for m in models:
+        execute_stmt(
+            f"""
+            UPDATE {m.name}
+            SET parent_type = NULL, parent_id = NULL
+            WHERE (parent_type, parent_id) = (%s, %s)
+            """,
+            (model_name, id),
+            returning_rs=False,
+        )
+
+    return
 
 
 def get_all_children_for_model(
@@ -605,12 +625,12 @@ def get_parent_chain(
 
     else:
         chain.append(p)
-    
+
     # print(chain)
     return chain
 
 
-def create(
+def create_instance(
     model_name: str, model_instance: Type[BaseFields]
 ) -> Type[BaseFields] | None:
     cols = get_fields(pyd_models[model_name]["default"])
@@ -629,14 +649,14 @@ def create(
     )
 
 
-def update(
+def update_instance(
     model_name: str, model_instance: Type[BaseFields]
 ) -> Type[BaseFields] | None:
     cols = get_fields(pyd_models[model_name]["default"])
     ph = get_placeholders(pyd_models[model_name]["default"])
 
     if model_instance.id:
-        old_model_instance = get(model_name, model_instance.id)
+        old_model_instance = get_instance(model_name, model_instance.id)
     else:
         return None
 
@@ -659,7 +679,7 @@ def update(
         )
 
 
-def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
+def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
     cols = get_fields(pyd_models[model_name]["default"])
     return execute_stmt(
         f"""

@@ -147,7 +147,9 @@ export const useModelStore = defineStore("model", () => {
 
   const get_filtered_models = () => {
     // console.log(instances.value.filter((x) => include_models_by_owners(x)));
-    return instances.value.filter((x) => include_models_by_owners(x));
+    if (instances.value)
+      return instances.value.filter((x) => include_models_by_owners(x));
+    return [];
   };
 
   return {

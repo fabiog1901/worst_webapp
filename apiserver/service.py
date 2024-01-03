@@ -6,15 +6,15 @@ import datetime as dt
 import apiserver.dependencies as dep
 
 
-def get_all(model_name: str) -> list[Type[BaseFields]] | None:
-    return db.get_all(model_name)
+def get_all_instances(model_name: str) -> list[Type[BaseFields]] | None:
+    return db.get_all_instances(model_name)
 
 
-def get(
+def get_instance(
     model_name: str,
     id: UUID,
 ) -> Type[BaseFields] | None:
-    return db.get(model_name, id)
+    return db.get_instance(model_name, id)
 
 
 def get_all_children(
@@ -50,7 +50,7 @@ def get_parent_chain(
     return l
 
 
-def create(
+def create_instance(
     model_name: str,
     user_id: str,
     model: Type[BaseFields],
@@ -66,10 +66,10 @@ def create(
     if not m.id:
         m.id = uuid4()
 
-    return db.create(model_name, m)
+    return db.create_instance(model_name, m)
 
 
-def update(
+def update_instance(
     model_name: str, user_id: str, model: Type[BaseFields]
 ) -> Type[BaseFields] | None:
     m = pyd_models[model_name]["default"](
@@ -78,15 +78,20 @@ def update(
         updated_at=dt.datetime.utcnow(),
     )
 
-    return db.update(model_name, m)
+    return db.update_instance(model_name, m)
 
 
-def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
+def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
+
+    # delete all attachments from the instance
     s3_folder_name = "/".join([model_name, str(id)])
-
     dep.s3_delete_all_objects(s3_folder_name)
 
-    return db.delete(model_name, id)
+    # set parent_type and parent_id to NULL for all children
+    db.set_parent_to_null(model_name, str(id))
+    
+    # finally, delete the instance itself
+    return db.delete_instance(model_name, id)
 
 
 def add_attachment(model_name: str, id: UUID, filename: str):
