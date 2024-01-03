@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 import os
 import minio
 import validators
-
+from minio.deleteobjects import DeleteObject
 from apiserver import db
 from apiserver.models import UserInDB
 
@@ -82,6 +82,24 @@ def get_presigned_put_url(filename: str):
 
 def s3_remove_object(filename: str):
     minio_client.remove_object(S3_BUCKET, filename)
+
+
+def s3_list_all_objects(folder: str) -> list[str]:
+    return [
+        x.object_name
+        for x in minio_client.list_objects(S3_BUCKET, folder, recursive=True)
+    ]
+
+
+def s3_delete_all_objects(folder: str):
+    delete_object_list = map(
+        lambda x: DeleteObject(x.object_name),
+        minio_client.list_objects(S3_BUCKET, folder, recursive=True),
+    )
+
+    errors = minio_client.remove_objects(S3_BUCKET, delete_object_list)
+    for _ in errors:
+        pass
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

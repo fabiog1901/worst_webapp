@@ -119,7 +119,7 @@
             class="p-1"
           >
             <div
-              class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
+              class="flex h-8 w-fit min-w-16 items-center justify-center rounded-2xl p-2 text-sm font-semibold"
               v-bind:class="getLabel(tag)"
             >
               {{ tag }}

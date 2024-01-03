@@ -1,17 +1,20 @@
 <template>
   <div class="flex h-full w-full">
-    <section id="context-bar" class="flex w-96 flex-col dark:bg-gray-700">
+    <section
+      id="context-bar"
+      class="flex w-96 flex-col bg-gray-50 dark:bg-gray-700"
+    >
       <div v-for="(v, k) in modelStore.instance_children" v-bind:key="k">
         <router-link v-bind:to="route.path + '/' + k"
           ><span
-            class="m-1 flex w-32 cursor-pointer justify-center rounded-xl border bg-slate-700 p-2 align-middle text-white hover:font-bold"
+            class="m-1 flex w-32 cursor-pointer justify-center rounded-xl border bg-gray-400 p-2 align-middle hover:font-bold dark:bg-slate-700 dark:text-white"
             >{{ k }}</span
           >
         </router-link>
         <div
           v-for="n in v"
           v-bind:key="n"
-          class="mx-12 my-1 flex cursor-pointer justify-center rounded-full border p-2 align-middle text-white hover:font-bold dark:bg-green-700"
+          class="mx-12 my-1 flex cursor-pointer justify-center rounded-full border bg-green-400 p-2 align-middle hover:font-bold dark:bg-green-700 dark:text-white"
         >
           <router-link v-bind:to="'/' + k + '/' + n.id">
             <span class="">{{ n.name }}</span>
@@ -26,32 +29,34 @@
     >
       <div class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
         <div class="p-2 text-sm text-gray-700 dark:text-white">name</div>
-        <div class="bg-slate-500 p-2 text-xl font-semibold dark:text-white">
+        <div
+          class="bg-slate-300 p-2 text-xl font-semibold dark:bg-slate-500 dark:text-white"
+        >
           {{ modelStore.instance?.name }}
         </div>
         <div v-for="x in getSkemaFields" v-bind:key="x" class="">
           <div class="p-2 text-sm text-gray-700 dark:text-white">
-            {{ x.name }} [{{ x.type }}]
+            {{ x.name }} <i>[{{ x.type }}]</i>
           </div>
           <div
             v-if="x.type === 'decimal'"
-            class="h-12 bg-slate-500 p-2 dark:text-white"
+            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
           >
             {{ formatDecimal(modelStore.instance?.[x.name as keyof Model]) }}
           </div>
 
           <div
             v-else-if="x.type === 'date'"
-            class="h-12 bg-slate-500 p-2 dark:text-white"
+            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
           >
             {{ formatDate(modelStore.instance?.[x.name as keyof Model]) }}
           </div>
           <div
             v-else-if="x.type === 'enum'"
-            class="h-12 bg-slate-500 p-2 dark:text-white"
+            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
           >
             <div
-              class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
+              class="flex h-8 w-fit min-w-16 items-center justify-center rounded border p-2 text-sm font-semibold"
               v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model] as string)"
             >
               {{ modelStore.instance?.[x.name as keyof Model] }}
@@ -68,41 +73,44 @@
             />
           </div>
 
-          <div v-else class="h-12 bg-slate-500 p-2 dark:text-white">
+          <div
+            v-else
+            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
+          >
             {{ modelStore.instance?.[x.name as keyof Model] }}
           </div>
         </div>
       </div>
-      <div class="w-96 bg-gray-300 dark:bg-gray-900">
+      <div class="w-96 bg-gray-300 dark:bg-gray-900 dark:text-white">
         <div class="mx-2 text-sm dark:text-white">
           id: {{ modelStore.instance?.id }}
         </div>
         <div class="mx-2 text-sm dark:text-white">
           parent_type: {{ modelStore.instance?.parent_type }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           parent_id: {{ modelStore.instance?.parent_id }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           owned_by: {{ modelStore.instance?.owned_by }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           permissions: {{ modelStore.instance?.permissions }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           created_by: {{ modelStore.instance?.created_by }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           created_at: {{ modelStore.instance?.created_at }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           updated_by: {{ modelStore.instance?.updated_by }}
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           updated_at: {{ modelStore.instance?.updated_at }}
         </div>
 
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           tags:
           <div
             v-for="tag in modelStore.instance?.tags"
@@ -117,7 +125,7 @@
             </div>
           </div>
         </div>
-        <div class="mx-2 text-sm text-white">
+        <div class="mx-2 text-sm">
           attachments:
           <div
             v-for="att in modelStore.instance?.attachments"
@@ -125,16 +133,16 @@
             class="flex p-1"
           >
             <div
-              class="flex h-8 w-fit items-center justify-start rounded-md bg-gray-300 text-gray-400 shadow-md transition duration-300 ease-in-out dark:bg-gray-500"
+              class="flex h-8 w-fit items-center justify-start rounded-md bg-gray-300 shadow-md transition duration-300 ease-in-out dark:bg-gray-500 dark:text-gray-400"
             >
               <div
-                class="flex h-8 w-full items-center rounded bg-transparent pl-2 pr-4 font-sans font-semibold text-gray-400 outline-none hover:cursor-pointer hover:bg-gray-600 hover:underline"
+                class="flex h-8 w-full items-center rounded bg-transparent pl-2 pr-4 font-sans font-semibold outline-none hover:cursor-pointer hover:bg-gray-400 hover:underline hover:dark:bg-gray-600"
                 v-on:click="download_file(att)"
               >
                 {{ att }}
               </div>
               <div
-                class="flex h-8 items-center justify-center rounded-r bg-gray-700 px-2 hover:cursor-pointer hover:bg-red-500"
+                class="flex h-8 items-center justify-center rounded-r bg-gray-400 px-2 hover:cursor-pointer hover:bg-red-500 dark:bg-gray-700"
                 v-on:click="confirm_delete_attachment(att)"
               >
                 <svg
@@ -156,10 +164,120 @@
             </div>
           </div>
         </div>
-        <div class="border bg-green-500">
-          <input type="file" v-on:change="upload_file" />
+
+        <div
+          class="m-2 flex h-8 w-fit items-center justify-start rounded-md bg-gray-300 text-gray-400 shadow-md transition duration-300 ease-in-out dark:bg-gray-500"
+        >
+          <label
+            class="flex h-8 w-full items-center rounded bg-green-700 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-green-400"
+            for="upload_file"
+            >Upload New File
+            <input
+              id="upload_file"
+              hidden
+              type="file"
+              v-on:change="upload_file"
+            />
+            <svg
+              id="magnifying-glass-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="top-navigation-icon ml-2 h-5 w-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+              />
+            </svg>
+          </label>
+        </div>
+        <div class="flex-grow bg-yellow-400"></div>
+        <hr
+          id="linebreaker"
+          class="mx-2 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+        />
+        <div
+          class="m-2 flex h-8 w-48 items-center justify-start rounded-md bg-gray-300 text-gray-400 shadow-md transition duration-300 ease-in-out"
+        >
+          <label
+            class="flex h-8 w-full items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
+            v-on:click="showDeleteInstanceModal = true"
+            >Delete {{ model_name }}
+
+            <svg
+              id="magnifying-glass-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="top-navigation-icon ml-2 h-5 w-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+              />
+            </svg>
+          </label>
         </div>
       </div>
+
+      <div
+        v-if="showDeleteInstanceModal"
+        class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
+      >
+        <div
+          class="absolute h-full w-full bg-gray-900 opacity-50"
+          v-on:click="showDeleteInstanceModal = false"
+        ></div>
+
+        <div class="absolute max-h-full max-w-xl">
+          <div class="container overflow-hidden bg-white md:rounded">
+            <div
+              class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none"
+            >
+              <h3 class="text-2xl">Delete {{ model_name }}</h3>
+              <div
+                class="cursor-pointer text-2xl hover:text-gray-600"
+                v-on:click="showDeleteInstanceModal = false"
+              >
+                &#215;
+              </div>
+            </div>
+
+            <div class="max-h-full px-4 py-4">
+              <p class="text-gray-800">
+                Are you sure you want to delete {{ model_name }}:
+                <span class="font-semibold">{{
+                  modelStore.instance?.name
+                }}</span>
+                ?
+              </p>
+
+              <div class="mt-4 text-right">
+                <button
+                  class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
+                  v-on:click="showDeleteInstanceModal = false"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="mr-2 rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-400 focus:outline-none"
+                  v-on:click="delete_instance"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         v-if="showModal"
         class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
@@ -198,7 +316,7 @@
                 </button>
                 <button
                   class="mr-2 rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-400 focus:outline-none"
-                  v-on:click="delete_instance"
+                  v-on:click="delete_attachment"
                 >
                   Delete
                 </button>
@@ -244,7 +362,7 @@
 <script setup lang="ts">
 import { computed, onMounted, watch, ref } from "vue";
 
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 import FabMark from "@/components/FabMark.vue";
 
@@ -254,17 +372,14 @@ import { saveAs } from "file-saver";
 import type { Model } from "@/types";
 
 const modelStore = useModelStore();
-//const router = useRouter();
 const route = useRoute();
+const router = useRouter();
 
 const showModal = ref(false);
+const showDeleteInstanceModal = ref(false);
 const attachment = ref("");
 
-// const createNewModel = () => {
-//   console.log(`new model ${model_name.value}`);
-// };
-
-const delete_instance = async () => {
+const delete_attachment = async () => {
   showModal.value = false;
 
   await modelStore.delete_attachment(
@@ -277,9 +392,14 @@ const delete_instance = async () => {
   modelStore.get_instance(model_name.value, id.value);
 };
 
-// const modelLink = (m: Model) => {
-//   router.push(`/${model_name.value}/${m.id}`);
-// };
+const delete_instance = async () => {
+  showDeleteInstanceModal.value = false;
+
+  await modelStore.delete_instance(model_name.value, id.value);
+
+  // go back to TableView for the same model name
+  router.push(`/${model_name.value}`);
+};
 
 const id = computed(() => {
   return route.params.id as string;

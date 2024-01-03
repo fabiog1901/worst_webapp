@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from apiserver import db
 from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate
 import datetime as dt
+import apiserver.dependencies as dep
 
 
 def get_all(model_name: str) -> list[Type[BaseFields]] | None:
@@ -81,16 +82,20 @@ def update(
 
 
 def delete(model_name: str, id: UUID) -> Type[BaseFields] | None:
+    s3_folder_name = "/".join([model_name, str(id)])
+
+    dep.s3_delete_all_objects(s3_folder_name)
+
     return db.delete(model_name, id)
 
 
 def add_attachment(model_name: str, id: UUID, filename: str):
     return db.add_attachment(model_name, id, filename)
-    
+
 
 def remove_attachment(model_name: str, id: UUID, filename: str):
     return db.remove_attachment(model_name, id, filename)
-    
+
 
 def log_event(
     model_name: str, ts: dt.datetime, username: str, action: str, details: str

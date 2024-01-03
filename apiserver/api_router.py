@@ -46,7 +46,7 @@ class WorstRouter(APIRouter):
             id: UUID,
         ) -> dict | None:
             return svc.get_all_children(model_name, id)
-        
+
         @self.get(
             "/{id}/parent_chain",
             dependencies=[Security(dep.get_current_user)],
@@ -55,7 +55,18 @@ class WorstRouter(APIRouter):
             id: UUID,
         ) -> list | None:
             return svc.get_parent_chain(model_name, id)
-        
+
+        @self.get(
+            "/{id}/attachment-list",
+            dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+            name="Get list of all objects in a folder",
+        )
+        async def get_attachment_list(
+            id: UUID,
+        ) -> list[str] | None:
+            s3_folder_name = "/".join([model_name, str(id)])
+            return dep.s3_list_all_objects(s3_folder_name)
+
         @self.get(
             "/{id}/{children_model_name}",
             dependencies=[Security(dep.get_current_user)],
@@ -65,8 +76,6 @@ class WorstRouter(APIRouter):
             children_model_name: str,
         ) -> list | None:
             return svc.get_all_children_for_model(model_name, id, children_model_name)
-        
-        
 
         @self.post(
             "",
@@ -109,6 +118,7 @@ class WorstRouter(APIRouter):
                 bg_task.add_task(
                     svc.log_event,
                     model_name,
+                    dt.datetime.utcnow(),
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
@@ -132,6 +142,7 @@ class WorstRouter(APIRouter):
                 bg_task.add_task(
                     svc.log_event,
                     model_name,
+                    dt.datetime.utcnow(),
                     current_user.user_id,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),

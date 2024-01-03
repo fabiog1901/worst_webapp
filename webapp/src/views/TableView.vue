@@ -11,7 +11,7 @@
         v-bind:model-fields="modelStore.models[model_name]['skema']['fields']"
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
-        v-on:delete-clicked="delete_instance($event)"
+        v-on:delete-clicked="confirm_delete_instance($event)"
         v-on:new-clicked="showModal = true"
       />
       <div
@@ -68,6 +68,54 @@
       </div>
     </section>
   </div>
+  <div
+    v-if="showDeleteInstanceModal"
+    class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
+  >
+    <div
+      class="absolute h-full w-full bg-gray-900 opacity-50"
+      v-on:click="showDeleteInstanceModal = false"
+    ></div>
+
+    <div class="absolute max-h-full max-w-xl">
+      <div class="container overflow-hidden bg-white md:rounded">
+        <div
+          class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none"
+        >
+          <h3 class="text-2xl">Delete {{ model_name }}</h3>
+          <div
+            class="cursor-pointer text-2xl hover:text-gray-600"
+            v-on:click="showDeleteInstanceModal = false"
+          >
+            &#215;
+          </div>
+        </div>
+
+        <div class="max-h-full px-4 py-4">
+          <p class="text-gray-800">
+            Are you sure you want to delete {{ model_name }}:
+            <span class="font-semibold">{{ instance_name }}</span>
+            ?
+          </p>
+
+          <div class="mt-4 text-right">
+            <button
+              class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
+              v-on:click="showDeleteInstanceModal = false"
+            >
+              Cancel
+            </button>
+            <button
+              class="mr-2 rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-400 focus:outline-none"
+              v-on:click="delete_instance"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -109,11 +157,28 @@ const modelDefaultFields = [
 const router = useRouter();
 const route = useRoute();
 const showModal = ref(false);
+const showDeleteInstanceModal = ref(false);
 const m_json = ref("");
+const id = ref("");
+const instance_name = ref("");
+// const delete_instance = async (m: Model) => {
+//   modelStore.delete_instance(model_name.value, m.id);
+//   await modelStore.get_all_instances(model_name.value);
+// };
 
-const delete_instance = (m: Model) => {
-  modelStore.delete_instance(model_name.value, m.id);
-  console.log(`delete model: ${model_name.value}/${m.id}`);
+const confirm_delete_instance = (m: Model) => {
+  showDeleteInstanceModal.value = true;
+  id.value = m.id;
+  instance_name.value = m.name;
+};
+
+const delete_instance = async () => {
+  showDeleteInstanceModal.value = false;
+
+  await modelStore.delete_instance(model_name.value, id.value);
+
+  // refresh list
+  await modelStore.get_all_instances(model_name.value);
 };
 
 const create_instance = () => {
