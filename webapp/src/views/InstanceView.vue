@@ -206,7 +206,7 @@
           <label
             class="flex h-8 w-full items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
             v-on:click="showDeleteInstanceModal = true"
-            >Delete {{ model_name }}
+            >Delete {{ modelStore.instance?.name }}
 
             <svg
               id="magnifying-glass-icon"
@@ -227,104 +227,20 @@
         </div>
       </div>
 
-      <div
+      <ModalDelete
         v-if="showDeleteInstanceModal"
-        class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
-      >
-        <div
-          class="absolute h-full w-full bg-gray-900 opacity-50"
-          v-on:click="showDeleteInstanceModal = false"
-        ></div>
-
-        <div class="absolute max-h-full max-w-xl">
-          <div class="container overflow-hidden bg-white md:rounded">
-            <div
-              class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none"
-            >
-              <h3 class="text-2xl">Delete {{ model_name }}</h3>
-              <div
-                class="cursor-pointer text-2xl hover:text-gray-600"
-                v-on:click="showDeleteInstanceModal = false"
-              >
-                &#215;
-              </div>
-            </div>
-
-            <div class="max-h-full px-4 py-4">
-              <p class="text-gray-800">
-                Are you sure you want to delete {{ model_name }}:
-                <span class="font-semibold">{{
-                  modelStore.instance?.name
-                }}</span>
-                ?
-              </p>
-
-              <div class="mt-4 text-right">
-                <button
-                  class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
-                  v-on:click="showDeleteInstanceModal = false"
-                >
-                  Cancel
-                </button>
-                <button
-                  class="mr-2 rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-400 focus:outline-none"
-                  v-on:click="delete_instance"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
+        v-bind:model-name="model_name"
+        v-bind:instance-name="modelStore.instance?.name"
+        v-on:cancel-clicked="showDeleteInstanceModal = false"
+        v-on:delete-clicked="delete_instance"
+      ></ModalDelete>
+      <ModalDelete
         v-if="showDeleteAttachmentModal"
-        class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
-      >
-        <div
-          class="absolute h-full w-full bg-gray-900 opacity-50"
-          v-on:click="showDeleteAttachmentModal = false"
-        ></div>
-
-        <div class="absolute max-h-full max-w-xl">
-          <div class="container overflow-hidden bg-white md:rounded">
-            <div
-              class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none"
-            >
-              <h3 class="text-2xl">Delete Object</h3>
-              <div
-                class="cursor-pointer text-2xl hover:text-gray-600"
-                v-on:click="showDeleteAttachmentModal = false"
-              >
-                &#215;
-              </div>
-            </div>
-
-            <div class="max-h-full px-4 py-4">
-              <p class="text-gray-800">
-                Are you sure you want to delete:
-                <span class="font-semibold">{{ attachment }}</span> ?
-              </p>
-
-              <div class="mt-4 text-right">
-                <button
-                  class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
-                  v-on:click="showDeleteAttachmentModal = false"
-                >
-                  Cancel
-                </button>
-                <button
-                  class="mr-2 rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-400 focus:outline-none"
-                  v-on:click="delete_attachment"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        model-name="attachment"
+        v-bind:instance-name="attachment"
+        v-on:cancel-clicked="showDeleteAttachmentModal = false"
+        v-on:delete-clicked="delete_attachment"
+      ></ModalDelete>
     </section>
   </div>
 </template>
@@ -335,6 +251,7 @@ import { computed, onMounted, watch, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 import FabMark from "@/components/FabMark.vue";
+import ModalDelete from "@/components/ModalDelete.vue";
 
 import { formatDecimal, formatDate, getLabel } from "@/utils/utils";
 import { saveAs } from "file-saver";

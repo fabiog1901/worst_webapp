@@ -13,18 +13,29 @@
       </div>
       <FabTable
         v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="modelStore.models[model_name]['skema']['fields']"
+        v-bind:model-fields="
+          modelStore.models[model_name]
+            ? modelStore.models[model_name]['skema']['fields']
+            : []
+        "
         v-bind:model-default-fields="modelDefaultFields"
         v-on:row-clicked="modelLink($event)"
         v-on:delete-clicked="deleteModel($event)"
         v-on:new-clicked="createNewModel()"
       />
+      <!-- <CreateNewModal
+        v-if="showCreateNewInstanceModal"
+        v-bind:model-name="model_name"
+        v-bind:model-base-fields="modelBaseFields"
+        v-on:cancel-clicked="showCreateNewInstanceModal = false"
+        v-on:create-clicked="create_instance($event)"
+      ></CreateNewModal> -->
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, watch, ref } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
