@@ -140,6 +140,7 @@ def create_model(
     # TODO sanitize incoming name
     m.name = m.name.lower()
 
+
     return db.create_model(m)
 
 

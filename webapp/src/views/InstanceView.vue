@@ -68,7 +68,7 @@
           >
             <FabMark
               class="h-fit dark:bg-slate-500 dark:text-white"
-              v-bind:source="modelStore.instance?.[x.name]"
+              v-bind:source="modelStore.instance?.[x.name] ?? ''"
               v-bind:theme="getTheme"
             />
           </div>
@@ -279,12 +279,12 @@
       </div>
 
       <div
-        v-if="showModal"
+        v-if="showDeleteAttachmentModal"
         class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
       >
         <div
           class="absolute h-full w-full bg-gray-900 opacity-50"
-          v-on:click="showModal = false"
+          v-on:click="showDeleteAttachmentModal = false"
         ></div>
 
         <div class="absolute max-h-full max-w-xl">
@@ -295,7 +295,7 @@
               <h3 class="text-2xl">Delete Object</h3>
               <div
                 class="cursor-pointer text-2xl hover:text-gray-600"
-                v-on:click="showModal = false"
+                v-on:click="showDeleteAttachmentModal = false"
               >
                 &#215;
               </div>
@@ -310,7 +310,7 @@
               <div class="mt-4 text-right">
                 <button
                   class="px-4 py-2 text-sm text-gray-600 hover:underline focus:outline-none"
-                  v-on:click="showModal = false"
+                  v-on:click="showDeleteAttachmentModal = false"
                 >
                   Cancel
                 </button>
@@ -325,36 +325,6 @@
           </div>
         </div>
       </div>
-      <!--
-        <div v-for="(v, k) in modelStore.instance" v-bind:key="k">
-        <div class="m-2 text-lg font-semibold dark:text-slate-200">
-          {{ k }}
-        </div>
-
-         <template v-if="modelStore.worst_models[model_name].skema.fields[].type === 'tag'">
-          <div
-            v-for="tag in slotProps.data[col.name]"
-            v-bind:key="tag"
-            class="p-1"
-          >
-            <div
-              class="flex h-8 w-16 items-center justify-center text-sm font-semibold"
-              v-bind:class="getStatusLabel(tag)"
-            >
-              {{ tag }}
-            </div>
-          </div>
-        </template> 
-
-        <span
-          v-show="!editing"
-          class="m-2 h-12 w-44 bg-slate-500 p-2 dark:text-slate-100"
-          v-on:dblclick="editing = !editing"
-        >
-          <label for="value">{{ v }}</label>
-        </span>
-      </div>
-      -->
     </section>
   </div>
 </template>
@@ -375,12 +345,12 @@ const modelStore = useModelStore();
 const route = useRoute();
 const router = useRouter();
 
-const showModal = ref(false);
+const showDeleteAttachmentModal = ref(false);
 const showDeleteInstanceModal = ref(false);
 const attachment = ref("");
 
 const delete_attachment = async () => {
-  showModal.value = false;
+  showDeleteAttachmentModal.value = false;
 
   await modelStore.delete_attachment(
     model_name.value,
@@ -441,7 +411,7 @@ const download_file = async (filename: string) => {
 };
 
 const confirm_delete_attachment = async (s: any) => {
-  showModal.value = true;
+  showDeleteAttachmentModal.value = true;
   attachment.value = s;
 };
 

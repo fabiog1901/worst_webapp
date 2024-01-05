@@ -1,11 +1,9 @@
-from enum import Enum
 from pydantic import create_model, BaseModel, EmailStr, Field
 from pydantic.fields import FieldInfo
 from uuid import UUID
 import datetime as dt
 import os
 import psycopg
-import re
 
 #############################
 #  LOAD MODELS DYNAMICALLY  #

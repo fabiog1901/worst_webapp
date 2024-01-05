@@ -109,17 +109,17 @@ export const useModelStore = defineStore("model", () => {
   };
 
   const create_instance = async (model_name: string, m: string) => {
-    const i = await axiosWrapper.post(`/${model_name}`, m);
     console.info(`POST /${model_name}`, m);
+    return await axiosWrapper.post(`/${model_name}`, m);
   };
 
   const update_instance = async (model_name: string, m: string) => {
-    const i = await axiosWrapper.put(`/${model_name}`, m);
     console.info(`PUT /${model_name}`, m);
+    return await axiosWrapper.put(`/${model_name}`, m);
   };
 
   const delete_instance = async (model_name: string, id: string) => {
-    const i = await axiosWrapper.delete(`/${model_name}/${id}`);
+    await axiosWrapper.delete(`/${model_name}/${id}`);
     console.info(`DELETE /${model_name}/${id}`);
   };
 

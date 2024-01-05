@@ -69,10 +69,9 @@ export const titleCase = (s: string) =>
     .replace(/^[-_]*(.)/, (_, c) => c.toUpperCase()) // Initial char (after -/_)
     .replace(/[-_]+(.)/g, (_, c) => "_" + c.toUpperCase()); // First char after each -/_
 
-const { user, logout } = useAuthStore();
+const authStore = useAuthStore();
 
 axios.defaults.baseURL = import.meta.env.VITE_APP_API_URL;
-axios.defaults.headers.common["Authorization"] = `Bearer ${user.access_token}`;
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
 // export const sendFile = async (presigned_url: string, payload: any) => {
@@ -97,6 +96,9 @@ function request(method: string) {
       url: url,
       data: body,
       //data: new URLSearchParams(body),
+      headers: {
+        Authorization: `Bearer ${authStore.user.access_token}`,
+      },
     };
 
     return axios(config)
@@ -105,7 +107,7 @@ function request(method: string) {
       })
       .catch((error) => {
         console.error(error.response);
-        logout();
+        authStore.logout();
       });
   };
 }

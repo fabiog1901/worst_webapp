@@ -27,7 +27,7 @@
     />
 
     <div
-      v-for="m in Object.keys(modelStore.models)"
+      v-for="m in Object.keys(modelStore.models ?? [])"
       id="models"
       v-bind:key="m"
       class="sidebar-icon group"

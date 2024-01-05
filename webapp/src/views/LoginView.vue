@@ -1,6 +1,6 @@
 <template>
   <section
-    class="align-center flex h-screen flex-col justify-center bg-slate-200 dark:bg-slate-700"
+    class="align-center flex h-screen flex-col justify-center bg-slate-300 dark:bg-slate-700"
   >
     <div
       class="m-8 flex justify-center text-5xl font-semibold text-gray-700 dark:text-gray-200"

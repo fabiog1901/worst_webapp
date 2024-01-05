@@ -351,8 +351,9 @@ def get_model(name: str) -> Model:
 def create_model(model: Model) -> Model | None:
     def get_type(x):
         return {
-            "sting": "str",
-            "ineger": int,
+            "markdown": "STRING",
+            "enum": "STRING",
+            "timestamp": "TIMESTAMPTZ"
         }.get(x, x)
 
     # build the CREATE TABLE stmt
@@ -376,7 +377,7 @@ def create_model(model: Model) -> Model | None:
         # else:
         #     additions[k] = get_type(v["type"])
 
-        additions[f["name"]] = f["type"]
+        additions[f["name"]] = get_type(f["type"])
 
     stmt = ""
 
@@ -388,12 +389,12 @@ def create_model(model: Model) -> Model | None:
         -- pk
         id UUID NOT NULL,
         -- default fields
-        name STRING NOT NULL,
-        owned_by STRING NOT NULL,
-        permissions STRING NOT NULL,
+        name STRING NULL,
+        owned_by STRING NULL,
+        permissions STRING NULL,
         tags STRING [] NULL DEFAULT ARRAY[],
-        parent_type STRING,
-        parent_id UUID,
+        parent_type STRING NULL,
+        parent_id UUID NULL,
         attachments STRING[] NULL DEFAULT ARRAY[],
         -- custom fields
     """
@@ -404,15 +405,8 @@ def create_model(model: Model) -> Model | None:
         created_by STRING NULL,
         updated_at TIMESTAMPTZ NOT NULL,
         updated_by STRING NULL,
-        -- PK
-        CONSTRAINT pk PRIMARY KEY (id),
-        -- other FKs
-        CONSTRAINT created_by_in_users FOREIGN KEY (created_by)
-            REFERENCES worst_users(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-        CONSTRAINT owned_by_in_users FOREIGN KEY (owned_by)
-            REFERENCES worst_users(user_id) ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT updated_by_in_users FOREIGN KEY (updated_by)
-            REFERENCES worst_users(user_id) ON DELETE SET NULL ON UPDATE CASCADE
+        -- pk
+        CONSTRAINT pk PRIMARY KEY (id)
         );
         CREATE INDEX {model.name}_parent ON {model.name}(parent_type, parent_id);
         CREATE INVERTED INDEX {model.name}_tags_gin ON {model.name}(tags);
