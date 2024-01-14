@@ -45,6 +45,8 @@ export const useModelStore = defineStore("model", () => {
     console.info(`GET /${model_name}`);
   };
 
+  
+
   const get_instance = async (model_name: string, id: string) => {
     instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
     console.info(`GET /${model_name}/${id}`);

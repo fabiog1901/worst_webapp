@@ -1,5 +1,5 @@
 <template>
-  <section class="flex">
+  <section class="flex flex-grow bg-gray-300 dark:bg-gray-500 dark:text-white">
     <div class="mx-2">
       <div
         v-for="m in Object.keys(modelStore.models)"
@@ -8,7 +8,7 @@
         class="m-1"
       >
         <div
-          class="cursor-pointer rounded-3xl border-b bg-blue-600 p-2 text-center text-white hover:bg-blue-400"
+          class="cursor-pointer rounded-3xl border bg-blue-600 p-2 text-center text-white hover:bg-blue-400"
           v-on:click="get_model(m)"
         >
           {{ m }}
@@ -16,7 +16,7 @@
         <!-- <span class="">{{ m }} - {{ modelStore.worst_models[m] }}</span> -->
       </div>
     </div>
-    <div class="m-2 w-96 rounded-md border-2 border-blue-700 bg-gray-200">
+    <div class="m-2 w-96 rounded-md border-2 border-blue-700 bg-gray-200 text-black">
       <textarea v-model="m_json" class="h-full w-full"></textarea>
     </div>
 
@@ -28,7 +28,7 @@
         class="m-1"
       >
         <div
-          class="cursor-pointer rounded-3xl border-b bg-red-600 p-2 text-center text-white hover:bg-red-400"
+          class="cursor-pointer rounded-3xl border bg-red-600 p-2 text-center text-white hover:bg-red-400"
           v-on:click="delete_worst_model(m)"
         >
           {{ m }}
@@ -37,7 +37,7 @@
       </div>
     </div>
     <div
-      class="m-1 h-10 cursor-pointer rounded-3xl border-b bg-green-600 p-2 text-center text-white hover:bg-green-400"
+      class="m-1 h-10 cursor-pointer rounded-3xl border  bg-green-600 p-2 text-center text-white hover:bg-green-400"
       v-on:click="create_worst_model"
     >
       Create Model

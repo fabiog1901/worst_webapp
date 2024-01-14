@@ -20,6 +20,7 @@ validators = "^0.20.0"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 fastapi = {extras = ["all"], version = "^0.100.0"}
 sqlalchemy = "^2.0.19"
+pyjwt = "^2.8.0"
 
 
 [tool.poetry.group.dev.dependencies]

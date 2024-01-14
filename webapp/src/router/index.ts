@@ -1,9 +1,9 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
 
 import { useAuthStore } from "@/stores/authStore";
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: "/",
@@ -35,6 +35,10 @@ const router = createRouter({
       path: "/login",
       component: () => import("@/views/LoginView.vue"),
     },
+    {
+      path: "/callback",
+      component: () => import("@/views/CallbackView.vue"),
+    },
   ],
   scrollBehavior() {
     return { top: 0, left: 0, behavior: "smooth" };
@@ -50,12 +54,16 @@ router.beforeEach(async (to) => {
     // make sure the user is authenticated
     !authStore.user &&
     // Avoid an infinite redirect
-    to.path !== "/login"
+    to.path !== "/login" &&
+    to.path !== "/callback"
   ) {
     // save where user wanted to go
     authStore.returnUrl = to.fullPath;
 
-    console.warn("Not authorized or not logged in. Redirecting...");
+    console.warn(
+      "Not authorized or not logged in. Redirecting...",
+      to.fullPath
+    );
     return "/login";
   }
 });

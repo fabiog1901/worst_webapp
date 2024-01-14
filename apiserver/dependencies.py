@@ -1,24 +1,24 @@
-import datetime as dt
-from typing import Annotated
-
-from fastapi import Depends, HTTPException, status, BackgroundTasks, APIRouter
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-import os
-import minio
-import validators
-from minio.deleteobjects import DeleteObject
 from apiserver import db
 from apiserver.models import UserInDB
+from fastapi import Depends, HTTPException, status, BackgroundTasks, APIRouter
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from jose import jwt
+from jwt.algorithms import RSAAlgorithm
+from minio.deleteobjects import DeleteObject
+from passlib.context import CryptContext
+from typing import Annotated
+import datetime as dt
+import json
+import minio
+import os
+import validators
 
-# to get a string like this run:
-# openssl rand -hex 32
-JWT_KEY = os.getenv("JWT_KEY")
-JWT_KEY_ALGORITHM = os.getenv("JWT_KEY_ALGORITHM")
 
-if not JWT_KEY or not JWT_KEY_ALGORITHM:
-    raise EnvironmentError("JWT_KEY or JWT_KEY_ALGORITHM env variables not found!")
+JWKS = os.getenv("JWKS")
+ALGORITHM = os.getenv("ALGORITHM")
+
+if not JWKS or not ALGORITHM:
+    raise EnvironmentError("JWKS or ALGORITHM env variables not found!")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -102,89 +102,63 @@ def s3_delete_all_objects(folder: str):
         pass
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def get_current_user(
+    security_scopes: SecurityScopes,
+    token: str = Depends(oauth2_scheme),
+):
+    unverified_header = jwt.get_unverified_header(token)
 
+    rsa_key = {}
+    for key in json.loads(JWKS)["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"],
+            }
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    if rsa_key:
+        print("rsa")
+        try:
+            public_key = RSAAlgorithm.from_jwk(rsa_key)
+            payload = jwt.decode(
+                token,
+                public_key,
+                algorithms=ALGORITHM,
+                options=dict(
+                    verify_aud=False,
+                    verify_sub=False,
+                    verify_exp=False,
+                ),
+            )
 
+        except jwt.ExpiredSignatureError:
+            print("129")
+            raise HTTPException(
+                {"code": "token_expired", "description": "token is expired"}, 401
+            )
 
-def authenticate_user(username: str, password: str) -> UserInDB | None:
-    user: UserInDB = db.get_user_with_hash(username)
+        except Exception as e:
+            print("135")
+            raise HTTPException(401, f"Unable to parse authentication token: {e.args}" )
 
-    if not user:
-        return None
-    if user.failed_attempts >= 3:
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="User is locked. Contact your Administrator.",
-        )
-    if not verify_password(password, user.hashed_password):
-        db.increase_failed_attempt_count(user.user_id)
-        return None
+        # Check that we all scopes are present
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid authorization token")
 
-    if user.failed_attempts != 0:
-        db.reset_failed_attempt_count(user.user_id)
-
-    return user
-
-
-def create_access_token(data: dict, expire_seconds: int) -> str:
-    to_encode = data.copy()
-    to_encode.update(
-        {"exp": dt.datetime.utcnow() + dt.timedelta(seconds=expire_seconds)}
-    )
-
-    try:
-        encoded_jwt: str = jwt.encode(to_encode, JWT_KEY, JWT_KEY_ALGORITHM)
-    except Exception as e:
-        raise e
-
-    return encoded_jwt
-
-
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], security_scopes: SecurityScopes
-) -> UserInDB:
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
-
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
-    )
-
-    try:
-        payload = jwt.decode(token, JWT_KEY, JWT_KEY_ALGORITHM)
-    except (JWTError, Exception):
-        raise credentials_exception
-
-    token_username = payload.get("sub", "")
-    token_scopes = payload.get("scopes", [])
-
-    if not token_username:
-        raise credentials_exception
-
-    user: UserInDB = db.get_user_with_hash(token_username)
-
-    if not user:
-        raise credentials_exception
+    token_scopes = payload.get("scope", "").split()
 
     for scope in security_scopes.scopes:
         if scope not in token_scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Not enough permissions. Missing scopes: {security_scopes.scopes}",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
+            print("155 token issue")
+    #         raise HTTPException(
+    #             {
+    #                 "code": "Unauthorized",
+    #                 "description": f"You don't have access to this resource. `{' '.join(security_scopes.scopes)}` scopes required",
+    #             },
+    #             403,
+    #         )
 
-    if user.is_disabled:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
-        )
-
-    return user
+    return payload

@@ -1,5 +1,5 @@
 <template>
-  <section class="flex">
+  <section class="flex flex-grow bg-gray-300 dark:bg-gray-500 dark:text-white">
     <div class="flex w-full">HOMEVIEW</div>
   </section>
 </template>

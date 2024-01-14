@@ -71,6 +71,13 @@
           </div>
         </div>
       </Form>
+
+      <div
+        class="h-9 w-16 cursor-pointer items-center rounded-lg bg-yellow-300 text-center hover:bg-yellow-500"
+        v-on:click="sso_login"
+      >
+        SSO
+      </div>
     </div>
   </section>
 </template>
@@ -81,13 +88,19 @@ import * as Yup from "yup";
 
 import { useAuthStore } from "@/stores/authStore";
 
+const authStore = useAuthStore();
+
+const sso_login = () => {
+  console.log("sso_login");
+  authStore.get_auth_code_url();
+};
+
 const schema = Yup.object().shape({
   username: Yup.string().required("Username is required"),
   password: Yup.string().required("Password is required"),
 });
 
 function onSubmit(values: any, { setErrors }) {
-  const authStore = useAuthStore();
   const { username, password } = values;
 
   return authStore

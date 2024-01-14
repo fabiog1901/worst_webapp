@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -21,8 +21,23 @@ import threading
 import time
 import apiserver.dependencies as dep
 
+import hashlib
+import os
+import urllib.parse as parse
+import requests
 
 JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
+
+AUTH_URL = "http://localhost:18080/realms/fabioworst/protocol/openid-connect/auth"
+TOKEN_URL = "http://localhost:18080/realms/fabioworst/protocol/openid-connect/token"
+SCOPE = "openid"
+CLIENT_ID = "BankApp"
+CLIENT_SECRET = "XmdmfRWJ149Iaf054NWU0tZvhIeOYMYz"
+REDIRECT_URI = "http://localhost:5500/callback"
+
+ALGORITHM = "RS256"
+JWKS = '{"keys":[{"kid":"UFnFt3_8o557r-lH2EuOjXAjzn56Xjv-aWlEsz2C0u0","kty":"RSA","alg":"RSA-OAEP","use":"enc","n":"thdVcAuenPhEBkzSQfrdh50jm3A3swFm-WmE-pQvHvaYafzye3ToFC9vIyNtXUF_p4FLgUJWbUrwZU6PCdEb-S8EPx1x3zUJ9GRas-RG9exhB7RQ3iqQYdEaQzlc7Fzw9nV3OTrmvGz4WdZDZ3FVjGNXx2eNRSJEV4hIS-8Hl2iNAar7w4NV9QhhTHIG6cs_Pp1fnw_buIb_Ap2C1EceGH_xyMSdN2K35exHXhQWUP_4Izw0YYZqM-isBDcUSAsfy2Ae4Sl5rawf-CvRUezE616CHOyAdJtigrwgkKVCr6r2-jgvF-yV0ozKC_SyzK2ZRTC9ChAAo8skO02bxgg-lQ","e":"AQAB","x5c":["MIICozCCAYsCBgGMxsl5ODANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDDApmYWJpb3dvcnN0MB4XDTI0MDEwMTIwNDcyMVoXDTM0MDEwMTIwNDkwMVowFTETMBEGA1UEAwwKZmFiaW93b3JzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALYXVXALnpz4RAZM0kH63YedI5twN7MBZvlphPqULx72mGn88nt06BQvbyMjbV1Bf6eBS4FCVm1K8GVOjwnRG/kvBD8dcd81CfRkWrPkRvXsYQe0UN4qkGHRGkM5XOxc8PZ1dzk65rxs+FnWQ2dxVYxjV8dnjUUiRFeISEvvB5dojQGq+8ODVfUIYUxyBunLPz6dX58P27iG/wKdgtRHHhh/8cjEnTdit+XsR14UFlD/+CM8NGGGajPorAQ3FEgLH8tgHuEpea2sH/gr0VHsxOteghzsgHSbYoK8IJClQq+q9vo4LxfsldKMygv0ssytmUUwvQoQAKPLJDtNm8YIPpUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAVbrQ0HCSB4NPvDUv4SPbO7anjRLH/5f/97CXVWymWIwcuvYUpV3ynvmOsg2ygIYkEZKULwlYhlKcGRnbAU1I1wDzPHO8BVCr6Qz8a4olfcL46jppcf3HfLohDPkNp4rpEFwqwBLIGd39Cj5OwB93MrAQ+ZWykdgZV+kHH8BAqfED3m7+wpHjISjkXlAi1IZ52PqvH0NBWdPBznT8tHOCyXbeiMM26oFBNnmZoC95YZA2wUBloF+HNFpvJrUTAPCJk6ekDYLap3wzSJzdF4LgdykGkUzVMOrYOzotOn5nMSP+2oo8toSIpNA2SZ/pM5hAvP2JftBCunxKWgfvohr36g=="],"x5t":"LvaKfBL3DWrhayiw_ApyR3E2Exg","x5t#S256":"pDexnxZVn4tQToZX6ZzHoz7XXVikyKEk_6KJE5Eby1E"},{"kid":"aBeFPPWPSBtx-mHokr8Dox3IrFdSjeLsXG__uVLmkQs","kty":"RSA","alg":"RS256","use":"sig","n":"2Il9H1HC6iSeJmXUuPBSRy3JOGjcYXyrWr-ETqP9lXRUk4tV8jYBLRNnLt6R5YthpB03X5-AAZZXDPnLqIED2lE9rdvXO_D5sHCrgeIWG-bG11LzZS8oRrzeszOEoxYUdr1VB0HT45mElvmBk4OvEjDbjdBFzuARunmmqjfRh327tu4BSn4bseRTMqozDaYJIp78Hh5YZxz9pNaNQWIqPKyjtWg-HLKmQGUcK32dPloqMrwCgjusdO6mO8W6l0H9-g7AvLrcUoss5H5-LJQWQS3T2ZL8-WzbH3Ji6VKqvtiVzgtPuASDh54ToKxHTlmeO2znfqwfADBP3P3apg4DtQ","e":"AQAB","x5c":["MIICozCCAYsCBgGMxsl4nTANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDDApmYWJpb3dvcnN0MB4XDTI0MDEwMTIwNDcyMVoXDTM0MDEwMTIwNDkwMVowFTETMBEGA1UEAwwKZmFiaW93b3JzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANiJfR9RwuokniZl1LjwUkctyTho3GF8q1q/hE6j/ZV0VJOLVfI2AS0TZy7ekeWLYaQdN1+fgAGWVwz5y6iBA9pRPa3b1zvw+bBwq4HiFhvmxtdS82UvKEa83rMzhKMWFHa9VQdB0+OZhJb5gZODrxIw243QRc7gEbp5pqo30Yd9u7buAUp+G7HkUzKqMw2mCSKe/B4eWGcc/aTWjUFiKjyso7VoPhyypkBlHCt9nT5aKjK8AoI7rHTupjvFupdB/foOwLy63FKLLOR+fiyUFkEt09mS/Pls2x9yYulSqr7Ylc4LT7gEg4eeE6CsR05Znjts536sHwAwT9z92qYOA7UCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAchpFWYaMpWy93OoZKrs9IBmJ+7VXZmHk7idl/Y835cQ7oCLzsRH5B9lR4EXz7KNBaJlpTWs8I/uoiKV58LNeKR8VGDf3sMksKqpR2HwE6Ym1YzSMcWloUM829tKjdCfrIoLa6ONKsJpkaEvVriRKAxAf51lvccEiVEhTVpIwhKV892K6pGmSNaiFCJNB7gdFhnZndc/Mdu/1+h0c1apTNckdPnbuXwrXy+dWmPCKQVXfKyWiFtFPfe9nFf4Dx6u24FESwC3g+bjMHV1B364hNKguBZogiEqa5EQGTzDg+akG4qs6cY3HMEv+yLjtHwGEgT6EyFqJa/zEPMcJGVU0Qw=="],"x5t":"wpGV-y-vuLqwylzggZBh2oOKXcM","x5t#S256":"DT74NssiVfgcRxo7_dBsQPGi3Nltupb2yrb5v6W8dek"}]}'
+
 
 app = FastAPI(
     title="Worst API",
@@ -34,14 +49,11 @@ app = FastAPI(
 
 app.mount("/app", StaticFiles(directory="webapp/dist"), name="app")
 
-origins = [
-    "http://localhost",
-    "http://localhost:8800",
-]
+origins = ["http://localhost:5500", "http://localhost:5500/app"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,45 +79,43 @@ async def get_user_me(
     return current_user
 
 
-@app.put("/update-password", dependencies=[Depends(dep.get_current_user)])
-async def update_password(
-    old_password: str,
-    new_password: Annotated[str, Query(min_length=8, max_length=50)],
-    current_user: Annotated[User, Depends(dep.get_current_user)],
-) -> bool:
-    user = db.get_user_with_hash(current_user.user_id)
-    if not user or not dep.verify_password(old_password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+@app.get("/authorization_code", tags=["auth"])
+async def get_authorization_code() -> RedirectResponse:
+    return AUTH_URL + "?{}".format(
+        parse.urlencode(
+            {
+                "client_id": CLIENT_ID,
+                "redirect_uri": REDIRECT_URI,
+                "response_type": "code",
+                "scope": SCOPE,
+                "state": hashlib.sha256(os.urandom(32)).hexdigest(),
+            }
+        )
+    )
+
+
+@app.get("/token")
+async def get_token(authorization_code: str):
+    # exchange auth code for token
+    try:
+        r = requests.post(
+            TOKEN_URL,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "grant_type": "authorization_code",
+                "code": authorization_code,
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "redirect_uri": REDIRECT_URI,
+            },
         )
 
-    user = db.update_user(
-        current_user.user_id,
-        UpdatedUserInDB(hashed_password=dep.get_password_hash(new_password)),
-    )
+        token = r.json()
+    except Exception as e:
+        print("Exception: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
-    return bool(user)
-
-
-@app.post("/login", tags=["auth"])
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
-    user: UserInDB | None = dep.authenticate_user(
-        form_data.username, form_data.password
-    )
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    access_token = dep.create_access_token(
-        data={"sub": user.user_id, "scopes": user.scopes},
-        expire_seconds=JWT_EXPIRY_SECONDS,
-    )
-
-    return Token(access_token=access_token, token_type="bearer")
+    return Token(access_token=token["access_token"], token_type="bearer")
 
 
 # add routers dynamically
@@ -118,6 +128,7 @@ for k, v in pyd_models.items():
             update_model=v["update"],
         )
     )
+
 
 # ADMIN
 app.include_router(admin.router)

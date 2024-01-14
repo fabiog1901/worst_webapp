@@ -3,6 +3,7 @@ import { useRouter } from "vue-router";
 import { ref } from "vue";
 
 import axios from "axios";
+// import { axiosWrapper } from "@/utils/utils";
 
 export const useAuthStore = defineStore("auth", () => {
   const router = useRouter();
@@ -41,6 +42,47 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  const get_auth_code_url = async () => {
+    const token = await axios
+      .get(`${import.meta.env.VITE_APP_API_URL}/authorization_code`)
+      .then((r: any) => {
+        console.log("URL for auth code", r.data);
+        window.open(r.data).focus();
+      })
+      .catch((error: any) => {
+        console.error(error.response);
+        logout();
+      });
+    console.log("token ==> ", token);
+  };
+
+  const get_token = async (authorization_code: string) => {
+    const token = await axios
+      .get(`${import.meta.env.VITE_APP_API_URL}/token`, {
+        params: { authorization_code: authorization_code },
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+      })
+      .then((r: any) => {
+        return r.data;
+      })
+      .catch((error: any) => {
+        console.error(error.response);
+        logout();
+      });
+
+    if (token) {
+      console.info(`authStore::login `, token);
+      // update pinia state
+      user.value = token;
+
+      // store user details and jwt in local storage to keep user logged in between page refreshes
+      localStorage.setItem("user", JSON.stringify(user));
+      // redirect to previous url or default to home page
+      router.push(returnUrl.value || "/");
+    }
+  };
+
+
   const logout = () => {
     user.value = null;
     localStorage.removeItem("user");
@@ -49,6 +91,8 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   return {
+    get_auth_code_url,
+    get_token,
     login,
     logout,
     user,
