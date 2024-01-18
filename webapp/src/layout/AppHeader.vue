@@ -101,6 +101,9 @@
         />
       </svg>
     </div>
+    <div class="dark:text-white">
+      {{ authStore.user.user_details.fullname }}
+    </div>
   </section>
 </template>
 

@@ -11,7 +11,6 @@ const authStore = useAuthStore();
 const route = useRoute();
 
 onMounted(async () => {
-  console.warn(route.query.code);
   authStore.get_token(route.query.code as string);
 });
 </script>

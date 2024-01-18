@@ -26,17 +26,22 @@ import os
 import urllib.parse as parse
 import requests
 
+AUTH_URL = os.getenv("AUTH_URL")
+TOKEN_URL = os.getenv("TOKEN_URL")
+SCOPE = os.getenv("SCOPE")
+SCOPE_CLAIM = os.getenv("SCOPE_CLAIM")
+USERNAME_CLAIM = os.getenv("USERNAME_CLAIM")
+FULLNAME_CLAIM = os.getenv("FULLNAME_CLAIM")
+EMAIL_CLAIM = os.getenv("EMAIL_CLAIM")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REDIRECT_URI = os.getenv("REDIRECT_URI")
+
+# to get a string like this run:
+# openssl rand -hex 32
+JWT_KEY = os.getenv("JWT_KEY")
+JWT_KEY_ALGORITHM = os.getenv("JWT_KEY_ALGORITHM")
 JWT_EXPIRY_SECONDS = int(os.getenv("JWT_EXPIRY_SECONDS", 1800))
-
-AUTH_URL = "http://localhost:18080/realms/fabioworst/protocol/openid-connect/auth"
-TOKEN_URL = "http://localhost:18080/realms/fabioworst/protocol/openid-connect/token"
-SCOPE = "openid"
-CLIENT_ID = "BankApp"
-CLIENT_SECRET = "XmdmfRWJ149Iaf054NWU0tZvhIeOYMYz"
-REDIRECT_URI = "http://localhost:5500/callback"
-
-ALGORITHM = "RS256"
-JWKS = '{"keys":[{"kid":"UFnFt3_8o557r-lH2EuOjXAjzn56Xjv-aWlEsz2C0u0","kty":"RSA","alg":"RSA-OAEP","use":"enc","n":"thdVcAuenPhEBkzSQfrdh50jm3A3swFm-WmE-pQvHvaYafzye3ToFC9vIyNtXUF_p4FLgUJWbUrwZU6PCdEb-S8EPx1x3zUJ9GRas-RG9exhB7RQ3iqQYdEaQzlc7Fzw9nV3OTrmvGz4WdZDZ3FVjGNXx2eNRSJEV4hIS-8Hl2iNAar7w4NV9QhhTHIG6cs_Pp1fnw_buIb_Ap2C1EceGH_xyMSdN2K35exHXhQWUP_4Izw0YYZqM-isBDcUSAsfy2Ae4Sl5rawf-CvRUezE616CHOyAdJtigrwgkKVCr6r2-jgvF-yV0ozKC_SyzK2ZRTC9ChAAo8skO02bxgg-lQ","e":"AQAB","x5c":["MIICozCCAYsCBgGMxsl5ODANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDDApmYWJpb3dvcnN0MB4XDTI0MDEwMTIwNDcyMVoXDTM0MDEwMTIwNDkwMVowFTETMBEGA1UEAwwKZmFiaW93b3JzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALYXVXALnpz4RAZM0kH63YedI5twN7MBZvlphPqULx72mGn88nt06BQvbyMjbV1Bf6eBS4FCVm1K8GVOjwnRG/kvBD8dcd81CfRkWrPkRvXsYQe0UN4qkGHRGkM5XOxc8PZ1dzk65rxs+FnWQ2dxVYxjV8dnjUUiRFeISEvvB5dojQGq+8ODVfUIYUxyBunLPz6dX58P27iG/wKdgtRHHhh/8cjEnTdit+XsR14UFlD/+CM8NGGGajPorAQ3FEgLH8tgHuEpea2sH/gr0VHsxOteghzsgHSbYoK8IJClQq+q9vo4LxfsldKMygv0ssytmUUwvQoQAKPLJDtNm8YIPpUCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAVbrQ0HCSB4NPvDUv4SPbO7anjRLH/5f/97CXVWymWIwcuvYUpV3ynvmOsg2ygIYkEZKULwlYhlKcGRnbAU1I1wDzPHO8BVCr6Qz8a4olfcL46jppcf3HfLohDPkNp4rpEFwqwBLIGd39Cj5OwB93MrAQ+ZWykdgZV+kHH8BAqfED3m7+wpHjISjkXlAi1IZ52PqvH0NBWdPBznT8tHOCyXbeiMM26oFBNnmZoC95YZA2wUBloF+HNFpvJrUTAPCJk6ekDYLap3wzSJzdF4LgdykGkUzVMOrYOzotOn5nMSP+2oo8toSIpNA2SZ/pM5hAvP2JftBCunxKWgfvohr36g=="],"x5t":"LvaKfBL3DWrhayiw_ApyR3E2Exg","x5t#S256":"pDexnxZVn4tQToZX6ZzHoz7XXVikyKEk_6KJE5Eby1E"},{"kid":"aBeFPPWPSBtx-mHokr8Dox3IrFdSjeLsXG__uVLmkQs","kty":"RSA","alg":"RS256","use":"sig","n":"2Il9H1HC6iSeJmXUuPBSRy3JOGjcYXyrWr-ETqP9lXRUk4tV8jYBLRNnLt6R5YthpB03X5-AAZZXDPnLqIED2lE9rdvXO_D5sHCrgeIWG-bG11LzZS8oRrzeszOEoxYUdr1VB0HT45mElvmBk4OvEjDbjdBFzuARunmmqjfRh327tu4BSn4bseRTMqozDaYJIp78Hh5YZxz9pNaNQWIqPKyjtWg-HLKmQGUcK32dPloqMrwCgjusdO6mO8W6l0H9-g7AvLrcUoss5H5-LJQWQS3T2ZL8-WzbH3Ji6VKqvtiVzgtPuASDh54ToKxHTlmeO2znfqwfADBP3P3apg4DtQ","e":"AQAB","x5c":["MIICozCCAYsCBgGMxsl4nTANBgkqhkiG9w0BAQsFADAVMRMwEQYDVQQDDApmYWJpb3dvcnN0MB4XDTI0MDEwMTIwNDcyMVoXDTM0MDEwMTIwNDkwMVowFTETMBEGA1UEAwwKZmFiaW93b3JzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANiJfR9RwuokniZl1LjwUkctyTho3GF8q1q/hE6j/ZV0VJOLVfI2AS0TZy7ekeWLYaQdN1+fgAGWVwz5y6iBA9pRPa3b1zvw+bBwq4HiFhvmxtdS82UvKEa83rMzhKMWFHa9VQdB0+OZhJb5gZODrxIw243QRc7gEbp5pqo30Yd9u7buAUp+G7HkUzKqMw2mCSKe/B4eWGcc/aTWjUFiKjyso7VoPhyypkBlHCt9nT5aKjK8AoI7rHTupjvFupdB/foOwLy63FKLLOR+fiyUFkEt09mS/Pls2x9yYulSqr7Ylc4LT7gEg4eeE6CsR05Znjts536sHwAwT9z92qYOA7UCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAchpFWYaMpWy93OoZKrs9IBmJ+7VXZmHk7idl/Y835cQ7oCLzsRH5B9lR4EXz7KNBaJlpTWs8I/uoiKV58LNeKR8VGDf3sMksKqpR2HwE6Ym1YzSMcWloUM829tKjdCfrIoLa6ONKsJpkaEvVriRKAxAf51lvccEiVEhTVpIwhKV892K6pGmSNaiFCJNB7gdFhnZndc/Mdu/1+h0c1apTNckdPnbuXwrXy+dWmPCKQVXfKyWiFtFPfe9nFf4Dx6u24FESwC3g+bjMHV1B364hNKguBZogiEqa5EQGTzDg+akG4qs6cY3HMEv+yLjtHwGEgT6EyFqJa/zEPMcJGVU0Qw=="],"x5t":"wpGV-y-vuLqwylzggZBh2oOKXcM","x5t#S256":"DT74NssiVfgcRxo7_dBsQPGi3Nltupb2yrb5v6W8dek"}]}'
 
 
 app = FastAPI(
@@ -111,11 +116,26 @@ async def get_token(authorization_code: str):
         )
 
         token = r.json()
-    except Exception as e:
-        print("Exception: ", e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+        payload = dep.decode_token(token["id_token"])
 
-    return Token(access_token=token["access_token"], token_type="bearer")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print("Exception: ", e.args)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.args
+        )
+
+    user_details = {
+        "username": payload[USERNAME_CLAIM],
+        "fullname": payload[FULLNAME_CLAIM],
+        "email": payload[EMAIL_CLAIM],
+        "scopes": payload[SCOPE_CLAIM],
+    }
+
+    access_token = dep.create_access_token(user_details, JWT_EXPIRY_SECONDS)
+
+    return Token(access_token=access_token, token_type="bearer", user_details=user_details)
 
 
 # add routers dynamically

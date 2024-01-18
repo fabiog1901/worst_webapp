@@ -46,8 +46,9 @@ export const useAuthStore = defineStore("auth", () => {
     const token = await axios
       .get(`${import.meta.env.VITE_APP_API_URL}/authorization_code`)
       .then((r: any) => {
-        console.log("URL for auth code", r.data);
-        window.open(r.data).focus();
+        if (r.data) {
+          (window.open(r.data, "_self") as Window).focus();
+        }
       })
       .catch((error: any) => {
         console.error(error.response);
@@ -56,10 +57,10 @@ export const useAuthStore = defineStore("auth", () => {
     console.log("token ==> ", token);
   };
 
-  const get_token = async (authorization_code: string) => {
+  const get_token = async (auth_code: string) => {
     const token = await axios
       .get(`${import.meta.env.VITE_APP_API_URL}/token`, {
-        params: { authorization_code: authorization_code },
+        params: { authorization_code: auth_code },
         headers: { "content-type": "application/x-www-form-urlencoded" },
       })
       .then((r: any) => {

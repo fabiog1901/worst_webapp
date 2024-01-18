@@ -58,7 +58,7 @@ class WorstRouter(APIRouter):
 
         @self.get(
             "/{id}/attachment-list",
-            dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
         )
         async def get_attachment_list(
             id: UUID,
@@ -83,7 +83,7 @@ class WorstRouter(APIRouter):
         async def create_instance(
             model: update_model,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["rw"])
+                User, Security(dep.get_current_user, scopes=["worst_write"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -107,7 +107,7 @@ class WorstRouter(APIRouter):
         async def update_instance(
             model: update_model,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["rw"])
+                User, Security(dep.get_current_user, scopes=["worst_write"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -131,7 +131,7 @@ class WorstRouter(APIRouter):
         async def delete_instance(
             id: UUID,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["rw"])
+                User, Security(dep.get_current_user, scopes=["worst_write"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -165,7 +165,7 @@ class WorstRouter(APIRouter):
 
         @self.get(
             "/{id}/presigned-put-url/{filename}",
-            dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
             name="Get pre-signed URL for uploading an attachment",
         )
         async def get_presigned_put_url(
@@ -179,7 +179,7 @@ class WorstRouter(APIRouter):
 
         @self.delete(
             "/{id}/attachments/{filename}",
-            dependencies=[Security(dep.get_current_user, scopes=["rw"])],
+            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
         )
         async def delete_attachement(
             id: UUID,

@@ -2,7 +2,7 @@ from apiserver import db
 from apiserver.models import UserInDB
 from fastapi import Depends, HTTPException, status, BackgroundTasks, APIRouter
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from jose import jwt
+import jwt
 from jwt.algorithms import RSAAlgorithm
 from minio.deleteobjects import DeleteObject
 from passlib.context import CryptContext
@@ -16,6 +16,14 @@ import validators
 
 JWKS = os.getenv("JWKS")
 ALGORITHM = os.getenv("ALGORITHM")
+CLIENT_ID = os.getenv("CLIENT_ID")
+ISSUER = os.getenv("ISSUER")
+USERNAME_CLAIM = os.getenv("USERNAME_CLAIM")
+
+# to get a string like this run:
+# openssl rand -hex 32
+JWT_KEY = os.getenv("JWT_KEY")
+JWT_KEY_ALGORITHM = os.getenv("JWT_KEY_ALGORITHM")
 
 if not JWKS or not ALGORITHM:
     raise EnvironmentError("JWKS or ALGORITHM env variables not found!")
@@ -23,7 +31,8 @@ if not JWKS or not ALGORITHM:
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="login", scopes={"rw": "rw", "admin": "admin"}
+    tokenUrl="login",
+    scopes={"worst_read": "read", "worst_write": "write", "worst_admin": "admin"},
 )
 
 
@@ -102,10 +111,7 @@ def s3_delete_all_objects(folder: str):
         pass
 
 
-def get_current_user(
-    security_scopes: SecurityScopes,
-    token: str = Depends(oauth2_scheme),
-):
+def decode_token(token: str):
     unverified_header = jwt.get_unverified_header(token)
 
     rsa_key = {}
@@ -120,45 +126,82 @@ def get_current_user(
             }
 
     if rsa_key:
-        print("rsa")
         try:
             public_key = RSAAlgorithm.from_jwk(rsa_key)
             payload = jwt.decode(
                 token,
                 public_key,
-                algorithms=ALGORITHM,
-                options=dict(
-                    verify_aud=False,
-                    verify_sub=False,
-                    verify_exp=False,
-                ),
+                algorithms=[
+                    unverified_header["alg"],
+                ],
+                audience=CLIENT_ID,
+                issuer=ISSUER
+                # options=dict(
+                #     verify_aud=False,
+                #     verify_sub=False,
+                #     verify_exp=True,
+                # ),
             )
 
         except jwt.ExpiredSignatureError:
-            print("129")
             raise HTTPException(
-                {"code": "token_expired", "description": "token is expired"}, 401
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="token is expired"
             )
 
         except Exception as e:
-            print("135")
-            raise HTTPException(401, f"Unable to parse authentication token: {e.args}" )
+            raise HTTPException(401, f"Unable to parse authentication token: {e.args}")
 
         # Check that we all scopes are present
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid authorization token")
 
-    token_scopes = payload.get("scope", "").split()
+    return payload
+
+
+def create_access_token(data: dict, expire_seconds: int) -> str:
+    to_encode = data.copy()
+    to_encode.update(
+        {"exp": dt.datetime.utcnow() + dt.timedelta(seconds=expire_seconds)}
+    )
+
+    try:
+        return jwt.encode(to_encode, JWT_KEY, JWT_KEY_ALGORITHM)
+    except Exception as e:
+        raise e
+
+
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    security_scopes: SecurityScopes,
+) -> UserInDB:
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": authenticate_value},
+    )
+
+    try:
+        payload = jwt.decode(token, JWT_KEY, JWT_KEY_ALGORITHM)
+    except (jwt.PyJWTError, Exception):
+        raise credentials_exception
+
+    token_username = payload.get("username", None)
+    token_scopes = payload.get("scopes", [])
+
+    if not token_username:
+        raise credentials_exception
 
     for scope in security_scopes.scopes:
         if scope not in token_scopes:
-            print("155 token issue")
-    #         raise HTTPException(
-    #             {
-    #                 "code": "Unauthorized",
-    #                 "description": f"You don't have access to this resource. `{' '.join(security_scopes.scopes)}` scopes required",
-    #             },
-    #             403,
-    #         )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Not enough permissions. Missing scopes: {security_scopes.scopes}",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
 
-    return payload
+    return token_username
