@@ -1,8 +1,8 @@
 <template>
-  <div class="flex h-full w-full">
+  <div class="flex w-full">
     <section
       id="context-bar"
-      class="flex w-96 flex-col bg-gray-50 dark:bg-gray-700"
+      class="flex w-96 flex-col bg-gray-50 dark:bg-gray-600"
     >
       <div v-for="(v, k) in modelStore.instance_children" v-bind:key="k">
         <router-link v-bind:to="route.path + '/' + k"
@@ -25,59 +25,200 @@
 
     <section
       id="content-container"
-      class="flex h-full w-full bg-gray-300 dark:bg-gray-700"
+      class="flex w-full bg-gray-300 dark:bg-gray-700"
     >
       <div class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
-        <div class="p-2 text-sm text-gray-700 dark:text-white">name</div>
-        <div
-          class="bg-slate-300 p-2 text-xl font-semibold dark:bg-slate-500 dark:text-white"
-        >
-          {{ modelStore.instance?.name }}
-        </div>
-        <div v-for="x in getSkemaFields" v-bind:key="x" class="">
-          <div class="p-2 text-sm text-gray-700 dark:text-white">
-            {{ x.name }} <i>[{{ x.type }}]</i>
-          </div>
+        <div class="flex">
+          <div class="p-2 text-sm text-gray-700 dark:text-white">name</div>
+          <div class="flex-grow"></div>
           <div
-            v-if="x.type === 'decimal'"
-            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
+            v-if="edit_field !== 'name'"
+            class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
+            v-on:click="
+              new_value = modelStore.instance.name;
+              edit_field = 'name';
+            "
           >
-            {{ formatDecimal(modelStore.instance?.[x.name as keyof Model]) }}
+            Edit
           </div>
-
-          <div
-            v-else-if="x.type === 'date'"
-            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
-          >
-            {{ formatDate(modelStore.instance?.[x.name as keyof Model]) }}
-          </div>
-          <div
-            v-else-if="x.type === 'enum'"
-            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
-          >
+          <div v-else class="flex">
             <div
-              class="flex h-8 w-fit min-w-16 items-center justify-center rounded border p-2 text-sm font-semibold"
-              v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model] as string)"
+              class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
+              v-on:click="edit_field = ''"
             >
-              {{ modelStore.instance?.[x.name as keyof Model] }}
+              Cancel
+            </div>
+
+            <div
+              class="m-2 rounded-xl bg-orange-400 px-2 text-sm hover:cursor-pointer hover:bg-orange-300"
+              v-on:click="save_new_value(modelStore.instance.name)"
+            >
+              Save
             </div>
           </div>
+        </div>
+        <div>
           <div
-            v-else-if="x.type === 'markdown'"
-            class="max-h-80 w-full overflow-y-scroll dark:bg-slate-500 dark:text-white"
+            v-if="edit_field !== 'name'"
+            class="m-1 flex h-12 items-center rounded border bg-slate-300 p-1 text-3xl font-semibold dark:bg-slate-500 dark:text-white"
           >
-            <FabMark
-              class="h-fit dark:bg-slate-500 dark:text-white"
-              v-bind:source="modelStore.instance?.[x.name] ?? ''"
-              v-bind:theme="getTheme"
-            />
+            <label>{{ modelStore.instance?.name }}</label>
           </div>
-
           <div
             v-else
-            class="h-12 bg-slate-300 p-2 dark:bg-slate-500 dark:text-white"
+            class="m-1 h-12 rounded border bg-slate-300 text-3xl dark:bg-slate-500 dark:text-white"
           >
-            {{ modelStore.instance?.[x.name as keyof Model] }}
+            <input
+              v-bind:id="id"
+              v-model="new_value"
+              class="h-full w-full p-2 text-black"
+              type="text"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <div v-for="x in getSkemaFields" v-bind:key="x" class="">
+          <div class="flex">
+            <div class="p-2 text-sm text-gray-700 dark:text-white">
+              {{ x.name }} <i>[{{ x.type }}]</i>
+            </div>
+            <div class="flex-grow"></div>
+            <div>
+              <div
+                v-if="edit_field !== x.name"
+                class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
+                v-on:click="
+                  new_value = modelStore.instance[x.name];
+                  edit_field = x.name;
+                "
+              >
+                Edit
+              </div>
+              <div v-else class="flex">
+                <div
+                  class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
+                  v-on:click="edit_field = ''"
+                >
+                  Cancel
+                </div>
+                <div
+                  class="m-2 rounded-xl bg-orange-400 px-2 text-sm hover:cursor-pointer hover:bg-orange-300"
+                  v-on:click="
+                    save_new_value(modelStore.instance[x.name as keyof Model])
+                  "
+                >
+                  Save
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="x.type === 'decimal'">
+            <div
+              v-if="edit_field !== x.name"
+              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
+            >
+              <label>{{
+                formatDecimal(modelStore.instance?.[x.name as keyof Model])
+              }}</label>
+            </div>
+            <div
+              v-else
+              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <input
+                v-bind:id="id"
+                v-model.number="new_value"
+                class="h-full w-full p-2 text-black"
+                type="number"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div v-else-if="x.type === 'date'">
+            <div
+              v-if="edit_field !== x.name"
+              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
+            >
+              <label>{{
+                formatDate(modelStore.instance?.[x.name as keyof Model])
+              }}</label>
+            </div>
+
+            <div
+              v-else
+              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <input
+                v-bind:id="id"
+                v-model="new_value"
+                class="h-full w-full p-2 text-black"
+                type="date"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <div v-else-if="x.type === 'enum'">
+            <div v-if="edit_field !== x.name" class="m-1 flex h-8 items-center">
+              <div
+                class="flex h-8 w-fit min-w-16 items-center justify-center rounded border p-2 text-sm font-semibold"
+                v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model] as string)"
+              >
+                {{ modelStore.instance?.[x.name as keyof Model] }}
+              </div>
+            </div>
+            <div
+              v-else
+              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <input
+                v-bind:id="id"
+                v-model.lazy.trim="new_value"
+                class="h-full w-full p-2 text-black"
+                type="text"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+          <div v-else-if="x.type === 'markdown'">
+            <div
+              v-if="edit_field !== x.name"
+              class="h-96 bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <FabMark
+                class="h-96 overflow-y-scroll dark:bg-slate-500 dark:text-white"
+                v-bind:source="modelStore.instance?.[x.name] ?? ''"
+                v-bind:theme="getTheme"
+              />
+            </div>
+
+            <div
+              v-else
+              class="h-96 bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <FabMarkEdit v-model="new_value" class="h-96" />
+            </div>
+          </div>
+
+          <div v-else>
+            <div
+              v-if="edit_field !== x.name"
+              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
+            >
+              <label>{{ modelStore.instance?.[x.name as keyof Model] }}</label>
+            </div>
+            <div
+              v-else
+              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
+            >
+              <input
+                v-bind:id="id"
+                v-model.lazy.trim="new_value"
+                class="h-full w-full p-2 text-black"
+                type="text"
+                autocomplete="off"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -206,7 +347,7 @@
           <label
             class="flex h-8 w-full items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
             v-on:click="showDeleteInstanceModal = true"
-            >Delete {{ modelStore.instance?.name }}
+            >Delete instance
 
             <svg
               id="magnifying-glass-icon"
@@ -251,6 +392,7 @@ import { computed, onMounted, watch, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 import FabMark from "@/components/FabMark.vue";
+import FabMarkEdit from "@/components/FabMarkEdit.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
 
 import { formatDecimal, formatDate, getLabel } from "@/utils/utils";
@@ -291,6 +433,22 @@ const delete_instance = async () => {
 const id = computed(() => {
   return route.params.id as string;
 });
+
+const edit_field = ref("");
+const new_value = ref("");
+
+const save_new_value = async (old_v: string) => {
+  if (old_v !== new_value.value) {
+    await modelStore.partial_update_instance(
+      model_name.value,
+      id.value,
+      edit_field.value,
+      new_value.value
+    );
+  }
+
+  edit_field.value = "";
+};
 
 const model_name = computed(() => {
   return route.params.model as string;

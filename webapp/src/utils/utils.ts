@@ -86,15 +86,17 @@ export const axiosWrapper = {
   get: request("GET"),
   post: request("POST"),
   put: request("PUT"),
+  patch: request("PATCH"),
   delete: request("DELETE"),
 };
 
 function request(method: string) {
-  return (url: string, body: any = {}) => {
+  return (url: string, body: any = {}, params: any = {}) => {
     const config: any = {
       method: method,
       url: url,
       data: body,
+      params: params,
       //data: new URLSearchParams(body),
       headers: {
         Authorization: `Bearer ${authStore.user.access_token}`,

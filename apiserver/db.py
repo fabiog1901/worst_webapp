@@ -162,113 +162,7 @@ def get_placeholders(model) -> str:
     return ("%s, " * len(tuple(model.__fields__.keys())))[:-2]
 
 
-# ADMIN/USERS
-USERS_COLS = get_fields(User)
-USERINDB_COLS = get_fields(UserInDB)
-USERINDB_PLACEHOLDERS = get_placeholders(UserInDB)
-
-
-def get_all_users() -> list[User]:
-    return execute_stmt(
-        f"""
-        SELECT {USERS_COLS} 
-        FROM worst_users
-        ORDER BY full_name
-        """,
-        (),
-        User,
-        True,
-    )
-
-
-def get_user_with_hash(user_id: str) -> UserInDB | None:
-    return execute_stmt(
-        f"""
-        select {USERINDB_COLS}
-        from worst_users 
-        where user_id = %s
-        """,
-        (user_id,),
-        UserInDB,
-    )
-
-
-def get_user(user_id: str) -> User | None:
-    return execute_stmt(
-        f"""
-        select {USERS_COLS}
-        from worst_users 
-        where user_id = %s
-        """,
-        (user_id,),
-        User,
-    )
-
-
-def create_user(user: UserInDB) -> User | None:
-    return execute_stmt(
-        f"""
-        insert into worst_users 
-            ({USERINDB_COLS})
-        values
-            ({USERINDB_PLACEHOLDERS})
-        returning {USERS_COLS}
-        """,
-        tuple(user.model_dump().values()),
-        User,
-    )
-
-
-def increase_failed_attempt_count(user_id: str) -> UserInDB | None:
-    return execute_stmt(
-        f"""update worst_users set
-            failed_attempts = failed_attempts + 1 
-        where user_id = %s
-        returning {USERINDB_COLS}""",
-        (user_id,),
-        UserInDB,
-    )
-
-
-def reset_failed_attempt_count(user_id: str):
-    execute_stmt(
-        "UPDATE worst_users SET failed_attempts = 0 WHERE user_id = %s",
-        (user_id,),
-        returning_rs=False,
-    )
-
-
-def update_user(user_id: str, user: UpdatedUserInDB) -> User | None:
-    old_uid = get_user_with_hash(user_id)
-
-    if old_uid:
-        update_data = user.model_dump(exclude_unset=True)
-
-        new_uid = old_uid.model_copy(update=update_data)
-
-        return execute_stmt(
-            f"""
-            update worst_users set 
-            ({USERINDB_COLS}) = 
-                ({USERINDB_PLACEHOLDERS})
-            where user_id  = %s
-            returning {USERS_COLS}
-            """,
-            (*tuple(new_uid.model_dump().values()), user_id),
-            User,
-        )
-
-
-def delete_user(user_id: str) -> User | None:
-    return execute_stmt(
-        f"""
-        delete from worst_users
-        where user_id = %s
-        returning {USERS_COLS}
-        """,
-        (user_id,),
-        User,
-    )
+# ADMIN
 
 
 def __get_where_clause(
@@ -350,11 +244,9 @@ def get_model(name: str) -> Model:
 
 def create_model(model: Model) -> Model | None:
     def get_type(x):
-        return {
-            "markdown": "STRING",
-            "enum": "STRING",
-            "timestamp": "TIMESTAMPTZ"
-        }.get(x, x)
+        return {"markdown": "STRING", "enum": "STRING", "timestamp": "TIMESTAMPTZ"}.get(
+            x, x
+        )
 
     # build the CREATE TABLE stmt
     additions: dict[str, str] = {}
@@ -671,6 +563,25 @@ def update_instance(
             (*tuple(new_model_instance.model_dump().values()), model_instance.id),
             pyd_models[model_name]["default"],
         )
+
+
+def partial_update_instance(
+    model_name: str, user_id: str, id: UUID, field: str, value, ts: dt.datetime
+) -> Type[BaseFields] | None:
+    cols = get_fields(pyd_models[model_name]["default"])
+
+    return execute_stmt(
+        f"""
+        UPDATE {model_name} SET
+            {field} = %s,
+            updated_by = %s,
+            updated_at = %s
+        WHERE id = %s
+        RETURNING {cols}
+        """,
+        (value, user_id, ts, id),
+        pyd_models[model_name]["default"],
+    )
 
 
 def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:

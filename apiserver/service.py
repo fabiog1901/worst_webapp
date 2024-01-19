@@ -80,6 +80,12 @@ def update_instance(
 
     return db.update_instance(model_name, m)
 
+def partial_update_instance(
+    model_name: str, user_id: str, id: UUID, field: str, value
+) -> Type[BaseFields] | None:
+
+    return db.partial_update_instance(model_name, user_id, id, field, value, dt.datetime.utcnow())
+
 
 def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
 

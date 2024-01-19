@@ -37,17 +37,19 @@ async def get_model(name: str) -> Model | None:
 )
 async def create_model(
     model: ModelUpdate,
-    current_user: Annotated[User, Security(dep.get_current_user, scopes=["worst_admin"])],
+    current_user: Annotated[
+        User, Security(dep.get_current_user, scopes=["worst_admin"])
+    ],
     bg_task: BackgroundTasks,
 ) -> Model | None:
-    x = svc.create_model(model, current_user.user_id)
+    x = svc.create_model(model, current_user)
 
     if x:
         bg_task.add_task(
             svc.log_event,
             NAME,
             dt.datetime.utcnow(),
-            current_user.user_id,
+            current_user,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
@@ -61,17 +63,19 @@ async def create_model(
 )
 async def update_model(
     model: ModelUpdate,
-    current_user: Annotated[User, Security(dep.get_current_user, scopes=["worst_admin"])],
+    current_user: Annotated[
+        User, Security(dep.get_current_user, scopes=["worst_admin"])
+    ],
     bg_task: BackgroundTasks,
 ) -> Model | None:
-    x = svc.update_model(model, current_user.user_id)
+    x = svc.update_model(model, current_user)
 
     if x:
         bg_task.add_task(
             svc.log_event,
             NAME,
             dt.datetime.utcnow(),
-            current_user.user_id,
+            current_user,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )
@@ -85,7 +89,9 @@ async def update_model(
 )
 async def delete_model(
     name: str,
-    current_user: Annotated[User, Security(dep.get_current_user, scopes=["worst_admin"])],
+    current_user: Annotated[
+        User, Security(dep.get_current_user, scopes=["worst_admin"])
+    ],
     bg_task: BackgroundTasks,
 ) -> Model | None:
     x = svc.delete_model(name)
@@ -95,7 +101,7 @@ async def delete_model(
             svc.log_event,
             NAME,
             dt.datetime.utcnow(),
-            current_user.user_id,
+            current_user,
             inspect.currentframe().f_code.co_name,  # type: ignore
             x.model_dump_json(),
         )

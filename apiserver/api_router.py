@@ -1,6 +1,6 @@
-from fastapi import APIRouter, BackgroundTasks, Security
+from fastapi import APIRouter, BackgroundTasks, Security, Body
 from fastapi.responses import HTMLResponse
-from typing import Annotated, Type
+from typing import Annotated, Any, Type
 from uuid import UUID
 from apiserver.models import User, BaseFields
 import inspect
@@ -87,14 +87,14 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.create_instance(model_name, current_user.user_id, model)
+            x = svc.create_instance(model_name, current_user, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
                     model_name,
                     dt.datetime.utcnow(),
-                    current_user.user_id,
+                    current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
                 )
@@ -111,14 +111,40 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.update_instance(model_name, current_user.user_id, model)
+            x = svc.update_instance(model_name, current_user, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
                     model_name,
                     dt.datetime.utcnow(),
-                    current_user.user_id,
+                    current_user,
+                    inspect.currentframe().f_code.co_name,  # type: ignore
+                    x.model_dump_json(),
+                )
+
+            return x
+
+        @self.patch(
+            "/{id}",
+        )
+        async def partial_update_instance(
+            id: UUID,
+            field: Annotated[str, Body()],
+            value: Annotated[Any, Body()],
+            current_user: Annotated[
+                User, Security(dep.get_current_user, scopes=["worst_write"])
+            ],
+            bg_task: BackgroundTasks,
+        ) -> default_model | None:
+            x = svc.partial_update_instance(model_name, current_user, id, field, value)
+
+            if x:
+                bg_task.add_task(
+                    svc.log_event,
+                    model_name,
+                    dt.datetime.utcnow(),
+                    current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
                 )
@@ -142,7 +168,7 @@ class WorstRouter(APIRouter):
                     svc.log_event,
                     model_name,
                     dt.datetime.utcnow(),
-                    current_user.user_id,
+                    current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
                 )

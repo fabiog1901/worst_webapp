@@ -45,8 +45,6 @@ export const useModelStore = defineStore("model", () => {
     console.info(`GET /${model_name}`);
   };
 
-  
-
   const get_instance = async (model_name: string, id: string) => {
     instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
     console.info(`GET /${model_name}/${id}`);
@@ -120,6 +118,19 @@ export const useModelStore = defineStore("model", () => {
     return await axiosWrapper.put(`/${model_name}`, m);
   };
 
+  const partial_update_instance = async (
+    model_name: string,
+    id: string,
+    field: string,
+    val: any
+  ) => {
+    instance.value = await axiosWrapper.patch(`/${model_name}/${id}`, {
+      field: field,
+      value: val,
+    });
+    console.info(`PATCH /${model_name}`, id, field, val);
+  };
+
   const delete_instance = async (model_name: string, id: string) => {
     await axiosWrapper.delete(`/${model_name}/${id}`);
     console.info(`DELETE /${model_name}/${id}`);
@@ -178,6 +189,7 @@ export const useModelStore = defineStore("model", () => {
     delete_attachment,
     create_instance,
     update_instance,
+    partial_update_instance,
     delete_instance,
 
     // misc
