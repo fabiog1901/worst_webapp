@@ -7,10 +7,9 @@ import os
 import datetime as dt
 from apiserver.models import (
     Model,
+    Report,
     pyd_models,
     User,
-    UserInDB,
-    UpdatedUserInDB,
     BaseFields,
 )
 
@@ -400,6 +399,77 @@ def delete_model(model_name: str) -> Model | None:
     update_watch()
 
     return deleted_model
+
+
+
+
+
+# WORST_REPORTS
+REPORT_COLS = get_fields(Report)
+REPORT_PLACEHOLDERS = get_placeholders(Report)
+
+
+def get_all_reports() -> list[Report]:
+    return execute_stmt(
+        f"""
+        SELECT {REPORT_COLS} 
+        FROM worst_reports
+        ORDER BY name""",
+        (),
+        Report,
+        True,
+    )
+
+
+def get_report(name: str) -> Model:
+    return execute_stmt(
+        f"""
+        SELECT {REPORT_COLS} 
+        FROM worst_reports
+        WHERE name = %s""",
+        (name,),
+        Report,
+    )
+
+
+def create_report(report: Report) -> Report | None:
+
+    return execute_stmt(
+        f"""
+        INSERT INTO worst_reports 
+            ({REPORT_COLS}) 
+        VALUES 
+            ({REPORT_PLACEHOLDERS})
+        RETURNING {REPORT_COLS}""",
+        (*tuple(report.model_dump().values()),),
+        Report,
+    )
+
+
+
+def update_report(report: Report) -> Report | None:
+    return execute_stmt(
+        f"""
+        UPDATE worst_reports SET 
+            sql_stmt = %s,
+            updated_by = %s,
+            updated_at = %s
+        WHERE name = %s
+        RETURNING {REPORT_COLS}""",
+        (report.sql_stmt, report.updated_by, report.updated_at, report.name),
+        Report,
+    )
+
+def delete_report(name: str) -> Report | None:
+    return execute_stmt(
+        f"""
+        DELETE FROM worst_reports 
+        WHERE name = %s 
+        RETURNING {REPORT_COLS}""",
+        (name,),
+        Report,
+    )
+
 
 
 ###################

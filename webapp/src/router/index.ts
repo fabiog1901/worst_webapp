@@ -18,6 +18,10 @@ const router = createRouter({
           component: () => import("@/views/AdminView.vue"),
         },
         {
+          path: "/sql",
+          component: () => import("@/views/SQLView.vue"),
+        },
+        {
           path: "/:model",
           component: () => import("@/views/TableView.vue"),
         },

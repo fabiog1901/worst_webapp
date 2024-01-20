@@ -34,6 +34,37 @@ export const useModelStore = defineStore("model", () => {
     console.info(`DELETE /admin/models/${m}`);
   };
 
+  // reports
+  const reports: { [key: string]: any } = ref<{}>({});
+
+  const get_all_reports = async () => {
+    reports.value = await axiosWrapper.get(`/admin/reports`);
+    console.info("GET /admin/reports");
+  };
+
+  const get_report = async (name: string) => {
+    await axiosWrapper.get(`/admin/reports/${name}`);
+    console.info(`GET /admin/reports/${name}`);
+  };
+
+  const create_report = async (name: string, sql_stmt: string) => {
+    await axiosWrapper.post(`/admin/reports/`, {
+      name: name,
+      sql_stmt: sql_stmt,
+    });
+    console.info(`POST /admin/reports/ (${name}, ${sql_stmt})`);
+  };
+
+  const update_report = async (name: string, sql_stmt: string) => {
+    await axiosWrapper.put(`/admin/reports/${name}`, { sql_stmt: sql_stmt });
+    console.info(`PUT /admin/reports/${name}`, sql_stmt);
+  };
+
+  const delete_report = async (name: string) => {
+    await axiosWrapper.delete(`/admin/reports/${name}`);
+    console.info(`DELETE /admin/reports/${name}`);
+  };
+
   // instances
   const instances = ref<Model[]>([]);
   const instance: { [index: string]: any } = ref<Model>({} as Model);
@@ -173,6 +204,14 @@ export const useModelStore = defineStore("model", () => {
     create_model,
     update_model,
     delete_model,
+
+    // reports
+    reports,
+    get_all_reports,
+    get_report,
+    create_report,
+    update_report,
+    delete_report,
 
     // instances
     instances,

@@ -1,5 +1,4 @@
 from apiserver import db
-from apiserver.models import UserInDB
 from fastapi import Depends, HTTPException, status, BackgroundTasks, APIRouter
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 import jwt
@@ -12,6 +11,7 @@ import json
 import minio
 import os
 import validators
+from apiserver.models import User
 
 
 JWKS = os.getenv("JWKS")
@@ -173,7 +173,7 @@ def create_access_token(data: dict, expire_seconds: int) -> str:
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     security_scopes: SecurityScopes,
-) -> UserInDB:
+) -> User:
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:

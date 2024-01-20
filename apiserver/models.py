@@ -122,33 +122,15 @@ class Token(BaseModel):
     user_details: dict
 
 
-class CommonUser(BaseModel):
+class User(BaseModel):
+    user_id: str
     full_name: str | None = None
     email: EmailStr | None = None
-    is_disabled: bool | None = None
     scopes: list[str] | None = None
 
-
-class User(CommonUser):
-    user_id: str
-
-
-class UpdatedUser(CommonUser):
-    password: str | None = None
-
-
-class UpdatedUserInDB(CommonUser):
-    hashed_password: str | None = None
-
-
-class NewUser(User):
-    password: str = Field(min_length=8, max_length=50)
-
-
-class UserInDB(User):
-    hashed_password: str
-    failed_attempts: int = 0
-
+class Report(AuditFields):
+    name: str
+    sql_stmt: str
 
 ###################
 #  MODEL OBJECTS  #

@@ -1,7 +1,7 @@
 from typing import Type
 from uuid import UUID, uuid4
 from apiserver import db
-from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate
+from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate, Report
 import datetime as dt
 import apiserver.dependencies as dep
 
@@ -80,22 +80,23 @@ def update_instance(
 
     return db.update_instance(model_name, m)
 
+
 def partial_update_instance(
     model_name: str, user_id: str, id: UUID, field: str, value
 ) -> Type[BaseFields] | None:
-
-    return db.partial_update_instance(model_name, user_id, id, field, value, dt.datetime.utcnow())
+    return db.partial_update_instance(
+        model_name, user_id, id, field, value, dt.datetime.utcnow()
+    )
 
 
 def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
-
     # delete all attachments from the instance
     s3_folder_name = "/".join([model_name, str(id)])
     dep.s3_delete_all_objects(s3_folder_name)
 
     # set parent_type and parent_id to NULL for all children
     db.set_parent_to_null(model_name, str(id))
-    
+
     # finally, delete the instance itself
     return db.delete_instance(model_name, id)
 
@@ -146,7 +147,6 @@ def create_model(
     # TODO sanitize incoming name
     m.name = m.name.lower()
 
-
     return db.create_model(m)
 
 
@@ -169,3 +169,55 @@ def update_model(
 def delete_model(model_name: str) -> Model | None:
     # TODO sanitize name
     return db.delete_model(model_name.lower())
+
+
+# REPORTS
+def get_all_reports() -> dict[str, Report] | None:
+    reports = db.get_all_reports()
+
+    x = {}
+
+    for r in reports:
+        x[r.name] = r.model_dump(exclude="name")
+
+    return x
+
+
+def get_report(name: str) -> Report | None:
+    return db.get_report(name)
+
+
+def create_report(
+    name: str,
+    sql_stmt: str,
+    user_id: str,
+) -> Report | None:
+    r = Report(
+        name=name,
+        sql_stmt=sql_stmt,
+        created_by=user_id,
+        updated_by=user_id,
+        created_at=dt.datetime.utcnow(),
+        updated_at=dt.datetime.utcnow(),
+    )
+
+    return db.create_report(r)
+
+
+def update_report(
+    name: str,
+    sql_stmt: str,
+    user_id: str,
+) -> Report | None:
+    r = Report(
+        name=name,
+        sql_stmt=sql_stmt,
+        updated_by=user_id,
+        updated_at=dt.datetime.utcnow(),
+    )
+
+    return db.update_report(r)
+
+
+def delete_report(name: str) -> Report | None:
+    return db.delete_report(name)

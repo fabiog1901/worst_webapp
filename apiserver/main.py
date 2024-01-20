@@ -9,10 +9,8 @@ from apiserver import db
 from apiserver import service as svc
 from apiserver.api_router import WorstRouter
 from apiserver.models import (
-    UserInDB,
     Token,
     User,
-    UpdatedUserInDB,
     pyd_models,
 )
 from apiserver.routers.admin import admin
@@ -99,7 +97,7 @@ async def get_authorization_code() -> RedirectResponse:
     )
 
 
-@app.get("/token")
+@app.get("/token", tags=["auth"])
 async def get_token(authorization_code: str):
     # exchange auth code for token
     try:
@@ -135,7 +133,9 @@ async def get_token(authorization_code: str):
 
     access_token = dep.create_access_token(user_details, JWT_EXPIRY_SECONDS)
 
-    return Token(access_token=access_token, token_type="bearer", user_details=user_details)
+    return Token(
+        access_token=access_token, token_type="bearer", user_details=user_details
+    )
 
 
 # add routers dynamically
