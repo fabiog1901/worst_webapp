@@ -14,6 +14,7 @@ from apiserver.models import (
     pyd_models,
 )
 from apiserver.routers.admin import admin
+from apiserver.routers import sql
 import os
 import threading
 import time
@@ -150,7 +151,7 @@ for k, v in pyd_models.items():
     )
 
 
-# ADMIN
+app.include_router(sql.router)
 app.include_router(admin.router)
 
 

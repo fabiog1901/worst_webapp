@@ -65,6 +65,24 @@ export const useModelStore = defineStore("model", () => {
     console.info(`DELETE /admin/reports/${name}`);
   };
 
+  // sql
+  const result_set = ref<any>([]);
+
+  const execute_sql_report = async (name: string) => {
+    result_set.value = await axiosWrapper.post(`/sql/report/${name}`);
+    console.info(`POST /sql/report/${name}`);
+  };
+
+  const execute_sql_select = async (select_stmt: string) => {
+    result_set.value = await axiosWrapper.post(`/sql/select`, select_stmt);
+    console.info("POST /sql/select", select_stmt);
+  };
+
+  const execute_sql_dml = async (sql_stmt: string) => {
+    result_set.value = await axiosWrapper.post(`/sql/dml`, sql_stmt);
+    console.info("POST /sql/dml", sql_stmt);
+  };
+
   // instances
   const instances = ref<Model[]>([]);
   const instance: { [index: string]: any } = ref<Model>({} as Model);
@@ -204,6 +222,12 @@ export const useModelStore = defineStore("model", () => {
     create_model,
     update_model,
     delete_model,
+
+    // sql
+    result_set,
+    execute_sql_report,
+    execute_sql_dml,
+    execute_sql_select,
 
     // reports
     reports,

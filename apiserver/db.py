@@ -15,6 +15,8 @@ from apiserver.models import (
 
 
 DB_URL = os.getenv("DB_URL")
+DB_URL_DML = os.getenv("DB_URL_DML")
+DB_URL_SELECT = os.getenv("DB_URL_SELECT")
 
 SQL_RESERVED_WORDS = [
     "all",
@@ -121,6 +123,8 @@ if not DB_URL:
 
 # the pool starts connecting immediately.
 pool = ConnectionPool(DB_URL, kwargs={"autocommit": True})
+dml_pool = ConnectionPool(DB_URL_DML, kwargs={"autocommit": True})
+select_pool = ConnectionPool(DB_URL_SELECT, kwargs={"autocommit": True})
 
 
 def log_event(
@@ -128,7 +132,7 @@ def log_event(
 ):
     execute_stmt(
         """UPSERT INTO 
-            worst_events (object, ts, username, action, details) 
+            internal.events (object, ts, username, action, details) 
         VALUES 
             (%s, %s, %s, %s, %s)
         """,
@@ -139,13 +143,13 @@ def log_event(
 
 def get_watch() -> int:
     return execute_stmt(
-        "SELECT ts::INT8 FROM worst_watch AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
+        "SELECT ts::INT8 FROM internal.watch AS OF SYSTEM TIME follower_read_timestamp() LIMIT 1",
     )[0]
 
 
 def update_watch() -> None:
     # just refresh the entry to update column 'ts'
-    execute_stmt("UPDATE worst_watch SET id=1 WHERE true", returning_rs=False)
+    execute_stmt("UPDATE internal.watch SET id=1 WHERE true", returning_rs=False)
 
 
 def load_schema(ddl_filename):
@@ -222,7 +226,7 @@ def get_all_models() -> list[Model]:
     return execute_stmt(
         f"""
         SELECT {MODEL_COLS} 
-        FROM worst_models
+        FROM internal.models
         ORDER BY name""",
         (),
         Model,
@@ -234,7 +238,7 @@ def get_model(name: str) -> Model:
     return execute_stmt(
         f"""
         SELECT {MODEL_COLS} 
-        FROM worst_models
+        FROM internal.models
         WHERE name = %s""",
         (name,),
         Model,
@@ -312,7 +316,7 @@ def create_model(model: Model) -> Model | None:
 
     new_model = execute_stmt(
         f"""
-        INSERT INTO worst_models 
+        INSERT INTO internal.models 
             ({MODEL_COLS}) 
         VALUES 
             ({MODEL_PLACEHOLDERS})
@@ -362,7 +366,7 @@ def update_model(model: Model) -> Model | None:
 
     new_model = execute_stmt(
         f"""
-        UPDATE worst_models SET
+        UPDATE internal.models SET
             (skema, updated_by, updated_at) = (%s, %s, %s)
         WHERE name = %s 
         RETURNING {MODEL_COLS}""",
@@ -388,7 +392,7 @@ def delete_model(model_name: str) -> Model | None:
 
     deleted_model = execute_stmt(
         f"""
-        DELETE FROM worst_models 
+        DELETE FROM internal.models 
         WHERE name = %s 
         RETURNING {MODEL_COLS}""",
         (model_name,),
@@ -401,9 +405,6 @@ def delete_model(model_name: str) -> Model | None:
     return deleted_model
 
 
-
-
-
 # WORST_REPORTS
 REPORT_COLS = get_fields(Report)
 REPORT_PLACEHOLDERS = get_placeholders(Report)
@@ -413,7 +414,7 @@ def get_all_reports() -> list[Report]:
     return execute_stmt(
         f"""
         SELECT {REPORT_COLS} 
-        FROM worst_reports
+        FROM internal.reports
         ORDER BY name""",
         (),
         Report,
@@ -421,11 +422,11 @@ def get_all_reports() -> list[Report]:
     )
 
 
-def get_report(name: str) -> Model:
+def get_report(name: str) -> Report | None:
     return execute_stmt(
         f"""
         SELECT {REPORT_COLS} 
-        FROM worst_reports
+        FROM internal.reports
         WHERE name = %s""",
         (name,),
         Report,
@@ -433,10 +434,9 @@ def get_report(name: str) -> Model:
 
 
 def create_report(report: Report) -> Report | None:
-
     return execute_stmt(
         f"""
-        INSERT INTO worst_reports 
+        INSERT INTO internal.reports 
             ({REPORT_COLS}) 
         VALUES 
             ({REPORT_PLACEHOLDERS})
@@ -446,11 +446,10 @@ def create_report(report: Report) -> Report | None:
     )
 
 
-
 def update_report(report: Report) -> Report | None:
     return execute_stmt(
         f"""
-        UPDATE worst_reports SET 
+        UPDATE internal.reports SET 
             sql_stmt = %s,
             updated_by = %s,
             updated_at = %s
@@ -460,16 +459,34 @@ def update_report(report: Report) -> Report | None:
         Report,
     )
 
+
 def delete_report(name: str) -> Report | None:
     return execute_stmt(
         f"""
-        DELETE FROM worst_reports 
+        DELETE FROM internal.reports 
         WHERE name = %s 
         RETURNING {REPORT_COLS}""",
         (name,),
         Report,
     )
 
+
+# EXECUTE REPORT
+def execute_sql_report(sql_stmt: str, bind_params: tuple) -> list[Any]:
+    return execute_stmt(
+        sql_stmt,
+        bind_params,
+        None,
+        True,
+    )
+
+
+def execute_sql_select(sql_stmt: str) -> list[Any]:
+    return execute_select(sql_stmt)
+
+
+def execute_sql_dml(sql_stmt: str) -> list[Any]:
+    return execute_dml(sql_stmt)
 
 
 ###################
@@ -742,6 +759,48 @@ def execute_stmt(
                             return rs
                     else:
                         return None
+            except Exception as e:
+                # TODO correctly handle error such as PK violations
+                print(e)
+                return None
+
+
+def execute_select(
+    stmt: str,
+) -> list[tuple] | None:
+    with select_pool.connection() as conn:
+        # convert a set to a psycopg list
+        conn.adapters.register_dumper(set, ListDumper)
+        conn.adapters.register_dumper(dict, DictJsonbDumper)
+
+        with conn.cursor() as cur:
+            try:
+                cur.execute(stmt, ())  # type: ignore
+
+                rsl = cur.fetchall()
+
+                return rsl
+            except Exception as e:
+                # TODO correctly handle error such as PK violations
+                print(e)
+                return None
+
+
+def execute_dml(
+    stmt: str,
+) -> list[tuple] | None:
+    with dml_pool.connection() as conn:
+        # convert a set to a psycopg list
+        conn.adapters.register_dumper(set, ListDumper)
+        conn.adapters.register_dumper(dict, DictJsonbDumper)
+
+        with conn.cursor() as cur:
+            try:
+                cur.execute(stmt, ())  # type: ignore
+
+                rsl = cur.fetchall()
+
+                return rsl
             except Exception as e:
                 # TODO correctly handle error such as PK violations
                 print(e)

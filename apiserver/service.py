@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 from uuid import UUID, uuid4
 from apiserver import db
 from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate, Report
@@ -95,7 +95,7 @@ def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
     dep.s3_delete_all_objects(s3_folder_name)
 
     # set parent_type and parent_id to NULL for all children
-    db.set_parent_to_null(model_name, str(id))
+    db.set_parent_to_null(model_name, id)
 
     # finally, delete the instance itself
     return db.delete_instance(model_name, id)
@@ -129,7 +129,7 @@ def get_all_models() -> dict[str, Model] | None:
 
 def get_model(model_name: str) -> Model | None:
     # TODO sanitize name
-    return db.get_model(model_name.lower)
+    return db.get_model(model_name.lower())
 
 
 def create_model(
@@ -221,3 +221,23 @@ def update_report(
 
 def delete_report(name: str) -> Report | None:
     return db.delete_report(name)
+
+
+###################
+# EXECUTE REPORTS #
+###################
+def execute_sql_report(name: str, bind_params: tuple) -> list[Any] | None:
+    report = db.get_report(name)
+
+    if report:
+        return db.execute_sql_report(report.sql_stmt, bind_params)
+
+    return None
+
+
+def execute_sql_select(sql_select: str) -> list[Any] | None:
+    return db.execute_sql_select(sql_select)
+
+
+def execute_sql_dml(sql_stmt: str) -> list[Any] | None:
+    return db.execute_sql_dml(sql_stmt)

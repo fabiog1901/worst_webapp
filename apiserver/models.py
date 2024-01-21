@@ -63,7 +63,7 @@ def extend_model(name: str, base: type, dict_def: dict):
 # get all model defs from database
 with psycopg.connect(DB_URL, autocommit=True) as conn:
     with conn.cursor() as cur:
-        rs = cur.execute("SELECT name, skema FROM worst_models", ()).fetchall()
+        rs = cur.execute("SELECT name, skema FROM internal.models", ()).fetchall()
         skemas: dict = {}
         if rs:
             for n, s in rs:
