@@ -3,6 +3,7 @@ import { createApp } from "vue";
 import "@/index.css";
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
+import { GlobalCmComponent } from "codemirror-editor-vue3";
 
 import router from "@/router";
 import App from "@/App.vue";
@@ -14,4 +15,5 @@ const app = createApp(App);
 
 app.use(PrimeVue, { unstyled: true });
 app.use(ToastService);
+app.use(GlobalCmComponent);
 app.use(pinia).use(router).mount("#app");

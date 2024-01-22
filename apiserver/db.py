@@ -777,9 +777,13 @@ def execute_select(
             try:
                 cur.execute(stmt, ())  # type: ignore
 
+                if not cur.description:
+                    raise ValueError("Could not fetch column names from ResultSet")
+                col_names = [desc[0] for desc in cur.description]
+
                 rsl = cur.fetchall()
 
-                return rsl
+                return {"col_names": col_names, "rows": rsl}
             except Exception as e:
                 # TODO correctly handle error such as PK violations
                 print(e)
@@ -798,9 +802,13 @@ def execute_dml(
             try:
                 cur.execute(stmt, ())  # type: ignore
 
+                if not cur.description:
+                    raise ValueError("Could not fetch column names from ResultSet")
+                col_names = [desc[0] for desc in cur.description]
+
                 rsl = cur.fetchall()
 
-                return rsl
+                return col_names, rsl
             except Exception as e:
                 # TODO correctly handle error such as PK violations
                 print(e)
