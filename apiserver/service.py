@@ -1,6 +1,7 @@
 from typing import Any, Type
 from uuid import UUID, uuid4
 from apiserver import db
+from apiserver import search
 from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate, Report
 import datetime as dt
 import apiserver.dependencies as dep
@@ -171,7 +172,9 @@ def delete_model(model_name: str) -> Model | None:
     return db.delete_model(model_name.lower())
 
 
-# REPORTS
+##################
+#  CRUD REPORTS  #
+##################
 def get_all_reports() -> dict[str, Report] | None:
     reports = db.get_all_reports()
 
@@ -241,3 +244,18 @@ def execute_sql_select(sql_select: str) -> list[Any] | None:
 
 def execute_sql_dml(sql_stmt: str) -> list[Any] | None:
     return db.execute_sql_dml(sql_stmt)
+
+
+############
+#  SEARCH  #
+############
+def execute_search(search_queries: dict) -> dict | None:
+    return search.execute_search(search_queries)
+
+
+def add_documents(documents: list[dict]):
+    return search.add_documents(documents)
+
+
+def delete_document(comp_id: str):
+    return search.delete_document(comp_id)

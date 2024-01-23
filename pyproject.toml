@@ -20,6 +20,7 @@ uvicorn = {extras = ["standard"], version = "^0.22.0"}
 fastapi = {extras = ["all"], version = "^0.100.0"}
 sqlalchemy = "^2.0.19"
 pyjwt = {extras = ["crypto"], version = "^2.8.0"}
+meilisearch = "^0.29.0"
 
 
 [tool.poetry.group.dev.dependencies]

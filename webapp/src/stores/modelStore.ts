@@ -83,6 +83,14 @@ export const useModelStore = defineStore("model", () => {
     console.info("POST /sql/dml", sql_stmt);
   };
 
+  //search
+  const search_result = ref<any>({});
+
+  const execute_search = async (search_queries: any) => {
+    return await axiosWrapper.post(`/search/`, search_queries);
+    console.info(`POST /search/`, search_queries);
+  };
+
   // instances
   const instances = ref<Model[]>([]);
   const instance: { [index: string]: any } = ref<Model>({} as Model);
@@ -151,9 +159,7 @@ export const useModelStore = defineStore("model", () => {
     id: string,
     filename: string
   ) => {
-    const i = await axiosWrapper.delete(
-      `/${model_name}/${id}/attachments/${filename}`
-    );
+    await axiosWrapper.delete(`/${model_name}/${id}/attachments/${filename}`);
     console.info(`DELETE /${model_name}/${id}/attachments/${filename}`);
   };
 
@@ -228,6 +234,10 @@ export const useModelStore = defineStore("model", () => {
     execute_sql_report,
     execute_sql_dml,
     execute_sql_select,
+
+    // search
+    search_result,
+    execute_search,
 
     // reports
     reports,

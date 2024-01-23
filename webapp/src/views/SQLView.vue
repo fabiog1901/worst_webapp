@@ -3,7 +3,7 @@
     <section class="p-2">
       <div class="flex">
         <button
-          class="mb-2 border bg-green-700 p-2 text-white hover:cursor-pointer hover:bg-green-400"
+          class="mb-2 rounded border bg-green-700 p-2 text-white hover:cursor-pointer hover:bg-green-400"
           v-on:click="execute_sql(sql_stmt)"
         >
           Run SQL
@@ -11,14 +11,14 @@
         <div class="flex-grow"></div>
         <div>
           <button
-            class="mx-2 border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
+            class="mx-2 rounded border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
             v-on:click="copySqlInput"
           >
             Copy all
           </button>
 
           <button
-            class="mx-2 border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
+            class="mx-2 rounded border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
             v-on:click="clearSqlInput"
           >
             Clear
@@ -120,7 +120,9 @@ const modelStore = useModelStore();
 
 const sql_stmt = ref(`-- Use 'Ctrl+Enter' to run
 
-select a, now() from generate_series(0,100) as a;
+select id, gen_random_uuid(), now(), floor(random()*100000000) as amount, concat('tag-', floor(random()*10)::string) as tags 
+from generate_series(0,100) as id
+
 
 `);
 
@@ -155,6 +157,7 @@ const cols = computed(() => {
         // headerClasses: ["bg-slate-200", "text-black"],
         columnClasses: ["dark:bg-gray-600", "text-white"],
         // isKey: true,
+        sortable: true,
       });
     }
   }

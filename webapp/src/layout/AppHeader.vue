@@ -1,55 +1,71 @@
 <template>
+  <head>
+    <meta charset="utf-8" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@meilisearch/instant-meilisearch/templates/basic_search.css"
+    />
+  </head>
   <section
-    class="flex h-16 w-full flex-row items-center justify-evenly bg-gray-300 bg-opacity-90 p-2 shadow-lg dark:bg-gray-800"
+    class="flex h-14 w-full flex-row items-center bg-gray-300 p-2 dark:bg-gray-800"
   >
     <FabBreadcrumb
+      id="left-div"
+      class="flex-1"
       v-bind:chain="modelStore.instance_parent_chain ?? []"
       v-bind:worst-models="modelStore.models ?? {}"
       v-on:clicked="routerLinker($event)"
     />
-    <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">
-      <svg
-        v-if="userTheme === 'dark'"
-        id="sun-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="h-6 w-6"
+    <ais-instant-search
+      id="center-div"
+      class="flex-1"
+      v-bind:search-client="customSearchClient"
+      index-name="worst"
+    >
+      <ais-search-box
+        placeholder="Search..."
+        reset-title="Remove the query"
+        v-on:focus="open_ais_hits = true"
+        ><template v-slot:reset-icon>🚫</template></ais-search-box
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
-        />
-      </svg>
-
-      <svg
-        v-else
-        id="moon-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="h-6 w-6"
+      <div
+        v-if="open_ais_hits"
+        class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
-        />
-      </svg>
-    </div>
-    <div
-      id="search-box"
+        <div
+          class="absolute h-full w-full"
+          v-on:click="open_ais_hits = false"
+        ></div>
+      </div>
+      <ais-hits v-if="open_ais_hits">
+        <template v-slot:item="{ item }">
+          <ais-highlight
+            class="font-bold hover:cursor-pointer hover:underline"
+            v-bind:hit="item"
+            attribute="name"
+            v-on:click="routerSearchLinker(item.comp_id)"
+          ></ais-highlight>
+          <br />
+          <ais-snippet
+            class="hover:cursor-pointer hover:underline"
+            v-bind:hit="item"
+            attribute="text"
+            v-on:click="routerSearchLinker(item.comp_id)"
+          ></ais-snippet>
+        </template>
+      </ais-hits>
+      <ais-configure v-bind:attributes-to-snippet="['text']" />
+    </ais-instant-search>
+    <!-- <div
+      id="search-boxqq"
       class="ml-0 mr-0 flex h-9 w-1/5 items-center justify-start rounded-md bg-gray-400 px-2 text-gray-400 shadow-md transition duration-300 ease-in-out dark:bg-gray-600"
     >
       <input
         class="w-full rounded bg-transparent pl-1 font-sans font-semibold text-gray-400 placeholder-gray-500 outline-none"
         type="text"
         placeholder="Search..."
+        v-on:input="(event) => (text = search_fab(event.target.value))"
       />
       <svg
         id="magnifying-glass-icon"
@@ -66,58 +82,122 @@
           d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
         />
       </svg>
-    </div>
-    <div class="top-navigation-icon">
-      <svg
-        id="bell-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="ml-auto mr-4 h-6 w-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-        />
-      </svg>
-    </div>
-    <div class="top-navigation-icon" v-on:click="authStore.logout">
-      <svg
-        id="user-circle-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="h-6 w-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
-    </div>
-    <div class="dark:text-white">
-      {{ authStore.user.user_details.fullname }}
+    </div> -->
+    <div id="right-div" class="flex flex-1 flex-row items-center">
+      <div class="flex-grow"></div>
+      <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">
+        <svg
+          v-if="userTheme === 'dark'"
+          id="sun-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="h-6 w-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+          />
+        </svg>
+
+        <svg
+          v-else
+          id="moon-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="h-6 w-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"
+          />
+        </svg>
+      </div>
+      <div class="top-navigation-icon">
+        <svg
+          id="bell-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="h-6 w-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+          />
+        </svg>
+      </div>
+      <div class="top-navigation-icon" v-on:click="authStore.logout">
+        <svg
+          id="user-circle-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="h-6 w-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+      </div>
+      <div class="top-navigation-icon">
+        {{ authStore.user.user_details.fullname }}
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import { useModelStore } from "@/stores/modelStore";
 import FabBreadcrumb from "@/components/FabBreadcrumb.vue";
 import { useRouter } from "vue-router";
 
+import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
+import "instantsearch.css/themes/algolia-min.css";
+
+const customSearchClient = instantMeiliSearch(
+  "http://localhost:7700/",
+  "9ninok7GyY9F1_TYN9vCcw2dxKL-JHDlzu-CxjdhitA"
+).searchClient;
+
+const customSearchClient1 = {
+  async search(requests: any) {
+    console.log("rwq", JSON.stringify({ requests }));
+    const r = await modelStore.execute_search(JSON.stringify({ requests }));
+    console.log("r", r);
+    return r;
+  },
+};
+
 const userTheme = ref("light");
 const authStore = useAuthStore();
 const modelStore = useModelStore();
 const router = useRouter();
+
+const open_ais_hits = ref(false);
+
+// const search_fab = async (query: string) => {
+//   if (query) {
+//     await modelStore.execute_search(query, {});
+//   }
+//   console.log("searchresult: ", modelStore.search_result.hits);
+// };
 
 onMounted(() => {
   const initUserTheme = getTheme() || getMediaPreference();
@@ -161,12 +241,17 @@ const routerLinker = (x: Array<any>) => {
     router.push(`/${x[0]}/${x[1]}`);
   }
 };
+
+const routerSearchLinker = (x: string) => {
+  const comp_id = x.split("_");
+  open_ais_hits.value = false;
+  router.push(`/${comp_id[0]}/${comp_id[1]}`);
+};
 </script>
 
 <style scoped>
 .top-navigation-icon {
-  @apply ml-4
-      mr-3 cursor-pointer
+  @apply mx-3 cursor-pointer
       text-gray-600 transition duration-300 ease-in-out 
       hover:text-pink-400 dark:text-gray-400 
       dark:hover:text-pink-400;

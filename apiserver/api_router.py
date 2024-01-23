@@ -99,6 +99,24 @@ class WorstRouter(APIRouter):
                     x.model_dump_json(),
                 )
 
+                bg_task.add_task(
+                    svc.add_documents,
+                    [
+                        {"comp_id": model_name + "_" + str(x.id)}
+                        | x.model_dump(
+                            exclude=[
+                                "id",
+                                "created_at",
+                                "created_by",
+                                "updated_at",
+                                "updated_by",
+                            ],
+                            exclude_unset=True,
+                            exclude_none=True,
+                        )
+                    ],
+                )
+
             return x
 
         @self.put(
@@ -121,6 +139,24 @@ class WorstRouter(APIRouter):
                     current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
+                )
+
+                bg_task.add_task(
+                    svc.add_documents,
+                    [
+                        {"comp_id": model_name + "_" + str(x.id)}
+                        | x.model_dump(
+                            exclude=[
+                                "id",
+                                "created_at",
+                                "created_by",
+                                "updated_at",
+                                "updated_by",
+                            ],
+                            exclude_unset=True,
+                            exclude_none=True,
+                        )
+                    ],
                 )
 
             return x
@@ -149,6 +185,23 @@ class WorstRouter(APIRouter):
                     x.model_dump_json(),
                 )
 
+                bg_task.add_task(
+                    svc.add_documents,
+                    [
+                        {"comp_id": model_name + "_" + str(x.id)}
+                        | x.model_dump(
+                            exclude=[
+                                "id",
+                                "created_at",
+                                "created_by",
+                                "updated_at",
+                                "updated_by",
+                            ],
+                            exclude_unset=True,
+                            exclude_none=True,
+                        )
+                    ],
+                )
             return x
 
         @self.delete(
@@ -173,6 +226,7 @@ class WorstRouter(APIRouter):
                     x.model_dump_json(),
                 )
 
+                bg_task.add_task(svc.delete_document, model_name + "_" + str(x.id))
             return x
 
         # Attachements
@@ -189,6 +243,8 @@ class WorstRouter(APIRouter):
             data = dep.get_presigned_get_url(s3_object_name)
             return HTMLResponse(content=data)
 
+        # TODO sync attachments with search
+        # TODO review logic to make it error proof
         @self.get(
             "/{id}/presigned-put-url/{filename}",
             dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],

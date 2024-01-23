@@ -84,6 +84,24 @@ tests = ["pytest (>=3.2.1,!=3.3.0)"]
 typecheck = ["mypy"]
 
 [[package]]
+name = "camel-converter"
+version = "3.1.1"
+description = "Converts a string from snake case to camel case or camel case to snake case"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "camel_converter-3.1.1-py3-none-any.whl", hash = "sha256:f9f4ad446e46cc317d612a435b653bcb8c3572f1fb2252b0620c5e4fd3b50ebf"},
+    {file = "camel_converter-3.1.1.tar.gz", hash = "sha256:73c1e31801d0f7baf08fe2a44e6a712e685496e490cab3cd9ce7222845502ef7"},
+]
+
+[package.dependencies]
+pydantic = {version = ">=1.8.2", optional = true, markers = "extra == \"pydantic\""}
+
+[package.extras]
+pydantic = ["pydantic (>=1.8.2)"]
+
+[[package]]
 name = "certifi"
 version = "2022.12.7"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -712,6 +730,22 @@ files = [
     {file = "MarkupSafe-2.1.3-cp39-cp39-win_amd64.whl", hash = "sha256:3fd4abcb888d15a94f32b75d8fd18ee162ca0c064f35b11134be77050296d6ba"},
     {file = "MarkupSafe-2.1.3.tar.gz", hash = "sha256:af598ed32d6ae86f1b747b82783958b1a4ab8f617b06fe68795c7f026abbdcad"},
 ]
+
+[[package]]
+name = "meilisearch"
+version = "0.29.0"
+description = "The python client for Meilisearch API."
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "meilisearch-0.29.0-py3-none-any.whl", hash = "sha256:1f7c92b5d2f7e4add6d65298cdb8957715de519baa1bdc09fdd2a4a0101d6859"},
+    {file = "meilisearch-0.29.0.tar.gz", hash = "sha256:70b3e2ce63c50050cc29e02a04647c380e2ee6b79a557a64273c66687e1a2d2f"},
+]
+
+[package.dependencies]
+camel-converter = {version = "*", extras = ["pydantic"]}
+requests = "*"
 
 [[package]]
 name = "minio"
@@ -1729,4 +1763,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d5a2476e52dc9f0a1a595d2a9ce3936e4bcd6107223fd68e699cd6055c99c49c"
+content-hash = "12edd22a4ea3ebdd602127af9349b54cdbeae7676bee50dcbb2e51fb02eadc86"
