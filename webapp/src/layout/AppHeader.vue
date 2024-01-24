@@ -55,7 +55,7 @@
           ></ais-snippet>
         </template>
       </ais-hits>
-      <ais-configure v-bind:attributes-to-snippet="['text']" />
+      <ais-configure v-bind:attributes-to-snippet.camel="['text:50']" />
     </ais-instant-search>
     <!-- <div
       id="search-boxqq"
@@ -162,42 +162,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { onMounted, ref } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import { useModelStore } from "@/stores/modelStore";
 import FabBreadcrumb from "@/components/FabBreadcrumb.vue";
 import { useRouter } from "vue-router";
-
 import { instantMeiliSearch } from "@meilisearch/instant-meilisearch";
-import "instantsearch.css/themes/algolia-min.css";
-
-const customSearchClient = instantMeiliSearch(
-  "http://localhost:7700/",
-  "9ninok7GyY9F1_TYN9vCcw2dxKL-JHDlzu-CxjdhitA"
-).searchClient;
-
-const customSearchClient1 = {
-  async search(requests: any) {
-    console.log("rwq", JSON.stringify({ requests }));
-    const r = await modelStore.execute_search(JSON.stringify({ requests }));
-    console.log("r", r);
-    return r;
-  },
-};
 
 const userTheme = ref("light");
 const authStore = useAuthStore();
 const modelStore = useModelStore();
 const router = useRouter();
-
 const open_ais_hits = ref(false);
 
-// const search_fab = async (query: string) => {
-//   if (query) {
-//     await modelStore.execute_search(query, {});
-//   }
-//   console.log("searchresult: ", modelStore.search_result.hits);
-// };
+const customSearchClient = instantMeiliSearch(
+  `${import.meta.env.VITE_APP_API_URL}/search`,
+  authStore.user.access_token
+).searchClient;
+
 
 onMounted(() => {
   const initUserTheme = getTheme() || getMediaPreference();

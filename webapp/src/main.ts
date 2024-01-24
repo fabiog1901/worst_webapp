@@ -1,7 +1,6 @@
 import { createApp } from "vue";
 
 import "@/index.css";
-import "instantsearch.css/themes/algolia-min.css";
 
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
