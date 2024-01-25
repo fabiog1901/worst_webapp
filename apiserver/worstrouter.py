@@ -24,14 +24,20 @@ class WorstRouter(APIRouter):
 
         @self.get(
             "",
-            dependencies=[Security(dep.get_current_user)],
+            dependencies=[
+                Security(dep.get_current_user, scopes=["worst_instances_read"])
+            ],
+            description="Required permission: `worst_instances_read`",
         )
         async def get_all_instances() -> list[overview_model] | None:
             return svc.get_all_instances(model_name)
 
         @self.get(
             "/{id}",
-            dependencies=[Security(dep.get_current_user)],
+            dependencies=[
+                Security(dep.get_current_user, scopes=["worst_instances_read"])
+            ],
+            description="Required permission: `worst_instances_read`",
         )
         async def get_instance(
             id: UUID,
@@ -40,7 +46,10 @@ class WorstRouter(APIRouter):
 
         @self.get(
             "/{id}/children",
-            dependencies=[Security(dep.get_current_user)],
+            dependencies=[
+                Security(dep.get_current_user, scopes=["worst_instances_read"])
+            ],
+            description="Required permission: `worst_instances_read`",
         )
         async def get_all_children(
             id: UUID,
@@ -49,26 +58,23 @@ class WorstRouter(APIRouter):
 
         @self.get(
             "/{id}/parent_chain",
-            dependencies=[Security(dep.get_current_user)],
+            dependencies=[
+                Security(dep.get_current_user, scopes=["worst_instances_read"])
+            ],
+            description="Required permission: `worst_instances_read`",
         )
         async def get_parent_chain(
             id: UUID,
         ) -> list | None:
             return svc.get_parent_chain(model_name, id)
 
-        @self.get(
-            "/{id}/attachment-list",
-            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
-        )
-        async def get_attachment_list(
-            id: UUID,
-        ) -> list[str] | None:
-            s3_folder_name = "/".join([model_name, str(id)])
-            return dep.s3_list_all_objects(s3_folder_name)
 
         @self.get(
             "/{id}/{children_model_name}",
-            dependencies=[Security(dep.get_current_user)],
+            dependencies=[
+                Security(dep.get_current_user, scopes=["worst_instances_read"])
+            ],
+            description="Required permission: `worst_instances_read`",
         )
         async def get_all_children_for_model(
             id: UUID,
@@ -78,12 +84,12 @@ class WorstRouter(APIRouter):
 
         @self.post(
             "",
-            description="`id` will be generated if not provided by client.",
+            description="Required permission: `worst_instances_create`",
         )
         async def create_instance(
             model: update_model,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["worst_write"])
+                User, Security(dep.get_current_user, scopes=["worst_instances_create"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -121,11 +127,12 @@ class WorstRouter(APIRouter):
 
         @self.put(
             "",
+            description="Required permission: `worst_instances_update`",
         )
         async def update_instance(
             model: update_model,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["worst_write"])
+                User, Security(dep.get_current_user, scopes=["worst_instances_update"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -163,13 +170,14 @@ class WorstRouter(APIRouter):
 
         @self.patch(
             "/{id}",
+            description="Required permission: `worst_instances_patch`",
         )
         async def partial_update_instance(
             id: UUID,
             field: Annotated[str, Body()],
             value: Annotated[Any, Body()],
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["worst_write"])
+                User, Security(dep.get_current_user, scopes=["worst_instances_patch"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -206,11 +214,12 @@ class WorstRouter(APIRouter):
 
         @self.delete(
             "/{id}",
+            description="Required permission: `worst_instances_delete`",
         )
         async def delete_instance(
             id: UUID,
             current_user: Annotated[
-                User, Security(dep.get_current_user, scopes=["worst_write"])
+                User, Security(dep.get_current_user, scopes=["worst_instances_delete"])
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
@@ -228,45 +237,3 @@ class WorstRouter(APIRouter):
 
                 bg_task.add_task(svc.delete_document, model_name + "_" + str(x.id))
             return x
-
-        # Attachements
-        @self.get(
-            "/{id}/presigned-get-url/{filename}",
-            name="Get pre-signed URL for downloading an attachment",
-            dependencies=[Security(dep.get_current_user)],
-        )
-        async def get_presigned_get_url(
-            id: UUID,
-            filename: str,
-        ):
-            s3_object_name = "/".join([model_name, str(id), filename])
-            data = dep.get_presigned_get_url(s3_object_name)
-            return HTMLResponse(content=data)
-
-        # TODO sync attachments with search
-        # TODO review logic to make it error proof
-        @self.get(
-            "/{id}/presigned-put-url/{filename}",
-            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
-            name="Get pre-signed URL for uploading an attachment",
-        )
-        async def get_presigned_put_url(
-            id: UUID,
-            filename: str,
-        ):
-            s3_object_name = "/".join([model_name, str(id), filename])
-            svc.add_attachment(model_name, id, filename)
-            data = dep.get_presigned_put_url(s3_object_name)
-            return HTMLResponse(content=data)
-
-        @self.delete(
-            "/{id}/attachments/{filename}",
-            dependencies=[Security(dep.get_current_user, scopes=["worst_write"])],
-        )
-        async def delete_attachement(
-            id: UUID,
-            filename: str,
-        ):
-            s3_object_name = "/".join([model_name, str(id), filename])
-            svc.remove_attachment(model_name, id, filename)
-            dep.s3_remove_object(s3_object_name)

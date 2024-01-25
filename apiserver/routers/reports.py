@@ -11,31 +11,38 @@ from fastapi.responses import JSONResponse
 NAME = __name__.split(".", 2)[-1]
 
 router = APIRouter(
-    prefix="/reports",
+    prefix=f"/{NAME}",
     tags=[NAME],
-    dependencies=[Security(dep.get_current_user, scopes=["worst_read"])],
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    dependencies=[Security(dep.get_current_user, scopes=["worst_reports_read"])],
+    description="Required permission: `worst_reports_read`",
+)
 async def get_all_reports() -> dict[str, Report] | None:
     return JSONResponse(jsonable_encoder(svc.get_all_reports()))
 
 
-@router.get("/{name}")
+@router.get(
+    "/{name}",
+    dependencies=[Security(dep.get_current_user, scopes=["worst_reports_read"])],
+    description="Required permission: `worst_reports_read`",
+)
 async def get_report(name: str) -> Report | None:
     return svc.get_report(name)
 
 
 @router.post(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_reports_create`",
 )
 async def create_report(
     name: Annotated[str, Body()],
     sql_stmt: Annotated[str, Body()],
     current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
+        User, Security(dep.get_current_user, scopes=["worst_reports_create"])
     ],
     bg_task: BackgroundTasks,
 ) -> Report | None:
@@ -56,13 +63,13 @@ async def create_report(
 
 @router.put(
     "/{name}",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_reports_update`",
 )
 async def update_report(
     name: str,
     sql_stmt: Annotated[str, Body()],
     current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
+        User, Security(dep.get_current_user, scopes=["worst_reports_update"])
     ],
     bg_task: BackgroundTasks,
 ) -> Report | None:
@@ -83,14 +90,13 @@ async def update_report(
 
 @router.delete(
     "/{name}",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_reports_delete`",
 )
 async def delete_report(
     name: str,
-    current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
-    ],
-    bg_task: BackgroundTasks,
+current_user: Annotated[
+        User, Security(dep.get_current_user, scopes=["worst_reports_delete"])
+    ],    bg_task: BackgroundTasks,
 ) -> Report | None:
     x = svc.delete_report(name)
 

@@ -13,30 +13,37 @@ from fastapi.responses import JSONResponse
 NAME = __name__.split(".", 2)[-1]
 
 router = APIRouter(
-    prefix="/models",
+    prefix=f"/{NAME}",
     tags=[NAME],
-    dependencies=[Security(dep.get_current_user, scopes=["worst_read"])],
 )
 
 
-@router.get("")
+@router.get(
+    "",
+    dependencies=[Security(dep.get_current_user, scopes=["worst_models_read"])],
+    description="Required permission: `worst_models_read`",
+)
 async def get_all_models() -> dict[str, Model] | None:
     return JSONResponse(jsonable_encoder(svc.get_all_models()))
 
 
-@router.get("/{name}")
+@router.get(
+    "/{name}",
+    dependencies=[Security(dep.get_current_user, scopes=["worst_models_read"])],
+    description="Required permission: `worst_models_read`",
+)
 async def get_model(name: str) -> Model | None:
     return svc.get_model(name)
 
 
 @router.post(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_models_create`",
 )
 async def create_model(
     model: ModelUpdate,
     current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
+        User, Security(dep.get_current_user, scopes=["worst_models_create"])
     ],
     bg_task: BackgroundTasks,
 ) -> Model | None:
@@ -57,12 +64,12 @@ async def create_model(
 
 @router.put(
     "",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_models_update`",
 )
 async def update_model(
     model: ModelUpdate,
     current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
+        User, Security(dep.get_current_user, scopes=["worst_models_update"])
     ],
     bg_task: BackgroundTasks,
 ) -> Model | None:
@@ -83,12 +90,12 @@ async def update_model(
 
 @router.delete(
     "/{name}",
-    dependencies=[Security(dep.get_current_user, scopes=["worst_admin"])],
+    description="Required permission: `worst_models_delete`",
 )
 async def delete_model(
     name: str,
     current_user: Annotated[
-        User, Security(dep.get_current_user, scopes=["worst_admin"])
+        User, Security(dep.get_current_user, scopes=["worst_models_delete"])
     ],
     bg_task: BackgroundTasks,
 ) -> Model | None:

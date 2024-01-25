@@ -1,29 +1,25 @@
+from apiserver import db
+from apiserver.routers import sql, search, reports, models, attachments
+from apiserver.worstrouter import WorstRouter
+from apiserver.models import (
+    pyd_models,
+    Token,
+    User,
+)
 from fastapi import FastAPI, Depends, HTTPException, Query, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Annotated
-from apiserver import db
-from apiserver import service as svc
-from apiserver.api_router import WorstRouter
-from apiserver.models import (
-    Token,
-    User,
-    pyd_models,
-)
-from apiserver.routers.admin import admin
-from apiserver.routers import sql, search
-import os
-import threading
-import time
 import apiserver.dependencies as dep
-
+import apiserver.service as svc
 import hashlib
 import os
-import urllib.parse as parse
 import requests
+import threading
+import time
+import urllib.parse as parse
 
 AUTH_URL = os.getenv("AUTH_URL")
 TOKEN_URL = os.getenv("TOKEN_URL")
@@ -151,9 +147,11 @@ for k, v in pyd_models.items():
     )
 
 
+app.include_router(attachments.router)
 app.include_router(sql.router)
 app.include_router(search.router)
-app.include_router(admin.router)
+app.include_router(reports.router)
+app.include_router(models.router)
 
 
 # uvicorn server is started and configured to reload
