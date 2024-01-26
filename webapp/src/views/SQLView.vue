@@ -48,7 +48,7 @@
         <div>
           <button
             class="mr-2 rounded border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
-            v-on:click="copySqlInput"
+            v-on:click="showCreateNewReportModal = true"
           >
             New Report
           </button>
@@ -91,7 +91,9 @@
         <label>SearchBy:</label><input v-model="searchTerm" />
         </div>
       -->
-      <div class="text-white mx-2 px-2 border flex-grow h-8">{{ modelStore.result_set?.status }}</div>
+      <div class="text-white mx-2 px-2 border flex-grow h-8">
+        {{ modelStore.result_set?.status }}
+      </div>
       <div class="p-2">
         <table-lite
           v-bind:has-checkbox="false"
@@ -120,6 +122,12 @@
     v-on:cancel-clicked="showDeleteReportModal = false"
     v-on:delete-clicked="delete_report()"
   ></ModalDelete>
+  <ModalCreateNewReport
+    v-if="showCreateNewReportModal"
+    v-on:cancel-clicked="showCreateNewReportModal = false"
+    v-on:create-clicked="create_report($event, sql_stmt)"
+  >
+  </ModalCreateNewReport>
 </template>
 
 <script setup lang="ts">
@@ -127,36 +135,57 @@ import { computed, ref, onMounted } from "vue";
 import { useModelStore } from "@/stores/modelStore";
 import TableLite from "vue3-table-lite/ts";
 import ModalDelete from "@/components/ModalDelete.vue";
-
-// import { useTextSelection } from "@vueuse/core";
-// const state = useTextSelection();
-
-// ===
+import ModalCreateNewReport from "@/components/ModalCreateNewReport.vue";
 import "codemirror/mode/sql/sql.js";
 import "codemirror/theme/ayu-mirage.css";
 import { useClipboard } from "@vueuse/core";
-// import { vOnClickOutside } from "@vueuse/components";
-// import { tablesSchemaData, outputTableData, availableTablesData } from "@/data";
-// import type { TableSchemaModel, TableModel } from "@/data";
-// import TableSchema from "@/components/TableSchema.vue";
-// import BaseTable from "@/components/BaseTable.vue";
-// import BaseButton from "@/components/BaseButton.vue";
-// import IconMenu from "@/components/icons/IconMenu.vue";
 
-// const tablesSchema = ref<TableSchemaModel[]>(tablesSchemaData);
+const modelStore = useModelStore();
 
-// const outputTable = ref<TableModel>(outputTableData);
+// RUN SQL
+const sql_stmt = ref(`-- Use 'Ctrl+Enter' to run
 
-// const availableTables = ref<TableModel[]>(availableTablesData);
+select id, gen_random_uuid(), now(), floor(random()*100000000) as amount, concat('tag-', floor(random()*10)::string) as tags
+from generate_series(0,100) as id;
+`);
 
+const execute_sql = async (stmt: string) => {
+  //await modelStore.execute_sql_select(stmt, []);
+  await modelStore.execute_sql_dml(stmt, []);
+};
+
+const execute_sql_report = async (name: string) => {
+  await modelStore.execute_sql_report(name);
+};
+
+// REPORTS
 const showDeleteReportModal = ref(false);
+const showCreateNewReportModal = ref(false);
 const report = ref("");
+const report_name = ref("");
+
+const get_report = (name: string) => {
+  report.value = JSON.stringify(modelStore.reports[name], undefined, 4);
+};
+
+const create_report = async (name: string, sql_stmt: string) => {
+  await modelStore.create_report(name, sql_stmt);
+  await modelStore.get_all_reports();
+  showCreateNewReportModal.value = false;
+};
 
 const confirm_delete_report = async (s: any) => {
   showDeleteReportModal.value = true;
   report.value = s;
 };
 
+const delete_report = async () => {
+  showDeleteReportModal.value = false;
+  await modelStore.delete_report(report.value);
+  await modelStore.get_all_reports();
+};
+
+// SQL EDITOR
 const cmOptions = ref({
   mode: "text/x-sql",
   theme: "ayu-mirage",
@@ -174,37 +203,7 @@ const copySqlInput = (): void => {
   copy(sql_stmt.value);
 };
 
-const delete_report = async () => {
-  showDeleteReportModal.value = false;
-  await modelStore.delete_report(report.value);
-  await modelStore.get_all_reports();
-};
-
-//===
-
-const modelStore = useModelStore();
-
-const sql_stmt = ref(`-- Use 'Ctrl+Enter' to run
-
-select id, gen_random_uuid(), now(), floor(random()*100000000) as amount, concat('tag-', floor(random()*10)::string) as tags
-from generate_series(0,100) as id
-
-
-`);
-
-const execute_sql = async (stmt: string) => {
-  
-  //await modelStore.execute_sql_select(stmt, []);
-  
-  await modelStore.execute_sql_dml(stmt, []);
-};
-
-const execute_sql_report = async (name: string) => {
-  await modelStore.execute_sql_report(name);
-};
-
-const searchTerm = ref(""); // Search text
-
+// TABLE
 const rows = computed(() => {
   const data = [];
   if (modelStore.result_set?.rows) {
