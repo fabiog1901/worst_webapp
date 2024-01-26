@@ -11,7 +11,6 @@ import { useModelStore } from "@/stores/modelStore";
 const modelStore = useModelStore();
 
 onMounted(async () => {
-  console.log("homeview-mount");
   modelStore.instance_parent_chain = [];
 });
 </script>

@@ -1,8 +1,17 @@
 from typing import Any, Type
 from uuid import UUID, uuid4
+
+from fastapi.encoders import jsonable_encoder
 from apiserver import db
 from apiserver import search
-from apiserver.models import BaseFields, pyd_models, Model, ModelUpdate, Report
+from apiserver.models import (
+    BaseFields,
+    pyd_models,
+    Model,
+    ModelUpdate,
+    Report,
+    TableData,
+)
 import datetime as dt
 import apiserver.dependencies as dep
 
@@ -116,7 +125,9 @@ def log_event(
     return db.log_event(model_name, ts, username, action, details)
 
 
-# MODEL
+###########
+#  MODEL  #
+###########
 def get_all_models() -> dict[str, Model] | None:
     models = db.get_all_models()
 
@@ -175,13 +186,10 @@ def delete_model(model_name: str) -> Model | None:
 ##################
 #  CRUD REPORTS  #
 ##################
-def get_all_reports() -> dict[str, Report] | None:
+def get_all_reports() -> list[Report] | None:
     reports = db.get_all_reports()
 
-    x = {}
-
-    for r in reports:
-        x[r.name] = r.model_dump(exclude="name")
+    x = [r.model_dump() for r in reports]
 
     return x
 
@@ -226,24 +234,47 @@ def delete_report(name: str) -> Report | None:
     return db.delete_report(name)
 
 
-###################
-# EXECUTE REPORTS #
-###################
-def execute_sql_report(name: str, bind_params: tuple) -> list[Any] | None:
+###########
+#   SQL   #
+###########
+def execute_sql_report(name: str, bind_params: tuple) -> TableData | None:
     report = db.get_report(name)
-
     if report:
-        return db.execute_sql_report(report.sql_stmt, bind_params)
+        d = db.execute_sql("dml", report.sql_stmt, bind_params)
+
+        return TableData(
+            status=d["status"],
+            cols=d["cols"],
+            rows=jsonable_encoder(
+                d["rows"],
+            ),
+        )
 
     return None
 
 
-def execute_sql_select(sql_select: str) -> list[Any] | None:
-    return db.execute_sql_select(sql_select)
+def execute_sql_select(stmt: str, bind_params: tuple) -> TableData | None:
+    d = db.execute_sql("select", stmt, bind_params)
+
+    return TableData(
+        status=d["status"],
+        cols=d["cols"],
+        rows=jsonable_encoder(
+            d["rows"],
+        ),
+    )
 
 
-def execute_sql_dml(sql_stmt: str) -> list[Any] | None:
-    return db.execute_sql_dml(sql_stmt)
+def execute_sql_dml(stmt: str, bind_params: tuple) -> TableData | None:
+    d = db.execute_sql("dml", stmt, bind_params)
+
+    return TableData(
+        status=d["status"],
+        cols=d["cols"],
+        rows=jsonable_encoder(
+            d["rows"],
+        ),
+    )
 
 
 ############

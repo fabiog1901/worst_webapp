@@ -283,11 +283,11 @@
                 {{ att }}
               </div>
               <div
-                class="flex h-8 items-center justify-center rounded-r bg-gray-400 px-2 hover:cursor-pointer hover:bg-red-500 dark:bg-gray-700"
+                class="flex h-8 items-center justify-center rounded-r bg-gray-400 px-2 hover:cursor-pointer hover:bg-red-500 hover:dark:bg-red-500 dark:bg-gray-700"
                 v-on:click="confirm_delete_attachment(att)"
               >
                 <svg
-                  id="magnifying-glass-icon"
+                  id="garbage-bin-icon"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -531,7 +531,6 @@ const getTheme = computed(() => {
 //const editing = ref<boolean>(false);
 
 onMounted(async () => {
-  console.log("instance-view-onMounted", model_name.value);
   await modelStore.get_instance(model_name.value, id.value);
   await modelStore.get_instance_children(model_name.value, id.value);
   await modelStore.get_instance_parent_chain(model_name.value, id.value);
@@ -541,7 +540,6 @@ watch(
   () => route.fullPath,
   async () => {
     if (id.value && !route.params.child_model_name) {
-      console.log("instance-view-watch", id.value, route.params);
       await modelStore.get_instance(model_name.value, id.value);
       await modelStore.get_instance_children(model_name.value, id.value);
       await modelStore.get_instance_parent_chain(model_name.value, id.value);

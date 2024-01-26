@@ -21,8 +21,8 @@ router = APIRouter(
     dependencies=[Security(dep.get_current_user, scopes=["worst_reports_read"])],
     description="Required permission: `worst_reports_read`",
 )
-async def get_all_reports() -> dict[str, Report] | None:
-    return JSONResponse(jsonable_encoder(svc.get_all_reports()))
+async def get_all_reports() -> list[Report] | None:
+    return svc.get_all_reports()
 
 
 @router.get(

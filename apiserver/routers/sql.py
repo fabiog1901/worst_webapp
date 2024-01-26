@@ -4,6 +4,7 @@ import apiserver.dependencies as dep
 import apiserver.service as svc
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from apiserver.models import TableData
 
 NAME = __name__.split(".", 2)[-1]
 
@@ -21,7 +22,7 @@ router = APIRouter(
 async def execute_sql_report(
     name: str,
     bind_params: Annotated[tuple, Body()],
-) -> list[Any] | None:
+) -> TableData | None:
     return svc.execute_sql_report(name, bind_params)
 
 
@@ -31,9 +32,10 @@ async def execute_sql_report(
     description="Required permission: `worst_sql_select`",
 )
 async def execute_sql_select(
-    select_stmt: Annotated[str, Body()],
-) -> list[Any] | None:
-    return JSONResponse(jsonable_encoder(svc.execute_sql_select(select_stmt)))
+    stmt: Annotated[str, Body()],
+    bind_params: Annotated[tuple, Body()],
+) -> TableData | None:
+    return svc.execute_sql_select(stmt, bind_params)
 
 
 @router.post(
@@ -42,6 +44,7 @@ async def execute_sql_select(
     description="Required permission: `worst_sql_dml`",
 )
 async def execute_sql_dml(
-    sql_stmt: Annotated[str, Body()],
-) -> list[Any] | None:
-    return svc.execute_sql_dml(sql_stmt)
+    stmt: Annotated[str, Body()],
+    bind_params: Annotated[tuple, Body()],
+) -> TableData | None:
+    return svc.execute_sql_dml(stmt, bind_params)

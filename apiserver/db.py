@@ -9,7 +9,6 @@ from apiserver.models import (
     Model,
     Report,
     pyd_models,
-    User,
     BaseFields,
 )
 
@@ -165,9 +164,6 @@ def get_placeholders(model) -> str:
     return ("%s, " * len(tuple(model.__fields__.keys())))[:-2]
 
 
-# ADMIN
-
-
 def __get_where_clause(
     filters, table_name: str, include_where: bool = True
 ) -> tuple[str, tuple]:
@@ -205,7 +201,9 @@ def __get_where_clause(
     return (where_clause[:-4], tuple(bind_params))
 
 
-# WORST_MODELS
+############
+#  MODELS  #
+############
 MODEL_COLS = get_fields(Model)
 MODEL_PLACEHOLDERS = get_placeholders(Model)
 
@@ -405,7 +403,9 @@ def delete_model(model_name: str) -> Model | None:
     return deleted_model
 
 
-# WORST_REPORTS
+#############
+#  REPORTS  #
+#############
 REPORT_COLS = get_fields(Report)
 REPORT_PLACEHOLDERS = get_placeholders(Report)
 
@@ -471,27 +471,9 @@ def delete_report(name: str) -> Report | None:
     )
 
 
-# EXECUTE REPORT
-def execute_sql_report(sql_stmt: str, bind_params: tuple) -> list[Any]:
-    return execute_stmt(
-        sql_stmt,
-        bind_params,
-        None,
-        True,
-    )
-
-
-def execute_sql_select(sql_stmt: str) -> list[Any]:
-    return execute_select(sql_stmt)
-
-
-def execute_sql_dml(sql_stmt: str) -> list[Any]:
-    return execute_dml(sql_stmt)
-
-
-###################
-# CRUD FOR MODELS #
-###################
+###############
+#  INSTANCES  #
+###############
 def get_all_instances(model_name: str) -> list[Type[BaseFields]]:
     return execute_stmt(
         f"""
@@ -684,6 +666,9 @@ def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
     )
 
 
+###############
+# ATTACHMENTS #
+###############
 def add_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
     return execute_stmt(
         f"""
@@ -708,6 +693,7 @@ def remove_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
     )
 
 
+# ======================================================
 class DictJsonbDumper(JsonbDumper):
     def dump(self, obj):
         return super().dump(Jsonb(obj))
@@ -765,51 +751,41 @@ def execute_stmt(
                 return None
 
 
-def execute_select(
+###########
+#   SQL   #
+###########
+def execute_sql(
+    user_type: str,
     stmt: str,
-) -> list[tuple] | None:
-    with select_pool.connection() as conn:
-        # convert a set to a psycopg list
-        conn.adapters.register_dumper(set, ListDumper)
-        conn.adapters.register_dumper(dict, DictJsonbDumper)
+    bind_params: tuple,
+) -> dict[str, Any] | None:
+    if user_type == "dml":
+        conn = dml_pool.getconn()
+    else:
+        conn = select_pool.getconn()
 
-        with conn.cursor() as cur:
-            try:
-                cur.execute(stmt, ())  # type: ignore
+    conn.adapters.register_dumper(set, ListDumper)
+    conn.adapters.register_dumper(dict, DictJsonbDumper)
 
-                if not cur.description:
-                    raise ValueError("Could not fetch column names from ResultSet")
-                col_names = [desc[0] for desc in cur.description]
+    with conn.cursor() as cur:
+        try:
+            cur.execute(stmt, bind_params)  # type: ignore
 
-                rsl = cur.fetchall()
+            if not cur.description:
+                return {"status": cur.statusmessage, "cols": [], "rows": []}
 
-                return {"col_names": col_names, "rows": rsl}
-            except Exception as e:
-                # TODO correctly handle error such as PK violations
-                print(e)
-                return None
+            col_names = [desc[0] for desc in cur.description]
 
+            rsl = cur.fetchall()
 
-def execute_dml(
-    stmt: str,
-) -> list[tuple] | None:
-    with dml_pool.connection() as conn:
-        # convert a set to a psycopg list
-        conn.adapters.register_dumper(set, ListDumper)
-        conn.adapters.register_dumper(dict, DictJsonbDumper)
-
-        with conn.cursor() as cur:
-            try:
-                cur.execute(stmt, ())  # type: ignore
-
-                if not cur.description:
-                    raise ValueError("Could not fetch column names from ResultSet")
-                col_names = [desc[0] for desc in cur.description]
-
-                rsl = cur.fetchall()
-
-                return col_names, rsl
-            except Exception as e:
-                # TODO correctly handle error such as PK violations
-                print(e)
-                return None
+            return {"status": cur.statusmessage, "cols": col_names, "rows": rsl}
+        
+        except Exception as e:
+            # TODO correctly handle error such as PK violations
+            return {"status": str(e), "cols": [], "rows":[]}
+        
+        finally:
+            if user_type == "dml":
+                dml_pool.putconn(conn)
+            else:
+                select_pool.putconn(conn)

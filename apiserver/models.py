@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import create_model, BaseModel, EmailStr, Field
 from pydantic.fields import FieldInfo
 from uuid import UUID
@@ -76,7 +77,6 @@ class AuditFields(BaseModel):
     updated_by: str
     updated_at: dt.datetime
 
-
 class BaseFields(BaseModel):
     id: UUID | None = None
     name: str | None = Field(default="", max_length=50)
@@ -131,6 +131,11 @@ class User(BaseModel):
 class Report(AuditFields):
     name: str
     sql_stmt: str
+
+class TableData(BaseModel):
+    status: str
+    cols: list[str]
+    rows: list[Any]
 
 ###################
 #  MODEL OBJECTS  #

@@ -156,7 +156,6 @@ const child_model_name = computed(() => {
 });
 
 onMounted(async () => {
-  console.log("modelchildview-mount", model_name.value, child_model_name.value);
   await modelStore.get_instance_children_for_model(
     model_name.value,
     id.value,
@@ -176,7 +175,6 @@ watch(
   () => route.fullPath,
   async () => {
     if (route.params.model && !route.params.id) {
-      console.info("modelchildview-watch", model_name.value);
       await modelStore.get_instance_children_for_model(
         model_name.value,
         id.value,

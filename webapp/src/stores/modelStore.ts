@@ -67,18 +67,24 @@ export const useModelStore = defineStore("model", () => {
   const result_set = ref<any>([]);
 
   const execute_sql_report = async (name: string) => {
-    result_set.value = await axiosWrapper.post(`/sql/report/${name}`);
+    result_set.value = await axiosWrapper.post(`/sql/report/${name}`, []);
     console.info(`POST /sql/report/${name}`);
   };
 
-  const execute_sql_select = async (select_stmt: string) => {
-    result_set.value = await axiosWrapper.post(`/sql/select`, select_stmt);
-    console.info("POST /sql/select", select_stmt);
+  const execute_sql_select = async (stmt: string, bind_params: any[]) => {
+    result_set.value = await axiosWrapper.post(`/sql/select`, {
+      stmt: stmt,
+      bind_params: bind_params,
+    });
+    console.info("POST /sql/select", stmt, bind_params);
   };
 
-  const execute_sql_dml = async (sql_stmt: string) => {
-    result_set.value = await axiosWrapper.post(`/sql/dml`, sql_stmt);
-    console.info("POST /sql/dml", sql_stmt);
+  const execute_sql_dml = async (stmt: string, bind_params: any[]) => {
+    result_set.value = await axiosWrapper.post(`/sql/dml`, {
+      stmt: stmt,
+      bind_params: bind_params,
+    });
+    console.info("POST /sql/dml", stmt, bind_params);
   };
 
   //search

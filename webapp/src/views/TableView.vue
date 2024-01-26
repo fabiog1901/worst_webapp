@@ -140,7 +140,6 @@ const modelBaseFields = computed(() => {
 });
 
 onMounted(async () => {
-  console.log("tableview-onMounted", model_name.value);
   await modelStore.get_all_instances(model_name.value);
   modelStore.instance_parent_chain = [
     [
