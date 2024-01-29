@@ -16,8 +16,11 @@ def execute_search(search_queries: dict) -> dict | None:
 
 
 def add_documents(documents: list[dict]):
-    print(documents)
     return index.add_documents(documents)
+
+
+def update_documents(documents: list[dict]):
+    return index.update_documents(documents)
 
 
 def delete_document(comp_id: any):

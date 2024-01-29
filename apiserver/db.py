@@ -669,27 +669,27 @@ def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
 ###############
 # ATTACHMENTS #
 ###############
-def add_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
+def add_attachment(model_name: str, id: UUID, s3_object_name: str) -> list[str]:
     return execute_stmt(
         f"""
         UPDATE {model_name} SET
             attachments = array_append(attachments, %s)
         WHERE id = %s
+        RETURNING attachments
         """,
         (s3_object_name, id),
-        returning_rs=False,
     )
 
 
-def remove_attachment(model_name: str, id: UUID, s3_object_name: str) -> None:
+def remove_attachment(model_name: str, id: UUID, s3_object_name: str) -> list[str]:
     return execute_stmt(
         f"""
         UPDATE {model_name} SET
             attachments = array_remove(attachments, %s)
         WHERE id = %s
+        RETURNING attachments
         """,
         (s3_object_name, id),
-        returning_rs=False,
     )
 
 

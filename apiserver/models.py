@@ -19,9 +19,9 @@ if not DB_URL:
 def build_model_tuple(fields: list[dict], is_overview: bool = False) -> dict:
     def get_type(x):
         return {
-            "string": str,
             "integer": int,
-            "date": dt.datetime,
+            "date": dt.date,
+            "datetime": dt.datetime,
             "decimal": float,
             "null": None,
         }.get(x, str)

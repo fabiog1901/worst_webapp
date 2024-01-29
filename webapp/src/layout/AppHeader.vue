@@ -27,7 +27,7 @@
         placeholder="Search..."
         reset-title="Remove the query"
         v-on:focus="open_ais_hits = true"
-        ><template v-slot:reset-icon>🚫</template></ais-search-box
+        ></ais-search-box
       >
       <div
         v-if="open_ais_hits"
@@ -41,48 +41,47 @@
       <ais-hits v-if="open_ais_hits">
         <template v-slot:item="{ item }">
           <ais-highlight
-            class="font-bold hover:cursor-pointer hover:underline"
+            class="font-bold text-xl hover:cursor-pointer hover:underline"
             v-bind:hit="item"
             attribute="name"
             v-on:click="routerSearchLinker(item.comp_id)"
           ></ais-highlight>
           <br />
-          <ais-snippet
-            class="hover:cursor-pointer hover:underline"
-            v-bind:hit="item"
-            attribute="text"
-            v-on:click="routerSearchLinker(item.comp_id)"
-          ></ais-snippet>
+          <div
+            v-for="k in Object.keys(item).filter((x) => {
+              return (
+                [
+                  'comp_id',
+                  'name',
+                  'parent_type',
+                  'parent_id',
+                  'permissions',
+                  '_highlightResult',
+                  '_snippetResult',
+                  '__position',
+                ].indexOf(x) === -1
+              );
+            })"
+          >
+            <div v-if="item[k] && (!Array.isArray(item[k] || item[k].length > 0))">
+              
+              <label
+                class="font-semibold hover:cursor-pointer hover:underline"
+                v-on:click="routerSearchLinker(item.comp_id)"
+                >{{ k }}:
+              </label>
+              <ais-snippet
+                v-bind:attribute="k"
+                class="hover:cursor-pointer hover:underline"
+                v-bind:hit="item"
+                v-on:click="routerSearchLinker(item.comp_id)"
+              ></ais-snippet>
+            </div>
+          </div>
         </template>
       </ais-hits>
       <ais-configure v-bind:attributes-to-snippet.camel="['text:50']" />
     </ais-instant-search>
-    <!-- <div
-      id="search-boxqq"
-      class="ml-0 mr-0 flex h-9 w-1/5 items-center justify-start rounded-md bg-gray-400 px-2 text-gray-400 shadow-md transition duration-300 ease-in-out dark:bg-gray-600"
-    >
-      <input
-        class="w-full rounded bg-transparent pl-1 font-sans font-semibold text-gray-400 placeholder-gray-500 outline-none"
-        type="text"
-        placeholder="Search..."
-        v-on:input="(event) => (text = search_fab(event.target.value))"
-      />
-      <svg
-        id="magnifying-glass-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        class="top-navigation-icon h-6 w-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-        />
-      </svg>
-    </div> -->
     <div id="right-div" class="flex flex-1 flex-row items-center">
       <div class="flex-grow"></div>
       <div id="dark-theme" class="top-navigation-icon" v-on:click="toggleTheme">
@@ -177,9 +176,8 @@ const open_ais_hits = ref(false);
 
 const customSearchClient = instantMeiliSearch(
   `${import.meta.env.VITE_APP_API_URL}/search`,
-  authStore.user.access_token
+  authStore.user.access_token,
 ).searchClient;
-
 
 onMounted(() => {
   const initUserTheme = getTheme() || getMediaPreference();
@@ -207,7 +205,7 @@ const setTheme = (theme: string) => {
 
 const getMediaPreference = () => {
   const hasDarkPreference = window.matchMedia(
-    "(prefers-color-scheme: dark)"
+    "(prefers-color-scheme: dark)",
   ).matches;
   if (hasDarkPreference) {
     return "dark";

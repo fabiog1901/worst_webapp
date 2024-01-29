@@ -64,7 +64,7 @@ async def get_presigned_put_url(
     bg_task: BackgroundTasks,
 ):
     s3_object_name = "/".join([model_name, str(id), filename])
-    svc.add_attachment(model_name, id, filename)
+    attachments = svc.add_attachment(model_name, id, filename)
     data = dep.get_presigned_put_url(s3_object_name)
     
     if data:
@@ -77,9 +77,10 @@ async def get_presigned_put_url(
             s3_object_name,
         )
 
+        # this should append to the new list...
         bg_task.add_task(
-            svc.add_documents,
-            [{"comp_id": model_name + "_" + str(id), "attachments": filename}],
+            svc.update_documents,
+            [{"comp_id": model_name + "_" + str(id), "attachments": ", ".join(attachments)}],
         )
     return HTMLResponse(content=data)
 
@@ -98,7 +99,7 @@ async def delete_attachement(
     bg_task: BackgroundTasks,
 ):
     s3_object_name = "/".join([model_name, str(id), filename])
-    svc.remove_attachment(model_name, id, filename)
+    attachments = svc.remove_attachment(model_name, id, filename)
     dep.s3_remove_object(s3_object_name)
     
     bg_task.add_task(
@@ -110,7 +111,8 @@ async def delete_attachement(
         s3_object_name,
     )
 
-    # bg_task.add_task(
-    #     svc.add_documents,
-    #     [{"comp_id": model_name + "_" + str(id), "attachments": filename}],
-    # )
+    # this should add the new list
+    bg_task.add_task(
+        svc.update_documents,
+        [{"comp_id": model_name + "_" + str(id), "attachments": ', '.join(attachments)}],
+    )

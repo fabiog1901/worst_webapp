@@ -111,12 +111,12 @@ def delete_instance(model_name: str, id: UUID) -> Type[BaseFields] | None:
     return db.delete_instance(model_name, id)
 
 
-def add_attachment(model_name: str, id: UUID, filename: str):
-    return db.add_attachment(model_name, id, filename)
+def add_attachment(model_name: str, id: UUID, filename: str) -> list[str]:
+    return db.add_attachment(model_name, id, filename)[0]
 
 
-def remove_attachment(model_name: str, id: UUID, filename: str):
-    return db.remove_attachment(model_name, id, filename)
+def remove_attachment(model_name: str, id: UUID, filename: str) -> list[str]:
+    return db.remove_attachment(model_name, id, filename)[0]
 
 
 def log_event(
@@ -286,6 +286,9 @@ def execute_search(search_queries: dict) -> dict | None:
 
 def add_documents(documents: list[dict]):
     return search.add_documents(documents)
+
+def update_documents(documents: list[dict]):
+    return search.update_documents(documents)
 
 
 def delete_document(comp_id: str):

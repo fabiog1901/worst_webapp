@@ -164,10 +164,6 @@ const showCreateNewReportModal = ref(false);
 const report = ref("");
 const report_name = ref("");
 
-const get_report = (name: string) => {
-  report.value = JSON.stringify(modelStore.reports[name], undefined, 4);
-};
-
 const create_report = async (name: string, sql_stmt: string) => {
   await modelStore.create_report(name, sql_stmt);
   await modelStore.get_all_reports();
