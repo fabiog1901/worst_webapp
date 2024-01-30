@@ -109,7 +109,7 @@ class WorstRouter(APIRouter):
                     svc.add_documents,
                     [
                         {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump(
+                        | x.model_dump_json(
                             exclude=[
                                 "id",
                                 "created_at",
@@ -152,7 +152,7 @@ class WorstRouter(APIRouter):
                     svc.add_documents,
                     [
                         {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump(
+                        | x.model_dump_json(
                             exclude=[
                                 "id",
                                 "created_at",
@@ -197,7 +197,7 @@ class WorstRouter(APIRouter):
                     svc.add_documents,
                     [
                         {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump(
+                        | x.model_dump_json(
                             exclude=[
                                 "id",
                                 "created_at",
