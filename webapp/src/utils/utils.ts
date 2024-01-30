@@ -108,8 +108,14 @@ function request(method: string) {
         return r.data;
       })
       .catch((error) => {
-        console.error(error.response);
-        authStore.logout();
+        if (error.response.status === 401) {
+          authStore.logout();
+        }
+        else {
+          return
+          // TODO handle 422 gracefully
+          //return error.response;
+        }
       });
   };
 }

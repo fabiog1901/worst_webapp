@@ -27,11 +27,11 @@
       id="content-container"
       class="flex w-full bg-gray-300 dark:bg-gray-700"
     >
-      <div class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
+      <main class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
         <div class="flex">
           <div class="p-2 text-sm text-gray-700 dark:text-white">name</div>
           <div class="flex-grow"></div>
-          <div
+          <button
             v-if="edit_field !== 'name'"
             class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
             v-on:click="
@@ -40,8 +40,8 @@
             "
           >
             Edit
-          </div>
-          <div v-else class="flex">
+          </button>
+          <button v-else class="flex">
             <div
               class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
               v-on:click="edit_field = ''"
@@ -55,7 +55,7 @@
             >
               Save
             </div>
-          </div>
+          </button>
         </div>
         <div>
           <div
@@ -69,7 +69,7 @@
             class="m-1 h-12 rounded border bg-slate-300 text-3xl dark:bg-slate-500 dark:text-white"
           >
             <input
-              v-bind:id="id"
+              v-bind:id="instance_id"
               v-model="new_value"
               class="h-full w-full p-2 text-black"
               type="text"
@@ -84,7 +84,7 @@
             </div>
             <div class="flex-grow"></div>
             <div>
-              <div
+              <button
                 v-if="edit_field !== x.name"
                 class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
                 v-on:click="
@@ -93,8 +93,8 @@
                 "
               >
                 Edit
-              </div>
-              <div v-else class="flex">
+              </button>
+              <button v-else class="flex">
                 <div
                   class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
                   v-on:click="edit_field = ''"
@@ -109,7 +109,7 @@
                 >
                   Save
                 </div>
-              </div>
+              </button>
             </div>
           </div>
           <div v-if="x.type === 'decimal'">
@@ -126,7 +126,7 @@
               class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
             >
               <input
-                v-bind:id="id"
+                v-bind:id="instance_id"
                 v-model.number="new_value"
                 class="h-full w-full p-2 text-black"
                 type="number"
@@ -150,7 +150,7 @@
               class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
             >
               <input
-                v-bind:id="id"
+                v-bind:id="instance_id"
                 v-model="new_value"
                 class="h-full w-full p-2 text-black"
                 type="date"
@@ -162,7 +162,11 @@
             <div v-if="edit_field !== x.name" class="m-1 flex h-8 items-center">
               <div
                 class="flex h-8 w-fit min-w-16 items-center justify-center rounded border p-2 text-sm font-semibold"
-                v-bind:class="getLabel(modelStore.instance?.[x.name as keyof Model] as string)"
+                v-bind:class="
+                  getLabel(
+                    modelStore.instance?.[x.name as keyof Model] as string,
+                  )
+                "
               >
                 {{ modelStore.instance?.[x.name as keyof Model] }}
               </div>
@@ -172,7 +176,7 @@
               class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
             >
               <input
-                v-bind:id="id"
+                v-bind:id="instance_id"
                 v-model.lazy.trim="new_value"
                 class="h-full w-full p-2 text-black"
                 type="text"
@@ -212,7 +216,7 @@
               class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
             >
               <input
-                v-bind:id="id"
+                v-bind:id="instance_id"
                 v-model.lazy.trim="new_value"
                 class="h-full w-full p-2 text-black"
                 type="text"
@@ -221,37 +225,107 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="w-96 bg-gray-300 dark:bg-gray-900 dark:text-white">
-        <div class="mx-2 text-sm dark:text-white">
+      </main>
+
+      <main
+        class="flex flex-col w-96 bg-gray-300 dark:bg-gray-900 dark:text-white"
+      >
+        <div class="m-1 text-sm dark:text-white">
           id: {{ modelStore.instance?.id }}
         </div>
-        <div class="mx-2 text-sm dark:text-white">
-          parent_type: {{ modelStore.instance?.parent_type }}
-        </div>
-        <div class="mx-2 text-sm">
-          parent_id: {{ modelStore.instance?.parent_id }}
-        </div>
-        <div class="mx-2 text-sm">
-          owned_by: {{ modelStore.instance?.owned_by }}
-        </div>
-        <div class="mx-2 text-sm">
-          permissions: {{ modelStore.instance?.permissions }}
-        </div>
-        <div class="mx-2 text-sm">
+        <div class="mb-1 mx-1 text-sm">
           created_by: {{ modelStore.instance?.created_by }}
         </div>
-        <div class="mx-2 text-sm">
+        <div class="mb-1 mx-1 text-sm">
           created_at: {{ modelStore.instance?.created_at }}
         </div>
-        <div class="mx-2 text-sm">
+        <div class="mb-1 mx-1 text-sm">
           updated_by: {{ modelStore.instance?.updated_by }}
         </div>
-        <div class="mx-2 text-sm">
+        <div class="mb-1 mx-1 text-sm">
           updated_at: {{ modelStore.instance?.updated_at }}
         </div>
 
-        <div class="mx-2 text-sm">
+        <hr
+          id="linebreaker"
+          class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+        />
+
+        <div class="flex">
+          <div class="p-2 text-sm text-gray-700 dark:text-white">parent</div>
+          <div class="flex-grow"></div>
+          <button
+            v-if="edit_field !== 'parent'"
+            class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
+            v-on:click="
+              new_value =
+                modelStore.instance.parent_type +
+                '/' +
+                modelStore.instance.parent_id;
+              edit_field = 'parent';
+            "
+          >
+            Edit
+          </button>
+          <button v-else class="flex">
+            <div
+              class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
+              v-on:click="edit_field = ''"
+            >
+              Cancel
+            </div>
+
+            <div
+              class="m-2 rounded-xl bg-orange-400 px-2 text-sm hover:cursor-pointer hover:bg-orange-300"
+              v-on:click="
+                save_new_parent(
+                  modelStore.instance?.parent_type,
+                  modelStore.instance?.parent_id,
+                )
+              "
+            >
+              Save
+            </div>
+          </button>
+        </div>
+        <div>
+          <div
+            v-if="edit_field !== 'parent'"
+            class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 text-sm font-semibold dark:bg-slate-500 dark:text-white"
+          >
+            <label v-if="modelStore.instance?.parent_type"
+              >{{ modelStore.instance?.parent_type }}/{{
+                modelStore.instance?.parent_id
+              }}</label
+            >
+          </div>
+          <div
+            v-else
+            class="m-1 h-8 rounded border bg-slate-300 text-sm dark:bg-slate-500 dark:text-white"
+          >
+            <input
+              v-bind:id="instance_id"
+              v-model="new_value"
+              class="h-full w-full p-2 text-black"
+              type="text"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div class="mb-1 mx-1 text-sm">
+          owned_by: {{ modelStore.instance?.owned_by }}
+        </div>
+        <div class="mb-1 mx-1 text-sm">
+          permissions: {{ modelStore.instance?.permissions }}
+        </div>
+
+        <hr
+          id="linebreaker"
+          class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+        />
+
+        <div class="mb-1 mx-1 text-sm">
           tags:
           <div
             v-for="tag in modelStore.instance?.tags"
@@ -266,7 +340,13 @@
             </div>
           </div>
         </div>
-        <div class="mx-2 text-sm">
+
+        <hr
+          id="linebreaker"
+          class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+        />
+
+        <div class="mb-1 mx-1 text-sm">
           attachments:
           <div
             v-for="att in modelStore.instance?.attachments"
@@ -306,9 +386,7 @@
           </div>
         </div>
 
-        <div
-          class="m-2 flex h-8 w-fit items-center justify-start rounded-md bg-gray-300 text-gray-400 shadow-md transition duration-300 ease-in-out dark:bg-gray-500"
-        >
+        <button class="m-2 flex h-8 w-fit items-center justify-start">
           <label
             class="flex h-8 w-full items-center rounded bg-green-700 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-green-400"
             for="upload_file"
@@ -335,17 +413,18 @@
               />
             </svg>
           </label>
-        </div>
-        <div class="flex-grow bg-yellow-400"></div>
+        </button>
+
+        <div id="spacer" class="flex-grow"></div>
+
         <hr
           id="linebreaker"
-          class="mx-2 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
+          class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
         />
-        <div
-          class="m-2 flex h-8 w-48 items-center justify-start rounded-md bg-gray-300 text-gray-400 shadow-md transition duration-300 ease-in-out"
-        >
+
+        <button class="m-2 flex justify-center">
           <label
-            class="flex h-8 w-full items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
+            class="flex h-8 w-fit items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
             v-on:click="showDeleteInstanceModal = true"
             >Delete instance
 
@@ -365,12 +444,12 @@
               />
             </svg>
           </label>
-        </div>
-      </div>
+        </button>
+      </main>
 
       <ModalDelete
         v-if="showDeleteInstanceModal"
-        v-bind:model-name="model_name"
+        v-bind:model-name="instance_type"
         v-bind:instance-name="modelStore.instance?.name"
         v-on:cancel-clicked="showDeleteInstanceModal = false"
         v-on:delete-clicked="delete_instance"
@@ -408,63 +487,114 @@ const showDeleteAttachmentModal = ref(false);
 const showDeleteInstanceModal = ref(false);
 const attachment = ref("");
 
+const edit_field = ref("");
+const new_value = ref("");
+
 const delete_attachment = async () => {
   showDeleteAttachmentModal.value = false;
 
   await modelStore.delete_attachment(
-    model_name.value,
-    id.value,
-    attachment.value
+    instance_type.value,
+    instance_id.value,
+    attachment.value,
   );
 
   // refresh to get updated list of attachments
-  modelStore.get_instance(model_name.value, id.value);
+  modelStore.get_instance(instance_type.value, instance_id.value);
 };
 
 const delete_instance = async () => {
   showDeleteInstanceModal.value = false;
 
-  await modelStore.delete_instance(model_name.value, id.value);
+  await modelStore.delete_instance(instance_type.value, instance_id.value);
 
   // go back to TableView for the same model name
-  router.push(`/${model_name.value}`);
+  router.push(`/${instance_type.value}`);
 };
 
-const id = computed(() => {
+const instance_id = computed(() => {
   return route.params.id as string;
 });
 
-const edit_field = ref("");
-const new_value = ref("");
+
 
 const save_new_value = async (old_v: string) => {
   if (old_v !== new_value.value) {
-    await modelStore.partial_update_instance(
-      model_name.value,
-      id.value,
+    modelStore.instance = await modelStore.partial_update_instance(
+      instance_type.value,
+      instance_id.value,
       edit_field.value,
-      new_value.value
+      new_value.value,
     );
   }
 
   edit_field.value = "";
 };
 
-const model_name = computed(() => {
+const save_new_parent = async (parent_type: string, parent_id: string) => {
+
+  const [new_parent_type, new_parent_id] = new_value.value.split("/");
+
+  // check a new parent was added and not the same one
+  if (parent_type !== new_parent_type || parent_id !== new_parent_id) {
+    // check new parent is not itself
+    if (
+      new_parent_type === instance_type.value &&
+      new_parent_id === modelStore.instance.id
+    ) {
+      console.warn("Parent cannot be the instance itself!");
+      alert("The instance parent cannot be the instance itself!");
+      return;
+    }
+
+    // check new parent exists:
+    const parent = await modelStore.get_instance(
+      new_parent_type,
+      new_parent_id,
+    );
+
+    // if exists, update to new parent
+    if (!parent) {
+      console.warn("Parent does not exist!");
+      alert("The requested parent does not exist!");
+      return;
+    }
+
+    // check that parent is not one of its children
+    // TODO
+
+    await modelStore.partial_update_instance(
+      instance_type.value,
+      instance_id.value,
+      "parent_type",
+      new_parent_type,
+    );
+
+    modelStore.instance = await modelStore.partial_update_instance(
+      instance_type.value,
+      instance_id.value,
+      "parent_id",
+      new_parent_id,
+    );
+  }
+  edit_field.value = "";
+};
+
+const instance_type = computed(() => {
   return route.params.model as string;
 });
 
 const getSkemaFields = computed(() => {
-  if (modelStore.models[model_name.value])
-    return modelStore.models[model_name.value]["skema"]["fields"];
+  if (modelStore.models[instance_type.value])
+    return modelStore.models[instance_type.value]["skema"]["fields"];
   return [];
 });
 
 const upload_file = async (e: any) => {
   const presigned_url = await modelStore.get_presigned_put_url(
-    model_name.value,
-    id.value,
-    e.target.files[0].name
+    instance_type.value,
+    instance_id.value,
+    e.target.files[0].name,
   );
 
   await fetch(presigned_url, {
@@ -472,14 +602,14 @@ const upload_file = async (e: any) => {
     body: e.target.files[0],
   });
 
-  modelStore.get_instance(model_name.value, id.value);
+  modelStore.get_instance(instance_type.value, instance_id.value);
 };
 
 const download_file = async (filename: string) => {
   const presigned_url = await modelStore.get_presigned_get_url(
-    model_name.value,
-    id.value,
-    filename
+    instance_type.value,
+    instance_id.value,
+    filename,
   );
 
   saveAs(presigned_url, filename);
@@ -528,22 +658,39 @@ const getTheme = computed(() => {
   return theme;
 });
 
-//const editing = ref<boolean>(false);
-
 onMounted(async () => {
-  await modelStore.get_instance(model_name.value, id.value);
-  await modelStore.get_instance_children(model_name.value, id.value);
-  await modelStore.get_instance_parent_chain(model_name.value, id.value);
+  modelStore.instance = await modelStore.get_instance(
+    instance_type.value,
+    instance_id.value,
+  );
+  modelStore.instance_children = await modelStore.get_instance_children(
+    instance_type.value,
+    instance_id.value,
+  );
+  modelStore.instance_parent_chain = await modelStore.get_instance_parent_chain(
+    instance_type.value,
+    instance_id.value,
+  );
 });
 
 watch(
   () => route.fullPath,
   async () => {
-    if (id.value && !route.params.child_model_name) {
-      await modelStore.get_instance(model_name.value, id.value);
-      await modelStore.get_instance_children(model_name.value, id.value);
-      await modelStore.get_instance_parent_chain(model_name.value, id.value);
+    if (instance_id.value && !route.params.child_model_name) {
+      modelStore.instance = await modelStore.get_instance(
+        instance_type.value,
+        instance_id.value,
+      );
+      modelStore.instance_children = await modelStore.get_instance_children(
+        instance_type.value,
+        instance_id.value,
+      );
+      modelStore.instance_parent_chain =
+        await modelStore.get_instance_parent_chain(
+          instance_type.value,
+          instance_id.value,
+        );
     }
-  }
+  },
 );
 </script>

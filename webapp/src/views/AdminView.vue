@@ -62,21 +62,19 @@ const get_model = (m: string) => {
   m_json.value = JSON.stringify(modelStore.models[m], undefined, 4);
 };
 
-const delete_worst_model = (m: string) => {
+const delete_worst_model = async (m: string) => {
   modelStore.delete_model(m);
-  modelStore.get_all_models();
+  modelStore.models = await modelStore.get_all_models();
 };
 
 
-const create_worst_model = () => {
+const create_worst_model = async () => {
   modelStore.create_model(m_json.value);
-  modelStore.get_all_models();
+  modelStore.models = await modelStore.get_all_models();
 };
-
 
 
 onMounted(async () => {
-  await modelStore.get_all_models();
-  await modelStore.get_all_reports();
+  modelStore.models = await modelStore.get_all_models();
 });
 </script>

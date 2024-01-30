@@ -120,7 +120,7 @@ import { useModelStore } from "@/stores/modelStore";
 const modelStore = useModelStore();
 
 onMounted(async () => {
-  await modelStore.get_all_models();
+  modelStore.models = await modelStore.get_all_models();
 });
 </script>
 

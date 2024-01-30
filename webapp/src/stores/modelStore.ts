@@ -8,8 +8,8 @@ export const useModelStore = defineStore("model", () => {
   const models: { [key: string]: any } = ref<{}>({});
 
   const get_all_models = async () => {
-    models.value = await axiosWrapper.get(`/models`);
     console.info("GET /models");
+    return await axiosWrapper.get(`/models`);
   };
 
   const get_model = async (m: string) => {
@@ -18,18 +18,18 @@ export const useModelStore = defineStore("model", () => {
   };
 
   const create_model = async (m: string) => {
-    await axiosWrapper.post(`/models/`, m);
     console.info(`POST /models/ (${m})`);
+    return await axiosWrapper.post(`/models/`, m);
   };
 
   const update_model = async (m: string) => {
-    await axiosWrapper.put(`/models/`, m);
     console.info(`PUT /models/`, m);
+    return await axiosWrapper.put(`/models/`, m);
   };
 
   const delete_model = async (m: string) => {
-    await axiosWrapper.delete(`/models/${m}`);
     console.info(`DELETE /models/${m}`);
+    return await axiosWrapper.delete(`/models/${m}`);
   };
 
   // reports
@@ -102,20 +102,18 @@ export const useModelStore = defineStore("model", () => {
   const instance_parent_chain = ref<any[]>([]);
 
   const get_all_instances = async (model_name: string) => {
-    instances.value = await axiosWrapper.get(`/${model_name}`);
     console.info(`GET /${model_name}`);
+    return await axiosWrapper.get(`/${model_name}`);
   };
 
   const get_instance = async (model_name: string, id: string) => {
-    instance.value = await axiosWrapper.get(`/${model_name}/${id}`);
     console.info(`GET /${model_name}/${id}`);
+    return await axiosWrapper.get(`/${model_name}/${id}`);
   };
 
   const get_instance_children = async (model_name: string, id: string) => {
-    instance_children.value = await axiosWrapper.get(
-      `/${model_name}/${id}/children`,
-    );
     console.info(`GET /${model_name}/${id}/children`);
+    return await axiosWrapper.get(`/${model_name}/${id}/children`);
   };
 
   const get_instance_children_for_model = async (
@@ -130,10 +128,8 @@ export const useModelStore = defineStore("model", () => {
   };
 
   const get_instance_parent_chain = async (model_name: string, id: string) => {
-    instance_parent_chain.value = await axiosWrapper.get(
-      `/${model_name}/${id}/parent_chain`,
-    );
     console.info(`GET /${model_name}/${id}/parent_chain`);
+    return await axiosWrapper.get(`/${model_name}/${id}/parent_chain`);
   };
 
   const create_instance = async (model_name: string, m: string) => {
@@ -152,16 +148,16 @@ export const useModelStore = defineStore("model", () => {
     field: string,
     val: any,
   ) => {
-    instance.value = await axiosWrapper.patch(`/${model_name}/${id}`, {
+    console.info(`PATCH /${model_name}`, id, field, val);
+    return await axiosWrapper.patch(`/${model_name}/${id}`, {
       field: field,
       value: val,
     });
-    console.info(`PATCH /${model_name}`, id, field, val);
   };
 
   const delete_instance = async (model_name: string, id: string) => {
-    await axiosWrapper.delete(`/${model_name}/${id}`);
     console.info(`DELETE /${model_name}/${id}`);
+    return await axiosWrapper.delete(`/${model_name}/${id}`);
   };
 
   // attachments
@@ -202,10 +198,10 @@ export const useModelStore = defineStore("model", () => {
     id: string,
     filename: string,
   ) => {
-    await axiosWrapper.delete(`/attachments/${model_name}/${id}`, undefined, {
+    console.info(`DELETE /attachments/${model_name}/${id}`, filename);
+    return await axiosWrapper.delete(`/attachments/${model_name}/${id}`, undefined, {
       filename: filename,
     });
-    console.info(`DELETE /attachments/${model_name}/${id}`, filename);
   };
 
   // misc

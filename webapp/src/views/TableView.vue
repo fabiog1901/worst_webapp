@@ -97,7 +97,7 @@ const delete_instance = async () => {
   await modelStore.delete_instance(model_name.value, id.value);
 
   // refresh list
-  await modelStore.get_all_instances(model_name.value);
+  modelStore.instances = await modelStore.get_all_instances(model_name.value);
 };
 
 const create_instance = async (m_json: any) => {
@@ -140,7 +140,7 @@ const modelBaseFields = computed(() => {
 });
 
 onMounted(async () => {
-  await modelStore.get_all_instances(model_name.value);
+  modelStore.instances = await modelStore.get_all_instances(model_name.value);
   modelStore.instance_parent_chain = [
     [
       model_name.value,
@@ -157,7 +157,7 @@ watch(
   async () => {
     if (route.params.model && !route.params.id) {
       console.info("modelview-watch", model_name.value);
-      await modelStore.get_all_instances(model_name.value);
+      modelStore.instances = await modelStore.get_all_instances(model_name.value);
       modelStore.instance_parent_chain = [
         [
           model_name.value,
