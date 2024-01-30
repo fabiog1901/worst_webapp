@@ -99,6 +99,35 @@
       />
     </div>
   </div>
+  <div v-else-if="item_type === 'tags'">
+    <div v-if="edit_field !== item_name" class="m-1 flex h-8 items-center">
+      <div
+            v-for="tag in instance?.[item_name]"
+            v-bind:key="tag"
+            class="p-1"
+          >
+            <div
+              class="flex h-8 w-fit min-w-16 items-center justify-center rounded-2xl p-2 text-sm font-semibold"
+              v-bind:class="getLabel(tag)"
+            >
+              {{ tag }}
+            </div>
+          </div>
+      
+
+    </div>
+    <div
+      v-else
+      class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
+    >
+      <input
+        v-model.lazy.trim="new_value"
+        class="h-full w-full p-2 text-black"
+        type="text"
+        autocomplete="off"
+      />
+    </div>
+  </div>
   <div v-else-if="item_type === 'markdown'">
     <div
       v-if="edit_field !== item_name"

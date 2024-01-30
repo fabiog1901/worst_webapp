@@ -27,8 +27,7 @@
         placeholder="Search..."
         reset-title="Remove the query"
         v-on:focus="open_ais_hits = true"
-        ></ais-search-box
-      >
+      ></ais-search-box>
       <div
         v-if="open_ais_hits"
         class="fixed left-0 top-0 z-10 flex h-full w-full items-center justify-center"
@@ -63,8 +62,20 @@
               );
             })"
           >
-            <div v-if="item[k] && (!Array.isArray(item[k] || item[k].length > 0))">
-              
+            <div v-if="item[k] && Array.isArray(item[k]) && item[k].length > 0">
+              <label
+                class="font-semibold hover:cursor-pointer hover:underline"
+                v-on:click="routerSearchLinker(item.comp_id)"
+                >{{ k }}:
+              </label>
+              <div class="flex" v-for="i in item[k]" v-bind:key="i">
+                <div
+                  class="hover:cursor-pointer hover:underline"
+                  v-on:click="routerSearchLinker(item.comp_id)"
+                  >-  {{ i }}</div>
+              </div>
+            </div>
+            <div v-if="item[k] && !Array.isArray(item[k])">
               <label
                 class="font-semibold hover:cursor-pointer hover:underline"
                 v-on:click="routerSearchLinker(item.comp_id)"

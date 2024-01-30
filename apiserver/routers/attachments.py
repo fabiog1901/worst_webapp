@@ -80,7 +80,7 @@ async def get_presigned_put_url(
         # this should append to the new list...
         bg_task.add_task(
             svc.update_documents,
-            [{"comp_id": model_name + "_" + str(id), "attachments": ", ".join(attachments)}],
+            [{"comp_id": model_name + "_" + str(id), "attachments": attachments}],
         )
     return HTMLResponse(content=data)
 
@@ -114,5 +114,5 @@ async def delete_attachement(
     # this should add the new list
     bg_task.add_task(
         svc.update_documents,
-        [{"comp_id": model_name + "_" + str(id), "attachments": ', '.join(attachments)}],
+        [{"comp_id": model_name + "_" + str(id), "attachments": attachments}],
     )

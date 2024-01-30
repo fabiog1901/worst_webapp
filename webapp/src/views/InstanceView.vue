@@ -133,33 +133,31 @@
           </div>
         </div>
 
-        <div class="mb-1 mx-1 text-sm">
-          owned_by: {{ modelStore.instance?.owned_by }}
-        </div>
-        <div class="mb-1 mx-1 text-sm">
-          permissions: {{ modelStore.instance?.permissions }}
-        </div>
+        <FabEditableField
+          v-bind:instance="modelStore.instance"
+          item_name="owned_by"
+          item_type="string"
+          v-on:save_new_value="save_new_value($event[0], $event[1], $event[2])"
+        ></FabEditableField>
+
+        <FabEditableField
+          v-bind:instance="modelStore.instance"
+          item_name="permissions"
+          item_type="string"
+          v-on:save_new_value="save_new_value($event[0], $event[1], $event[2])"
+        ></FabEditableField>
 
         <hr
           id="linebreaker"
           class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
         />
 
-        <div class="mb-1 mx-1 text-sm">
-          tags:
-          <div
-            v-for="tag in modelStore.instance?.tags"
-            v-bind:key="tag"
-            class="p-1"
-          >
-            <div
-              class="flex h-8 w-fit min-w-16 items-center justify-center rounded-2xl p-2 text-sm font-semibold"
-              v-bind:class="getLabel(tag)"
-            >
-              {{ tag }}
-            </div>
-          </div>
-        </div>
+        <FabEditableField
+          v-bind:instance="modelStore.instance"
+          item_name="tags"
+          item_type="tags"
+          v-on:save_new_value="save_new_value($event[0], $event[1], $event[2])"
+        ></FabEditableField>
 
         <hr
           id="linebreaker"
@@ -312,19 +310,6 @@ const attachment = ref("");
 const edit_field = ref("");
 const new_value = ref("");
 
-const delete_attachment = async () => {
-  showDeleteAttachmentModal.value = false;
-
-  await modelStore.delete_attachment(
-    instance_type.value,
-    instance_id.value,
-    attachment.value,
-  );
-
-  // refresh to get updated list of attachments
-  modelStore.get_instance(instance_type.value, instance_id.value);
-};
-
 const delete_instance = async () => {
   showDeleteInstanceModal.value = false;
 
@@ -421,7 +406,10 @@ const upload_file = async (e: any) => {
     body: e.target.files[0],
   });
 
-  modelStore.get_instance(instance_type.value, instance_id.value);
+  modelStore.instance = await modelStore.get_instance(
+    instance_type.value,
+    instance_id.value,
+  );
 };
 
 const download_file = async (filename: string) => {
@@ -437,6 +425,22 @@ const download_file = async (filename: string) => {
 const confirm_delete_attachment = async (s: any) => {
   showDeleteAttachmentModal.value = true;
   attachment.value = s;
+};
+
+const delete_attachment = async () => {
+  showDeleteAttachmentModal.value = false;
+
+  await modelStore.delete_attachment(
+    instance_type.value,
+    instance_id.value,
+    attachment.value,
+  );
+
+  // refresh to get updated list of attachments
+  modelStore.instance = await modelStore.get_instance(
+    instance_type.value,
+    instance_id.value,
+  );
 };
 
 // const ff = computed(() => {
