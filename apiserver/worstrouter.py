@@ -9,17 +9,20 @@ import apiserver.service as svc
 import datetime as dt
 
 
+
+
+
 class WorstRouter(APIRouter):
     def __init__(
         self,
-        model_name: str,
+        instance_type: str,
         default_model: Type[BaseFields],
         overview_model: Type[BaseFields],
         update_model: Type[BaseFields],
     ) -> None:
         super().__init__(
-            prefix=f"/{model_name}",
-            tags=[model_name],
+            prefix=f"/{instance_type}",
+            tags=[instance_type],
         )
 
         @self.get(
@@ -30,7 +33,7 @@ class WorstRouter(APIRouter):
             description="Required permission: `worst_instances_read`",
         )
         async def get_all_instances() -> list[overview_model] | None:
-            return svc.get_all_instances(model_name)
+            return svc.get_all_instances(instance_type)
 
         @self.get(
             "/{id}",
@@ -42,7 +45,7 @@ class WorstRouter(APIRouter):
         async def get_instance(
             id: UUID,
         ) -> default_model | None:
-            return svc.get_instance(model_name, id)
+            return svc.get_instance(instance_type, id)
 
         @self.get(
             "/{id}/children",
@@ -54,7 +57,7 @@ class WorstRouter(APIRouter):
         async def get_all_children(
             id: UUID,
         ) -> dict | None:
-            return svc.get_all_children(model_name, id)
+            return svc.get_all_children(instance_type, id)
 
         @self.get(
             "/{id}/parent_chain",
@@ -66,11 +69,10 @@ class WorstRouter(APIRouter):
         async def get_parent_chain(
             id: UUID,
         ) -> list | None:
-            return svc.get_parent_chain(model_name, id)
-
+            return svc.get_parent_chain(instance_type, id)
 
         @self.get(
-            "/{id}/{children_model_name}",
+            "/{id}/{children_instance_type}",
             dependencies=[
                 Security(dep.get_current_user, scopes=["worst_instances_read"])
             ],
@@ -78,9 +80,11 @@ class WorstRouter(APIRouter):
         )
         async def get_all_children_for_model(
             id: UUID,
-            children_model_name: str,
+            children_instance_type: str,
         ) -> list | None:
-            return svc.get_all_children_for_model(model_name, id, children_model_name)
+            return svc.get_all_children_for_model(
+                instance_type, id, children_instance_type
+            )
 
         @self.post(
             "",
@@ -93,12 +97,12 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.create_instance(model_name, current_user, model)
+            x = svc.create_instance(instance_type, current_user, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    model_name,
+                    instance_type,
                     dt.datetime.utcnow(),
                     current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
@@ -106,21 +110,7 @@ class WorstRouter(APIRouter):
                 )
 
                 bg_task.add_task(
-                    svc.add_documents,
-                    [
-                        {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump_json(
-                            exclude=[
-                                "id",
-                                "created_at",
-                                "created_by",
-                                "updated_at",
-                                "updated_by",
-                            ],
-                            exclude_unset=True,
-                            exclude_none=True,
-                        )
-                    ],
+                    svc.add_documents, self.__get_search_documents(instance_type, x)
                 )
 
             return x
@@ -136,12 +126,12 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.update_instance(model_name, current_user, model)
+            x = svc.update_instance(instance_type, current_user, model)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    model_name,
+                    instance_type,
                     dt.datetime.utcnow(),
                     current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
@@ -149,21 +139,7 @@ class WorstRouter(APIRouter):
                 )
 
                 bg_task.add_task(
-                    svc.add_documents,
-                    [
-                        {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump_json(
-                            exclude=[
-                                "id",
-                                "created_at",
-                                "created_by",
-                                "updated_at",
-                                "updated_by",
-                            ],
-                            exclude_unset=True,
-                            exclude_none=True,
-                        )
-                    ],
+                    svc.add_documents, self.__get_search_documents(instance_type, x)
                 )
 
             return x
@@ -181,12 +157,14 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x = svc.partial_update_instance(model_name, current_user, id, field, value)
+            x = svc.partial_update_instance(
+                instance_type, current_user, id, field, value
+            )
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    model_name,
+                    instance_type,
                     dt.datetime.utcnow(),
                     current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
@@ -194,22 +172,9 @@ class WorstRouter(APIRouter):
                 )
 
                 bg_task.add_task(
-                    svc.add_documents,
-                    [
-                        {"comp_id": model_name + "_" + str(x.id)}
-                        | x.model_dump_json(
-                            exclude=[
-                                "id",
-                                "created_at",
-                                "created_by",
-                                "updated_at",
-                                "updated_by",
-                            ],
-                            exclude_unset=True,
-                            exclude_none=True,
-                        )
-                    ],
+                    svc.add_documents, self.__get_search_documents(instance_type, x)
                 )
+                
             return x
 
         @self.delete(
@@ -223,17 +188,38 @@ class WorstRouter(APIRouter):
             ],
             bg_task: BackgroundTasks,
         ) -> default_model | None:
-            x: default_model = svc.delete_instance(model_name, id)
+            x: default_model = svc.delete_instance(instance_type, id)
 
             if x:
                 bg_task.add_task(
                     svc.log_event,
-                    model_name,
+                    instance_type,
                     dt.datetime.utcnow(),
                     current_user,
                     inspect.currentframe().f_code.co_name,  # type: ignore
                     x.model_dump_json(),
                 )
 
-                bg_task.add_task(svc.delete_document, model_name + "_" + str(x.id))
+                bg_task.add_task(svc.delete_document, instance_type + "_" + str(x.id))
             return x
+
+    def __get_search_documents(self, instance_type: str, x: Type[BaseFields]) -> list:
+        return [
+            {"comp_id": instance_type + "_" + str(x.id)}
+            | x.model_dump(
+                mode="json",
+                exclude=[
+                    "id",
+                    "created_at",
+                    "created_by",
+                    "updated_at",
+                    "updated_by",
+                    "permissions",
+                    "parent_type",
+                    "parent_id",
+                    "owned_by",
+                ],
+                exclude_unset=True,
+                exclude_none=True,
+            )
+        ]

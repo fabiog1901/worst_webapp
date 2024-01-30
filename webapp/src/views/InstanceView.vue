@@ -28,202 +28,22 @@
       class="flex w-full bg-gray-300 dark:bg-gray-700"
     >
       <main class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
-        <div class="flex">
-          <div class="p-2 text-sm text-gray-700 dark:text-white">name</div>
-          <div class="flex-grow"></div>
-          <button
-            v-if="edit_field !== 'name'"
-            class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
-            v-on:click="
-              new_value = modelStore.instance.name;
-              edit_field = 'name';
-            "
-          >
-            Edit
-          </button>
-          <button v-else class="flex">
-            <div
-              class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
-              v-on:click="edit_field = ''"
-            >
-              Cancel
-            </div>
+        <FabEditableField
+          v-bind:instance="modelStore.instance"
+          item_name="name"
+          item_type="header"
+          v-on:save_new_value="save_new_value($event[0], $event[1], $event[2])"
+        ></FabEditableField>
 
-            <div
-              class="m-2 rounded-xl bg-orange-400 px-2 text-sm hover:cursor-pointer hover:bg-orange-300"
-              v-on:click="save_new_value(modelStore.instance.name)"
-            >
-              Save
-            </div>
-          </button>
-        </div>
-        <div>
-          <div
-            v-if="edit_field !== 'name'"
-            class="m-1 flex h-12 items-center rounded border bg-slate-300 p-1 text-3xl font-semibold dark:bg-slate-500 dark:text-white"
-          >
-            <label>{{ modelStore.instance?.name }}</label>
-          </div>
-          <div
-            v-else
-            class="m-1 h-12 rounded border bg-slate-300 text-3xl dark:bg-slate-500 dark:text-white"
-          >
-            <input
-              v-bind:id="instance_id"
-              v-model="new_value"
-              class="h-full w-full p-2 text-black"
-              type="text"
-              autocomplete="off"
-            />
-          </div>
-        </div>
         <div v-for="x in getSkemaFields" v-bind:key="x" class="">
-          <div class="flex">
-            <div class="p-2 text-sm text-gray-700 dark:text-white">
-              {{ x.name }} <i>[{{ x.type }}]</i>
-            </div>
-            <div class="flex-grow"></div>
-            <div>
-              <button
-                v-if="edit_field !== x.name"
-                class="m-2 rounded-xl bg-green-400 px-2 text-sm hover:cursor-pointer hover:bg-green-300"
-                v-on:click="
-                  new_value = modelStore.instance[x.name];
-                  edit_field = x.name;
-                "
-              >
-                Edit
-              </button>
-              <button v-else class="flex">
-                <div
-                  class="m-2 px-2 text-sm underline hover:cursor-pointer dark:text-white"
-                  v-on:click="edit_field = ''"
-                >
-                  Cancel
-                </div>
-                <div
-                  class="m-2 rounded-xl bg-orange-400 px-2 text-sm hover:cursor-pointer hover:bg-orange-300"
-                  v-on:click="
-                    save_new_value(modelStore.instance[x.name as keyof Model])
-                  "
-                >
-                  Save
-                </div>
-              </button>
-            </div>
-          </div>
-          <div v-if="x.type === 'decimal'">
-            <div
-              v-if="edit_field !== x.name"
-              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
-            >
-              <label>{{
-                formatDecimal(modelStore.instance?.[x.name as keyof Model])
-              }}</label>
-            </div>
-            <div
-              v-else
-              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <input
-                v-bind:id="instance_id"
-                v-model.number="new_value"
-                class="h-full w-full p-2 text-black"
-                type="number"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-
-          <div v-else-if="x.type === 'date'">
-            <div
-              v-if="edit_field !== x.name"
-              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
-            >
-              <label>{{
-                formatDate(modelStore.instance?.[x.name as keyof Model])
-              }}</label>
-            </div>
-
-            <div
-              v-else
-              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <input
-                v-bind:id="instance_id"
-                v-model="new_value"
-                class="h-full w-full p-2 text-black"
-                type="date"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-          <div v-else-if="x.type === 'enum'">
-            <div v-if="edit_field !== x.name" class="m-1 flex h-8 items-center">
-              <div
-                class="flex h-8 w-fit min-w-16 items-center justify-center rounded border p-2 text-sm font-semibold"
-                v-bind:class="
-                  getLabel(
-                    modelStore.instance?.[x.name as keyof Model] as string,
-                  )
-                "
-              >
-                {{ modelStore.instance?.[x.name as keyof Model] }}
-              </div>
-            </div>
-            <div
-              v-else
-              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <input
-                v-bind:id="instance_id"
-                v-model.lazy.trim="new_value"
-                class="h-full w-full p-2 text-black"
-                type="text"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-          <div v-else-if="x.type === 'markdown'">
-            <div
-              v-if="edit_field !== x.name"
-              class="h-96 bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <FabMark
-                class="h-96 overflow-y-scroll dark:bg-slate-500 dark:text-white"
-                v-bind:source="modelStore.instance?.[x.name] ?? ''"
-                v-bind:theme="getTheme"
-              />
-            </div>
-
-            <div
-              v-else
-              class="h-96 bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <FabMarkEdit v-model="new_value" class="h-96" />
-            </div>
-          </div>
-
-          <div v-else>
-            <div
-              v-if="edit_field !== x.name"
-              class="m-1 flex h-8 items-center rounded border bg-slate-300 p-1 dark:bg-slate-500 dark:text-white"
-            >
-              <label>{{ modelStore.instance?.[x.name as keyof Model] }}</label>
-            </div>
-            <div
-              v-else
-              class="m-1 h-8 rounded border bg-slate-300 dark:bg-slate-500 dark:text-white"
-            >
-              <input
-                v-bind:id="instance_id"
-                v-model.lazy.trim="new_value"
-                class="h-full w-full p-2 text-black"
-                type="text"
-                autocomplete="off"
-              />
-            </div>
-          </div>
+          <FabEditableField
+            v-bind:instance="modelStore.instance"
+            v-bind:item_name="x.name"
+            v-bind:item_type="x.type"
+            v-on:save_new_value="
+              save_new_value($event[0], $event[1], $event[2])
+            "
+          ></FabEditableField>
         </div>
       </main>
 
@@ -479,6 +299,8 @@ import { saveAs } from "file-saver";
 
 import type { Model } from "@/types";
 
+import FabEditableField from "@/components/FabEditableField.vue";
+
 const modelStore = useModelStore();
 const route = useRoute();
 const router = useRouter();
@@ -516,15 +338,13 @@ const instance_id = computed(() => {
   return route.params.id as string;
 });
 
-
-
-const save_new_value = async (old_v: string) => {
-  if (old_v !== new_value.value) {
+const save_new_value = async (new_v: string, old_v: string, field: string) => {
+  if (old_v !== new_v) {
     modelStore.instance = await modelStore.partial_update_instance(
       instance_type.value,
       instance_id.value,
-      edit_field.value,
-      new_value.value,
+      field,
+      new_v,
     );
   }
 
@@ -532,7 +352,6 @@ const save_new_value = async (old_v: string) => {
 };
 
 const save_new_parent = async (parent_type: string, parent_id: string) => {
-
   const [new_parent_type, new_parent_id] = new_value.value.split("/");
 
   // check a new parent was added and not the same one
@@ -649,14 +468,6 @@ const confirm_delete_attachment = async (s: any) => {
 //     return {};
 //   }
 // });
-
-const getTheme = computed(() => {
-  const theme = localStorage.getItem("user-theme");
-  if (!theme) {
-    return "dark";
-  }
-  return theme;
-});
 
 onMounted(async () => {
   modelStore.instance = await modelStore.get_instance(

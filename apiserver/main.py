@@ -139,7 +139,7 @@ async def get_token(authorization_code: str):
 for k, v in pyd_models.items():
     app.include_router(
         WorstRouter(
-            model_name=k,
+            instance_type=k,
             default_model=v["default"],
             overview_model=v["overview"],
             update_model=v["update"],

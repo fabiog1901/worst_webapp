@@ -287,6 +287,7 @@ def execute_search(search_queries: dict) -> dict | None:
 def add_documents(documents: list[dict]):
     return search.add_documents(documents)
 
+
 def update_documents(documents: list[dict]):
     return search.update_documents(documents)
 
