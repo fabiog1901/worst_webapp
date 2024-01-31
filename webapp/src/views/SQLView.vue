@@ -48,7 +48,7 @@
         <div>
           <button
             class="mr-2 rounded border bg-slate-700 p-2 text-white hover:cursor-pointer hover:bg-slate-400"
-            v-on:click="showCreateNewReportModal = true"
+            v-on:click="showModalNewInput = true"
           >
             New Report
           </button>
@@ -122,12 +122,14 @@
     v-on:cancel-clicked="showDeleteReportModal = false"
     v-on:delete-clicked="delete_report()"
   ></ModalDelete>
-  <ModalCreateNewReport
-    v-if="showCreateNewReportModal"
-    v-on:cancel-clicked="showCreateNewReportModal = false"
+  <ModalNewInput
+    v-if="showModalNewInput"
+    title="New Report"
+    field_name="Name"
+    v-on:cancel-clicked="showModalNewInput = false"
     v-on:create-clicked="create_report($event, sql_stmt)"
   >
-  </ModalCreateNewReport>
+  </ModalNewInput>
 </template>
 
 <script setup lang="ts">
@@ -135,7 +137,7 @@ import { computed, ref, onMounted } from "vue";
 import { useModelStore } from "@/stores/modelStore";
 import TableLite from "vue3-table-lite/ts";
 import ModalDelete from "@/components/ModalDelete.vue";
-import ModalCreateNewReport from "@/components/ModalCreateNewReport.vue";
+import ModalNewInput from "@/components/ModalNewInput.vue";
 import "codemirror/mode/sql/sql.js";
 import "codemirror/theme/ayu-mirage.css";
 import { useClipboard } from "@vueuse/core";
@@ -160,14 +162,14 @@ const execute_sql_report = async (name: string) => {
 
 // REPORTS
 const showDeleteReportModal = ref(false);
-const showCreateNewReportModal = ref(false);
+const showModalNewInput = ref(false);
 const report = ref("");
 const report_name = ref("");
 
 const create_report = async (name: string, sql_stmt: string) => {
   await modelStore.create_report(name, sql_stmt);
   await modelStore.get_all_reports();
-  showCreateNewReportModal.value = false;
+  showModalNewInput.value = false;
 };
 
 const confirm_delete_report = async (s: any) => {

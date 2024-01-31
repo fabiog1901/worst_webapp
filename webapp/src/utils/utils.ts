@@ -52,7 +52,7 @@ export const getLabel = (s: string) => {
     case 3:
       return "bg-orange-400";
     case 4:
-      return "bg-rose-500";
+      return "bg-rose-600";
     case 5:
       return "bg-amber-400";
     case 6:
@@ -109,12 +109,14 @@ function request(method: string) {
       })
       .catch((error) => {
         if (error.response.status === 401) {
+          console.error('not authorized')
           authStore.logout();
         }
         else {
-          return
+          
           // TODO handle 422 gracefully
           //return error.response;
+          authStore.logout();
         }
       });
   };

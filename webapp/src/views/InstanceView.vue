@@ -152,12 +152,39 @@
           class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
         />
 
-        <FabEditableField
-          v-bind:instance="modelStore.instance"
-          item_name="tags"
-          item_type="tags"
-          v-on:save_new_value="save_new_value($event[0], $event[1], $event[2])"
-        ></FabEditableField>
+        <div class="mb-1 mx-1 text-sm">
+          tags
+          <div class="flex mt-2">
+            <div
+              v-for="tag in modelStore.instance?.tags"
+              v-bind:key="tag"
+              class="flex p-1"
+            >
+              <div class="flex h-8 w-fit items-center justify-start rounded-md">
+                <div
+                  class="flex h-8 min-w-10 w-fit items-center justify-center font-semibold pl-2 rounded-l-2xl"
+                  v-bind:class="getLabel(tag)"
+                >
+                  {{ tag }}
+                </div>
+                <div
+                  class="flex h-8 items-center text-2xl justify-center rounded-r-2xl pl-1 pr-2 hover:cursor-pointer hover:bg-red-500 hover:dark:bg-red-500"
+                  v-bind:class="getLabel(tag)"
+                  v-on:click="confirm_delete_item(tag, 'tag')"
+                >
+                  &#215;
+                </div>
+              </div>
+            </div>
+            <div class="flex-grow"></div>
+            <div
+              class="bg-green-500 hover:cursor-pointer hover:bg-green-300 text-white rounded-3xl h-8 w-8 m-1 text-center text-2xl font-semibold"
+              v-on:click="showModalNewInput = true"
+            >
+              +
+            </div>
+          </div>
+        </div>
 
         <hr
           id="linebreaker"
@@ -165,7 +192,7 @@
         />
 
         <div class="mb-1 mx-1 text-sm">
-          attachments:
+          attachments
           <div
             v-for="att in modelStore.instance?.attachments"
             v-bind:key="att"
@@ -182,7 +209,7 @@
               </div>
               <div
                 class="flex h-8 items-center justify-center rounded-r bg-gray-400 px-2 hover:cursor-pointer hover:bg-red-500 hover:dark:bg-red-500 dark:bg-gray-700"
-                v-on:click="confirm_delete_attachment(att)"
+                v-on:click="confirm_delete_item(att, 'attachment')"
               >
                 <svg
                   id="garbage-bin-icon"
@@ -204,7 +231,10 @@
           </div>
         </div>
 
-        <button class="m-2 flex h-8 w-fit items-center justify-start">
+        <button
+          id="upload-file"
+          class="m-2 flex h-8 w-fit items-center justify-start"
+        >
           <label
             class="flex h-8 w-full items-center rounded bg-green-700 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-green-400"
             for="upload_file"
@@ -240,10 +270,12 @@
           class="m-1 rounded-full border border-gray-200 bg-gray-200 dark:border-gray-800 dark:bg-gray-800"
         />
 
-        <button class="m-2 flex justify-center">
+        <button id="delete-instance" class="m-2 flex justify-center">
           <label
             class="flex h-8 w-fit items-center justify-center rounded bg-red-500 p-2 font-sans font-semibold text-white outline-none hover:cursor-pointer hover:bg-red-400"
-            v-on:click="showDeleteInstanceModal = true"
+            v-on:click="
+              confirm_delete_item(modelStore.instance?.name, 'instance')
+            "
             >Delete instance
 
             <svg
@@ -266,19 +298,21 @@
       </main>
 
       <ModalDelete
-        v-if="showDeleteInstanceModal"
-        v-bind:model-name="instance_type"
-        v-bind:instance-name="modelStore.instance?.name"
-        v-on:cancel-clicked="showDeleteInstanceModal = false"
-        v-on:delete-clicked="delete_instance"
+        v-if="showModalDelete"
+        v-bind:model-name="item_type_to_delete"
+        v-bind:instance-name="item_to_delete"
+        v-on:cancel-clicked="showModalDelete = false"
+        v-on:delete-clicked="delete_item"
       ></ModalDelete>
-      <ModalDelete
-        v-if="showDeleteAttachmentModal"
-        model-name="attachment"
-        v-bind:instance-name="attachment"
-        v-on:cancel-clicked="showDeleteAttachmentModal = false"
-        v-on:delete-clicked="delete_attachment"
-      ></ModalDelete>
+
+      <ModalNewInput
+        v-if="showModalNewInput"
+        title="New Tag"
+        field_name="Tag"
+        v-on:cancel-clicked="showModalNewInput = false"
+        v-on:create-clicked="create_new_tag($event)"
+      >
+      </ModalNewInput>
     </section>
   </div>
 </template>
@@ -288,14 +322,11 @@ import { computed, onMounted, watch, ref } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
-import FabMark from "@/components/FabMark.vue";
-import FabMarkEdit from "@/components/FabMarkEdit.vue";
+
 import ModalDelete from "@/components/ModalDelete.vue";
+import ModalNewInput from "@/components/ModalNewInput.vue";
 
-import { formatDecimal, formatDate, getLabel } from "@/utils/utils";
 import { saveAs } from "file-saver";
-
-import type { Model } from "@/types";
 
 import FabEditableField from "@/components/FabEditableField.vue";
 
@@ -303,25 +334,37 @@ const modelStore = useModelStore();
 const route = useRoute();
 const router = useRouter();
 
-const showDeleteAttachmentModal = ref(false);
-const showDeleteInstanceModal = ref(false);
-const attachment = ref("");
+const showModalDelete = ref(false);
+const showModalNewInput = ref(false);
+
+const item_to_delete = ref("");
+const item_type_to_delete = ref("");
 
 const edit_field = ref("");
 const new_value = ref("");
 
-const delete_instance = async () => {
-  showDeleteInstanceModal.value = false;
-
-  await modelStore.delete_instance(instance_type.value, instance_id.value);
-
-  // go back to TableView for the same model name
-  router.push(`/${instance_type.value}`);
-};
+import { getLabel } from "@/utils/utils";
 
 const instance_id = computed(() => {
   return route.params.id as string;
 });
+
+const create_new_tag = async (new_tag: string) => {
+
+  const tags = modelStore.instance?.tags ?? [];
+
+  if (!tags.includes(new_tag)) {
+    tags.push(new_tag);
+
+    modelStore.instance = await modelStore.partial_update_instance(
+      instance_type.value,
+      instance_id.value,
+      "tags",
+      tags,
+    );
+  }
+  showModalNewInput.value = false
+};
 
 const save_new_value = async (new_v: string, old_v: string, field: string) => {
   if (old_v !== new_v) {
@@ -422,25 +465,48 @@ const download_file = async (filename: string) => {
   saveAs(presigned_url, filename);
 };
 
-const confirm_delete_attachment = async (s: any) => {
-  showDeleteAttachmentModal.value = true;
-  attachment.value = s;
+const confirm_delete_item = async (s: any, t: string) => {
+  item_type_to_delete.value = t;
+  showModalDelete.value = true;
+  item_to_delete.value = s;
 };
 
-const delete_attachment = async () => {
-  showDeleteAttachmentModal.value = false;
+const delete_item = async () => {
+  showModalDelete.value = false;
 
-  await modelStore.delete_attachment(
-    instance_type.value,
-    instance_id.value,
-    attachment.value,
-  );
+  switch (item_type_to_delete.value) {
+    case "attachment":
+      await modelStore.delete_attachment(
+        instance_type.value,
+        instance_id.value,
+        item_to_delete.value,
+      );
 
-  // refresh to get updated list of attachments
-  modelStore.instance = await modelStore.get_instance(
-    instance_type.value,
-    instance_id.value,
-  );
+      // refresh to get updated list of attachments
+      modelStore.instance = await modelStore.get_instance(
+        instance_type.value,
+        instance_id.value,
+      );
+      break;
+    case "tag":
+      const new_tags = (modelStore.instance.tags as Array<string>).filter(
+        (x) => x !== item_to_delete.value,
+      );
+
+      modelStore.instance = await modelStore.partial_update_instance(
+        instance_type.value,
+        instance_id.value,
+        "tags",
+        new_tags,
+      );
+      break;
+    case "instance":
+      await modelStore.delete_instance(instance_type.value, instance_id.value);
+
+      // go back to TableView for the same model name
+      router.push(`/${instance_type.value}`);
+      break;
+  }
 };
 
 // const ff = computed(() => {

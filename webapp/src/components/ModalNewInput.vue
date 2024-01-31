@@ -14,7 +14,7 @@
         <div
           class="flex select-none items-center justify-between border-b bg-gray-100 px-4 py-4 text-sm font-medium leading-none dark:bg-gray-700 dark:text-white"
         >
-          <h3>New report</h3>
+          <h3>{{ props.title }}</h3>
           <div
             class="cursor-pointer text-2xl hover:text-gray-600"
             v-on:click="$emit('cancel-clicked')"
@@ -25,11 +25,10 @@
 
         <div class="max-h-full px-4 py-4">
           <div class="w-96 flex-1 bg-gray-300 dark:bg-gray-700">
-          
-              <div class="h-12 bg-slate-300 p-2 dark:bg-slate-500">
-                <label class="mx-2 text-white">Name</label>
-                <input v-model="report_name" type="text" />
-              </div>
+            <div class="h-12 bg-slate-300 p-2 dark:bg-slate-500">
+              <label class="mx-2 text-white">{{ props.field_name }}</label>
+              <input v-model="report_name" type="text" />
+            </div>
           </div>
 
           <div class="mt-4 p-2 text-right">
@@ -57,9 +56,18 @@ import { ref } from "vue";
 
 defineEmits(["create-clicked", "cancel-clicked"]);
 
+const props = defineProps({
+  title: {
+    type: String,
+    required: true,
+  },
+  field_name: {
+    type: String,
+    required: true,
+  },
+});
+
 const report_name = ref("");
-
-
 </script>
 
 <style scoped>
