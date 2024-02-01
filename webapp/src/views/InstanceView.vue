@@ -154,7 +154,7 @@
 
         <div class="mb-1 mx-1 text-sm">
           tags
-          <div class="flex mt-2">
+          <div class="flex flex-wrap mt-2">
             <div
               v-for="tag in modelStore.instance?.tags"
               v-bind:key="tag"

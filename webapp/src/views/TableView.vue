@@ -1,38 +1,44 @@
 <template>
   <div class="flex h-full w-full">
-    <section
+    <!-- <section
       id="context-bar"
       class="flex w-88 bg-gray-300 dark:bg-gray-500 dark:text-white"
     >
       Context bar
-    </section>
+    </section> -->
 
     <section
       id="content-container"
-      class="flex h-full w-full flex-col bg-gray-300 dark:bg-gray-700"
+      class="flex h-full w-full p-2 flex-col bg-gray-300 dark:bg-gray-700"
     >
-      <FabTable
-        v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="
-          modelStore.models[model_name]
-            ? modelStore.models[model_name]['skema']['fields']
-            : []
-        "
-        v-bind:model-default-fields="modelDefaultFields"
-        v-on:row-clicked="modelLink($event)"
-        v-on:delete-clicked="confirm_delete_instance($event)"
-        v-on:new-clicked="showCreateNewInstanceModal = true"
-      />
+      <div class="h-8"></div>
+      <TableLite
+        v-bind:has-checkbox="false"
+        v-bind:is-static-mode="true"
+        v-bind:columns="cols"
+        v-bind:rows="modelStore.instances"
+        v-bind:page-size="5"
+        v-bind:page-options="[
+          { value: 5, text: 5 },
+          { value: 10, text: 10 },
+          { value: 25, text: 25 },
+          { value: 100, text: 100 },
+        ]"
+        v-bind:total="modelStore.instances.length"
+        v-bind:sortable="sortable"
+        v-on:return-checked-rows="updateCheckedRows"
+      ></TableLite>
+
       <ModalCreateNewInstance
         v-if="showCreateNewInstanceModal"
-        v-bind:model-name="model_name"
+        v-bind:model-name="instance_type"
         v-bind:model-base-fields="modelBaseFields"
         v-on:cancel-clicked="showCreateNewInstanceModal = false"
         v-on:create-clicked="create_instance($event)"
       ></ModalCreateNewInstance>
       <ModalDelete
         v-if="showDeleteInstanceModal"
-        v-bind:model-name="model_name"
+        v-bind:model-name="instance_type"
         v-bind:instance-name="instance_name"
         v-on:cancel-clicked="showDeleteInstanceModal = false"
         v-on:delete-clicked="delete_instance"
@@ -46,58 +52,92 @@ import { computed, onMounted, watch, ref, onBeforeUnmount } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
-import FabTable from "@/components/FabTable.vue";
+
 import ModalCreateNewInstance from "@/components/ModalCreateNewInstance.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
+
+// import TableLite from "vue3-table-lite/ts";
+import TableLite from "@/components/TableLiteTs.vue";
 
 import type { Model } from "@/types";
 
 const modelStore = useModelStore();
+const router = useRouter();
+const route = useRoute();
 
-const modelDefaultFields = [
-  { name: "id", in_overview: false, type: "" },
-  { name: "name", in_overview: true, type: "" },
-  { name: "owned_by", in_overview: true, type: "" },
-  { name: "tags", in_overview: true, type: "tag" },
-  { name: "updated_by", in_overview: false, type: "" },
+const instance_id = ref("");
+const instance_name = ref("");
+const instance_type = computed(() => {
+  return route.params.model as string;
+});
+
+const model_default_fields = [
+  { name: "name", type: "", display: null, link: instance_type.value },
+  { name: "owned_by", type: "" },
+  { name: "tags", type: "tag" },
+  { name: "updated_by", type: "" },
   {
     name: "updated_at",
-    in_overview: false,
     type: "date",
   },
-  { name: "created_by", header: "Created By ", in_overview: false, type: "" },
+  { name: "created_by", type: "" },
   {
     name: "created_at",
-    in_overview: false,
     type: "date",
-  },
-  {
-    name: "attachments",
-    in_overview: false,
-    type: "list",
   },
 ];
 
-const router = useRouter();
-const route = useRoute();
 const showCreateNewInstanceModal = ref(false);
 const showDeleteInstanceModal = ref(false);
-const id = ref("");
-const instance_name = ref("");
+
+// TABLE
+const cols = computed(() => {
+  const data = [];
+  for (const x of model_default_fields.concat(
+    modelStore.models[instance_type.value]?.["skema"]["fields"] ?? [],
+  )) {
+    data.push({
+      label: x.name,
+      field: x.name,
+      // headerClasses: ["bg-slate-200", "text-black"],
+      columnClasses: ["dark:bg-gray-600", "text-white"],
+      isKey: false,
+      sortable: true,
+      display: x.display || null,
+      link: x.link,
+    });
+  }
+
+  return data;
+});
+
+const sortable = {
+  order: "id",
+  sort: "asc",
+};
+
+/**
+ * Row checked event
+ */
+const updateCheckedRows = (rowsKey: any) => {
+  console.log(rowsKey);
+};
 
 const confirm_delete_instance = (m: Model) => {
   showDeleteInstanceModal.value = true;
-  id.value = m.id;
+  instance_id.value = m.id;
   instance_name.value = m.name;
 };
 
 const delete_instance = async () => {
   showDeleteInstanceModal.value = false;
 
-  await modelStore.delete_instance(model_name.value, id.value);
+  await modelStore.delete_instance(instance_type.value, instance_id.value);
 
   // refresh list
-  modelStore.instances = await modelStore.get_all_instances(model_name.value);
+  modelStore.instances = await modelStore.get_all_instances(
+    instance_type.value,
+  );
 };
 
 const create_instance = async (m_json: any) => {
@@ -106,47 +146,26 @@ const create_instance = async (m_json: any) => {
     f[x.name] = m_json[x.name];
   }
   const i = await modelStore.create_instance(
-    model_name.value,
-    JSON.stringify(f)
+    instance_type.value,
+    JSON.stringify(f),
   );
   showCreateNewInstanceModal.value = false;
 
   // go to the new instance
-  router.push(`/${model_name.value}/${i.id}`);
+  router.push(`/${instance_type.value}/${i.id}`);
 };
-
-const modelLink = (m: Model) => {
-  router.push(`/${model_name.value}/${m.id}`);
-};
-
-const model_name = computed(() => {
-  return route.params.model as string;
-});
-
-const modelBaseFields = computed(() => {
-  return [
-    { name: "name", type: "string" },
-    { name: "id", type: "string" },
-    { name: "owned_by", type: "string" },
-    { name: "tags", type: "string" },
-    { name: "parent_id", type: "string" },
-    { name: "parent_type", type: "string" },
-    { name: "permissions", type: "string" },
-  ].concat(
-    modelStore.models[model_name.value]
-      ? modelStore.models[model_name.value]["skema"]["fields"]
-      : []
-  );
-});
 
 onMounted(async () => {
-  modelStore.instances = await modelStore.get_all_instances(model_name.value);
+  modelStore.instances = await modelStore.get_all_instances(
+    instance_type.value,
+  );
   modelStore.instance_parent_chain = [
     [
-      model_name.value,
+      instance_type.value,
       "",
       `${
-        model_name.value.charAt(0).toUpperCase() + model_name.value.slice(1)
+        instance_type.value.charAt(0).toUpperCase() +
+        instance_type.value.slice(1)
       } Overview`,
     ],
   ];
@@ -156,19 +175,21 @@ watch(
   () => route.fullPath,
   async () => {
     if (route.params.model && !route.params.id) {
-      console.info("modelview-watch", model_name.value);
-      modelStore.instances = await modelStore.get_all_instances(model_name.value);
+      modelStore.instances = await modelStore.get_all_instances(
+        instance_type.value,
+      );
       modelStore.instance_parent_chain = [
         [
-          model_name.value,
+          instance_type.value,
           "",
           `${
-            model_name.value.charAt(0).toUpperCase() + model_name.value.slice(1)
+            instance_type.value.charAt(0).toUpperCase() +
+            instance_type.value.slice(1)
           } Overview`,
         ],
       ];
     }
-  }
+  },
 );
 
 const onEscape = (e: any) => {

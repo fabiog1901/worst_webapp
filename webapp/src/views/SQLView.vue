@@ -86,11 +86,6 @@
     </section>
 
     <section>
-      <!--
-        <div style="text-align: left">
-        <label>SearchBy:</label><input v-model="searchTerm" />
-        </div>
-      -->
       <div class="text-white mx-2 px-2 border flex-grow h-8">
         {{ modelStore.result_set?.status }}
       </div>
@@ -135,7 +130,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
 import { useModelStore } from "@/stores/modelStore";
-import TableLite from "vue3-table-lite/ts";
+// import TableLite from "vue3-table-lite/ts";
+import TableLite from "@/components/TableLiteTs.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
 import ModalNewInput from "@/components/ModalNewInput.vue";
 import "codemirror/mode/sql/sql.js";
