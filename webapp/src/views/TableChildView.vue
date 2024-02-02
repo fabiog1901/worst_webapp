@@ -15,18 +15,7 @@
         {{ model_name }}
         <b> {{ modelStore.instance?.name }}</b> - {{ child_model_name }} List
       </div>
-      <FabTable
-        v-bind:data="modelStore.get_filtered_models()"
-        v-bind:model-fields="
-          modelStore.models[model_name]
-            ? modelStore.models[model_name]['skema']['fields']
-            : []
-        "
-        v-bind:model-default-fields="modelDefaultFields"
-        v-on:row-clicked="modelLink($event)"
-        v-on:delete-clicked="confirm_delete_instance($event)"
-        v-on:new-clicked="showCreateNewInstanceModal = true"
-      />
+
       <ModalCreateNewInstance
         v-if="showCreateNewInstanceModal"
         v-bind:model-name="child_model_name"
@@ -50,7 +39,6 @@ import { computed, onMounted, watch, ref } from "vue";
 
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
-import FabTable from "@/components/FabTable.vue";
 import ModalCreateNewInstance from "@/components/ModalCreateNewInstance.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
 

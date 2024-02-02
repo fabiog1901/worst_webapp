@@ -1,6 +1,8 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
 
+import exportFromJSON from "export-from-json";
+
 export const nextElementInList = <T>(arr: T[], val: T): T => {
   const idx = arr.indexOf(val);
   const nextIdx = (idx + 1) % arr.length;
@@ -82,6 +84,23 @@ axios.defaults.headers.post["Content-Type"] = "application/json";
 //   });
 // };
 
+export const save_to_csv = (data: any, id: string) => {
+  if (!data) return;
+  try {
+    // returns "20240202_135807"
+    const ts = new Date()
+      .toISOString()
+      .substring(0, 19)
+      .replace(/[\W_]+/g, "")
+      .replace("T", "_");
+    const fileName = `worst.${id}.${ts}`;
+    const exportType = exportFromJSON.types.csv;
+    exportFromJSON({ data, fileName, exportType });
+  } catch (e) {
+    throw new Error("Parsing failed!");
+  }
+};
+
 export const axiosWrapper = {
   get: request("GET"),
   post: request("POST"),
@@ -109,11 +128,9 @@ function request(method: string) {
       })
       .catch((error) => {
         if (error.response.status === 401) {
-          console.error('not authorized')
+          console.error("not authorized");
           authStore.logout();
-        }
-        else {
-          
+        } else {
           // TODO handle 422 gracefully
           //return error.response;
           authStore.logout();

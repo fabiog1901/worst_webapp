@@ -11,7 +11,15 @@
       id="content-container"
       class="flex h-full w-full p-2 flex-col bg-gray-300 dark:bg-gray-700"
     >
+      <FabToolbar
+        v-bind:rows="modelStore.instances"
+        v-on:new-clicked="showCreateNewInstanceModal = true"
+        v-on:delete-clicked="showDeleteInstanceModal = true"
+        v-on:export-clicked="exportData"
+      ></FabToolbar>
+
       <div class="h-8"></div>
+
       <TableLite
         v-bind:has-checkbox="false"
         v-bind:is-static-mode="true"
@@ -57,6 +65,7 @@ import ModalCreateNewInstance from "@/components/ModalCreateNewInstance.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
 
 // import TableLite from "vue3-table-lite/ts";
+import FabToolbar from "@/components/FabToolbar.vue";
 import TableLite from "@/components/TableLiteTs.vue";
 
 import type { Model } from "@/types";
@@ -71,8 +80,22 @@ const instance_type = computed(() => {
   return route.params.model as string;
 });
 
+import { save_to_csv } from "@/utils/utils";
+
+const exportData = () => {
+  save_to_csv(modelStore.instances, instance_type.value);
+};
+
 const model_default_fields = [
-  { name: "name", type: "", display: null, link: instance_type.value },
+  {
+    name: "id",
+    type: "",
+    link: instance_type.value,
+    display: (x: any) => {
+      return x.id.substring(0, 8).concat("...");
+    },
+  },
+  { name: "name", type: "", link: instance_type.value },
   { name: "owned_by", type: "" },
   { name: "tags", type: "tag" },
   { name: "updated_by", type: "" },
@@ -154,6 +177,18 @@ const create_instance = async (m_json: any) => {
   // go to the new instance
   router.push(`/${instance_type.value}/${i.id}`);
 };
+
+const modelBaseFields = computed(() => {
+  return [
+    { name: "name", type: "string" },
+    { name: "id", type: "string" },
+    { name: "owned_by", type: "string" },
+    { name: "tags", type: "string" },
+    { name: "parent_id", type: "string" },
+    { name: "parent_type", type: "string" },
+    { name: "permissions", type: "string" },
+  ].concat(modelStore.models[instance_type.value]?.["skema"]["fields"] ?? []);
+});
 
 onMounted(async () => {
   modelStore.instances = await modelStore.get_all_instances(

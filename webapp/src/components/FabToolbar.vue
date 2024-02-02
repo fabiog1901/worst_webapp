@@ -6,8 +6,9 @@
     <div
       id="new-button"
       class="mx-2 flex cursor-pointer items-center rounded-xl bg-blue-600 p-2 text-white"
-      v-on:click="$emit('new')"
+      v-on:click="$emit('new-clicked')"
     >
+      <span class="mx-1">New</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
@@ -22,14 +23,13 @@
           d="M12 6v12m6-6H6"
         />
       </svg>
-
-      <span class="mx-1">New</span>
     </div>
-    <!-- <div
+    <div
       id="delete-button"
       class="mx-2 flex cursor-pointer items-center justify-between rounded-xl bg-red-600 p-2 text-white"
-      v-on:click="$emit('delete')"
+      v-on:click="$emit('delete-clicked')"
     >
+      <span class="mx-1">Delete</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
@@ -44,10 +44,8 @@
           d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
         />
       </svg>
-
-      <span class="mx-1">Delete</span>
-    </div> -->
-    <div
+    </div>
+    <!-- <div
       id="query-input"
       class="ml-2 flex cursor-pointer items-center rounded-xl bg-gray-300 p-2 text-gray-600"
     >
@@ -58,7 +56,7 @@
         v-on:input="
           $emit(
             'update:modelValue',
-            ($event.target as HTMLInputElement).value as string
+            ($event.target as HTMLInputElement).value as string,
           )
         "
       />
@@ -76,12 +74,13 @@
           d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
         />
       </svg>
-    </div>
+    </div> -->
     <div
       id="export-button"
       class="mx-2 ml-auto flex cursor-pointer rounded-xl bg-green-600 p-2 text-white"
-      v-on:click="$emit('export')"
+      v-on:click="$emit('export-clicked')"
     >
+      <span class="mx-1" value="Mona">Export</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
@@ -96,20 +95,49 @@
           d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
         />
       </svg>
-
-      <span class="mx-1" value="Mona">Export</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-defineProps({
-  // if the prop is 'modelValue', we can use v-model
-  modelValue: {
-    type: String,
+const props = defineProps({
+  rows: {
+    type: Array,
     required: true,
   },
 });
 
-defineEmits(["new", "delete", "export", "update:modelValue"]);
+const json_fields = {
+  name: "name",
+  city: "city",
+  country: "country",
+  birthdate: "birthdate",
+ 
+};
+
+const json_meta = [
+  [
+    {
+      key: "charset",
+      value: "utf-8",
+    },
+  ],
+];
+
+const json_data = [
+  {
+    name: "Tony Peña",
+    city: "New York",
+    country: "United States",
+    birthdate: "1978-03-15",
+  },
+  {
+    name: "Thessaloniki",
+    city: "Athens",
+    country: "Greece",
+    birthdate: "1987-11-23",
+  },
+];
+
+defineEmits(["new-clicked", "delete-clicked", "export-clicked"]);
 </script>
