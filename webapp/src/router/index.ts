@@ -22,16 +22,16 @@ const router = createRouter({
           component: () => import("@/views/SQLView.vue"),
         },
         {
-          path: "/:model",
+          path: "/:instance_type",
           component: () => import("@/views/TableView.vue"),
         },
         {
-          path: "/:model/:id",
+          path: "/:instance_type/:id",
           component: () => import("@/views/InstanceView.vue"),
         },
         {
-          path: "/:model/:id/:child_model_name",
-          component: () => import("@/views/TableChildView.vue"),
+          path: "/:instance_type/:id/:child_instance_type",
+          component: () => import("@/views/TableView.vue"),
         },
       ],
     },

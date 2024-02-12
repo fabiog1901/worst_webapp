@@ -428,7 +428,7 @@ const save_new_parent = async (parent_type: string, parent_id: string) => {
 };
 
 const instance_type = computed(() => {
-  return route.params.model as string;
+  return route.params.instance_type as string;
 });
 
 const getSkemaFields = computed(() => {

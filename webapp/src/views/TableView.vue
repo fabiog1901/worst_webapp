@@ -1,17 +1,16 @@
 <template>
   <div class="flex h-full w-full">
-    <!-- <section
-      id="context-bar"
-      class="flex w-88 bg-gray-300 dark:bg-gray-500 dark:text-white"
-    >
-      Context bar
-    </section> -->
-
     <section
       id="content-container"
       class="flex h-full w-full p-2 flex-col bg-gray-300 dark:bg-gray-700"
     >
+      <div v-if="child_instance_type" class="m-2 text-3xl dark:text-slate-300">
+        [{{ instance_type }}] <b> {{ modelStore.instance?.name }}</b> - List for
+        <b>{{ child_instance_type }}</b>
+      </div>
+
       <FabToolbar
+        class="m-2"
         v-model="keyword"
         v-on:new-clicked="showCreateNewInstanceModal = true"
         v-on:delete-clicked="showDeleteInstanceModal = true"
@@ -21,6 +20,7 @@
       <div class="h-8"></div>
 
       <TableLite
+        class="m-2"
         v-bind:has-checkbox="true"
         checked-return-type="key"
         v-bind:is-static-mode="true"
@@ -40,7 +40,7 @@
 
       <ModalCreateNewInstance
         v-if="showCreateNewInstanceModal"
-        v-bind:model-name="instance_type"
+        v-bind:model-name="link_type"
         v-bind:model-base-fields="modelBaseFields"
         v-on:cancel-clicked="showCreateNewInstanceModal = false"
         v-on:create-clicked="create_instance($event)"
@@ -63,10 +63,10 @@ import { computed, onMounted, watch, ref, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useModelStore } from "@/stores/modelStore";
 
+import { save_to_csv } from "@/utils/utils";
+
 import ModalCreateNewInstance from "@/components/ModalCreateNewInstance.vue";
 import ModalDelete from "@/components/ModalDelete.vue";
-
-// import TableLite from "vue3-table-lite/ts";
 import FabToolbar from "@/components/FabToolbar.vue";
 import TableLite from "@/components/TableLiteTs.vue";
 
@@ -79,18 +79,30 @@ const route = useRoute();
 const selected_instances_ids = ref<string[]>([]);
 const selected_instances = ref<Model[]>([]);
 
+// extract details from route
 const instance_type = computed(() => {
-  return route.params.model as string;
+  return route.params.instance_type as string;
+});
+
+const id = computed(() => {
+  return route.params.id as string;
+});
+
+const child_instance_type = computed(() => {
+  return route.params.child_instance_type as string;
+});
+
+const link_type = computed(() => {
+  if (child_instance_type.value) {
+    return child_instance_type.value;
+  }
+  return instance_type.value;
 });
 
 const keyword = ref("");
 
-import { save_to_csv } from "@/utils/utils";
-
 const exportData = () => {
-  console.log(selected_instances.value);
-
-  //  save_to_csv(modelStore.instances, instance_type.value);
+  save_to_csv(modelStore.instances, instance_type.value);
 };
 
 const model_default_fields = [
@@ -98,12 +110,12 @@ const model_default_fields = [
     name: "id",
     type: "",
     is_key: true,
-    link: instance_type.value,
+    link: link_type.value,
     display: (x: any) => {
       return x.id.substring(0, 8).concat("...");
     },
   },
-  { name: "name", type: "", link: instance_type.value },
+  { name: "name", type: "", link: link_type },
   { name: "owned_by", type: "" },
   { name: "tags", type: "tag" },
   { name: "updated_by", type: "" },
@@ -125,7 +137,7 @@ const showDeleteInstanceModal = ref(false);
 const cols = computed(() => {
   const data = [];
   for (const x of model_default_fields.concat(
-    modelStore.models[instance_type.value]?.["skema"]["fields"] ?? [],
+    modelStore.models[link_type.value]?.["skema"]["fields"] ?? [],
   )) {
     data.push({
       label: x.name,
@@ -170,8 +182,6 @@ const include_checked_rows = (x: any) => {
 //         );
 // };
 
-
-
 // include_job_by_degree: () => (job: Job) => {
 //       const userStore = useUserStore();
 //       if (userStore.selectedDegrees.length === 0) return true;
@@ -209,14 +219,20 @@ const create_instance = async (m_json: any) => {
   for (const x of modelBaseFields.value) {
     f[x.name] = m_json[x.name];
   }
+  if (child_instance_type.value) {
+    f.parent_id = id.value;
+    f.parent_type = instance_type.value;
+  }
+
   const i = await modelStore.create_instance(
-    instance_type.value,
+    link_type.value,
     JSON.stringify(f),
   );
+
   showCreateNewInstanceModal.value = false;
 
   // go to the new instance
-  router.push(`/${instance_type.value}/${i.id}`);
+  router.push(`/${link_type.value}/${i.id}`);
 };
 
 const modelBaseFields = computed(() => {
@@ -228,29 +244,45 @@ const modelBaseFields = computed(() => {
     { name: "parent_id", type: "string" },
     { name: "parent_type", type: "string" },
     { name: "permissions", type: "string" },
-  ].concat(modelStore.models[instance_type.value]?.["skema"]["fields"] ?? []);
+  ].concat(modelStore.models[link_type.value]?.["skema"]["fields"] ?? []);
 });
 
 onMounted(async () => {
-  modelStore.instances = await modelStore.get_all_instances(
-    instance_type.value,
-  );
-  modelStore.instance_parent_chain = [
-    [
+  if (child_instance_type.value) {
+    await modelStore.get_instance_children_for_model(
       instance_type.value,
+      id.value,
+      child_instance_type.value,
+    );
+    modelStore.instance_parent_chain.push([
+      child_instance_type.value,
       "",
       `${
-        instance_type.value.charAt(0).toUpperCase() +
-        instance_type.value.slice(1)
-      } Overview`,
-    ],
-  ];
+        child_instance_type.value.charAt(0).toUpperCase() +
+        child_instance_type.value.slice(1)
+      } List`,
+    ]);
+  } else {
+    modelStore.instances = await modelStore.get_all_instances(
+      instance_type.value,
+    );
+    modelStore.instance_parent_chain = [
+      [
+        instance_type.value,
+        "",
+        `${
+          instance_type.value.charAt(0).toUpperCase() +
+          instance_type.value.slice(1)
+        } Overview`,
+      ],
+    ];
+  }
 });
 
 watch(
   () => route.fullPath,
   async () => {
-    if (route.params.model && !route.params.id) {
+    if (route.params.instance_type && !route.params.id) {
       modelStore.instances = await modelStore.get_all_instances(
         instance_type.value,
       );

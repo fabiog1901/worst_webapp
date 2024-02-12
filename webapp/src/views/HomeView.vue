@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useModelStore } from "@/stores/modelStore";
 import {
   Bar,
@@ -338,4 +338,8 @@ const chart_options_l = ref({
 });
 
 const modelStore = useModelStore();
+
+onMounted(async () => {
+  modelStore.instance_parent_chain = [];
+});
 </script>

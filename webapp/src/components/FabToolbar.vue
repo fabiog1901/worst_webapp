@@ -1,7 +1,7 @@
 <template>
   <div
     id="toolbar"
-    class="m-2 flex justify-between rounded border-2 border-gray-500 bg-gray-200 p-2 dark:border-gray-500 dark:bg-gray-700"
+    class="flex justify-between rounded border-2 border-gray-500 bg-gray-200 p-2 dark:border-gray-500 dark:bg-gray-700"
   >
     <div
       id="new-button"
@@ -45,7 +45,7 @@
         />
       </svg>
     </div>
-    <div
+    <!-- <div
       id="query-input"
       class="ml-2 flex cursor-pointer items-center rounded-xl bg-gray-300 p-2 text-gray-600"
     >
@@ -68,7 +68,7 @@
           d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
         />
       </svg>
-    </div>
+    </div> -->
     <div
       id="export-button"
       class="mx-2 ml-auto flex cursor-pointer rounded-xl hover:bg-green-400 bg-green-600 p-2 text-white"
@@ -94,9 +94,7 @@
 </template>
 
 <script setup lang="ts">
-
-
-const keyword = defineModel()
+const keyword = defineModel();
 
 defineEmits(["new-clicked", "delete-clicked", "export-clicked"]);
 </script>

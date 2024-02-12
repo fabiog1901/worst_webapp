@@ -155,7 +155,7 @@
                       @mouseleave="removeVerticalHighlight(j)"
                     >
                       <router-link
-                        v-bind:to="col.link + '/' + row.id"
+                        v-bind:to="'/' +col.link + '/' + row.id"
                         v-if="col.link"
                         ><div
                           v-if="col.display"
