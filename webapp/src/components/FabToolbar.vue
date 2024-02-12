@@ -5,7 +5,7 @@
   >
     <div
       id="new-button"
-      class="mx-2 flex cursor-pointer items-center rounded-xl bg-blue-600 p-2 text-white"
+      class="mx-2 flex cursor-pointer items-center rounded-xl hover:bg-blue-400 bg-blue-600 p-2 text-white"
       v-on:click="$emit('new-clicked')"
     >
       <span class="mx-1">New</span>
@@ -26,7 +26,7 @@
     </div>
     <div
       id="delete-button"
-      class="mx-2 flex cursor-pointer items-center justify-between rounded-xl bg-red-600 p-2 text-white"
+      class="mx-2 flex cursor-pointer items-center justify-between rounded-xl hover:bg-green-400 bg-red-600 p-2 text-white"
       v-on:click="$emit('delete-clicked')"
     >
       <span class="mx-1">Delete</span>
@@ -45,20 +45,14 @@
         />
       </svg>
     </div>
-    <!-- <div
+    <div
       id="query-input"
       class="ml-2 flex cursor-pointer items-center rounded-xl bg-gray-300 p-2 text-gray-600"
     >
       <input
-        v:bind:value="modelValue"
-        class="mx-2 w-80 rounded px-2"
+        class="mx-2 w-640 rounded px-2"
         placeholder="Filter by keyword..."
-        v-on:input="
-          $emit(
-            'update:modelValue',
-            ($event.target as HTMLInputElement).value as string,
-          )
-        "
+        v-model="keyword"
       />
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -74,10 +68,10 @@
           d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
         />
       </svg>
-    </div> -->
+    </div>
     <div
       id="export-button"
-      class="mx-2 ml-auto flex cursor-pointer rounded-xl bg-green-600 p-2 text-white"
+      class="mx-2 ml-auto flex cursor-pointer rounded-xl hover:bg-green-400 bg-green-600 p-2 text-white"
       v-on:click="$emit('export-clicked')"
     >
       <span class="mx-1" value="Mona">Export</span>
@@ -100,44 +94,9 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps({
-  rows: {
-    type: Array,
-    required: true,
-  },
-});
 
-const json_fields = {
-  name: "name",
-  city: "city",
-  country: "country",
-  birthdate: "birthdate",
- 
-};
 
-const json_meta = [
-  [
-    {
-      key: "charset",
-      value: "utf-8",
-    },
-  ],
-];
-
-const json_data = [
-  {
-    name: "Tony Peña",
-    city: "New York",
-    country: "United States",
-    birthdate: "1978-03-15",
-  },
-  {
-    name: "Thessaloniki",
-    city: "Athens",
-    country: "Greece",
-    birthdate: "1987-11-23",
-  },
-];
+const keyword = defineModel()
 
 defineEmits(["new-clicked", "delete-clicked", "export-clicked"]);
 </script>

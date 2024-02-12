@@ -14,11 +14,13 @@
     "@meilisearch/instant-meilisearch": "^0.15.0",
     "@vueuse/core": "^10.7.2",
     "axios": "^1.6.5",
+    "chart.js": "^4.4.1",
     "codemirror-editor-vue3": "^2.4.1",
     "export-from-json": "^1.7.4",
     "file-saver": "^2.0.5",
     "pinia": "^2.1.7",
     "vee-validate": "^4.12.4",
+    "vue-chartjs": "^5.3.0",
     "vue-instantsearch": "^4.13.5",
     "vue-router": "^4.2.5",
     "vue3-markdown": "^1.1.9"

@@ -12,7 +12,7 @@
       class="flex h-full w-full p-2 flex-col bg-gray-300 dark:bg-gray-700"
     >
       <FabToolbar
-        v-bind:rows="modelStore.instances"
+        v-model="keyword"
         v-on:new-clicked="showCreateNewInstanceModal = true"
         v-on:delete-clicked="showDeleteInstanceModal = true"
         v-on:export-clicked="exportData"
@@ -21,7 +21,8 @@
       <div class="h-8"></div>
 
       <TableLite
-        v-bind:has-checkbox="false"
+        v-bind:has-checkbox="true"
+        checked-return-type="key"
         v-bind:is-static-mode="true"
         v-bind:columns="cols"
         v-bind:rows="modelStore.instances"
@@ -44,12 +45,13 @@
         v-on:cancel-clicked="showCreateNewInstanceModal = false"
         v-on:create-clicked="create_instance($event)"
       ></ModalCreateNewInstance>
+
       <ModalDelete
-        v-if="showDeleteInstanceModal"
-        v-bind:model-name="instance_type"
-        v-bind:instance-name="instance_name"
+        v-if="showDeleteInstanceModal && selected_instances_ids.length > 0"
+        model-name="selected item(s)"
+        instance-name=""
         v-on:cancel-clicked="showDeleteInstanceModal = false"
-        v-on:delete-clicked="delete_instance"
+        v-on:delete-clicked="delete_instances"
       ></ModalDelete>
     </section>
   </div>
@@ -74,22 +76,28 @@ const modelStore = useModelStore();
 const router = useRouter();
 const route = useRoute();
 
-const instance_id = ref("");
-const instance_name = ref("");
+const selected_instances_ids = ref<string[]>([]);
+const selected_instances = ref<Model[]>([]);
+
 const instance_type = computed(() => {
   return route.params.model as string;
 });
 
+const keyword = ref("");
+
 import { save_to_csv } from "@/utils/utils";
 
 const exportData = () => {
-  save_to_csv(modelStore.instances, instance_type.value);
+  console.log(selected_instances.value);
+
+  //  save_to_csv(modelStore.instances, instance_type.value);
 };
 
 const model_default_fields = [
   {
     name: "id",
     type: "",
+    is_key: true,
     link: instance_type.value,
     display: (x: any) => {
       return x.id.substring(0, 8).concat("...");
@@ -124,7 +132,7 @@ const cols = computed(() => {
       field: x.name,
       // headerClasses: ["bg-slate-200", "text-black"],
       columnClasses: ["dark:bg-gray-600", "text-white"],
-      isKey: false,
+      isKey: x.is_key ?? false,
       sortable: true,
       display: x.display || null,
       link: x.link,
@@ -143,19 +151,52 @@ const sortable = {
  * Row checked event
  */
 const updateCheckedRows = (rowsKey: any) => {
-  console.log(rowsKey);
+  selected_instances_ids.value = rowsKey;
+  selected_instances.value = modelStore.instances.filter((x) =>
+    include_checked_rows(x),
+  ) as Model[];
 };
 
-const confirm_delete_instance = (m: Model) => {
-  showDeleteInstanceModal.value = true;
-  instance_id.value = m.id;
-  instance_name.value = m.name;
+const include_checked_rows = (x: any) => {
+  if (selected_instances_ids.value.length === 0) return true;
+  return selected_instances_ids.value.includes(x.id);
 };
 
-const delete_instance = async () => {
+// const include_by_search_term = () => {
+//   let newData = fakeData.filter(
+//           (x) =>
+//             x.email.toLowerCase().includes(keyword.toLowerCase()) ||
+//             x.name.toLowerCase().includes(keyword.toLowerCase()),
+//         );
+// };
+
+
+
+// include_job_by_degree: () => (job: Job) => {
+//       const userStore = useUserStore();
+//       if (userStore.selectedDegrees.length === 0) return true;
+//       return userStore.selectedDegrees.includes(job.degree);
+//     },
+//     include_job_by_search_term: () => (job: Job) => {
+//       const userStore = useUserStore();
+//       return job.title
+//         .toLowerCase()
+//         .includes(userStore.searchTerm.toLowerCase());
+//     },
+//     get_filtered_jobs(state): Job[] {
+//       return state.jobs
+//         .filter((job) => this.include_job_by_org(job))
+//         .filter((job) => this.include_job_by_job_type(job))
+//         .filter((job) => this.include_job_by_degree(job))
+//         .filter((job) => this.include_job_by_search_term(job));
+//     },
+
+const delete_instances = async () => {
   showDeleteInstanceModal.value = false;
 
-  await modelStore.delete_instance(instance_type.value, instance_id.value);
+  selected_instances_ids.value.forEach(async (x) => {
+    await modelStore.delete_instance(instance_type.value, x);
+  });
 
   // refresh list
   modelStore.instances = await modelStore.get_all_instances(

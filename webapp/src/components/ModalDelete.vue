@@ -23,7 +23,7 @@
 
         <div class="max-h-full px-4 py-4">
           <p class="text-gray-800">
-            Are you sure you want to delete {{ props.modelName }}:
+            Are you sure you want to delete {{ props.modelName }}
             <span class="font-semibold">{{ props.instanceName }}</span>
             ?
           </p>
