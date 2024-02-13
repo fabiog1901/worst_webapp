@@ -115,7 +115,7 @@ const model_default_fields = [
       return x.id.substring(0, 8).concat("...");
     },
   },
-  { name: "name", type: "", link: link_type },
+  { name: "name", type: "", link: link_type.value },
   { name: "owned_by", type: "" },
   { name: "tags", type: "tag" },
   { name: "updated_by", type: "" },
