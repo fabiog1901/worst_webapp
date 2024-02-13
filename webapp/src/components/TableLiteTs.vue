@@ -1,11 +1,11 @@
 <template>
-  <div class="vtl vtl-card">
-    <div class="vtl-card-title" v-if="title">{{ title }}</div>
-    <div class="vtl-card-body">
-      <div class="vtl-row">
+  <div class="flex flex-col min-w-0 break-words bg-gray-200 bg-clip-border">
+    <div v-if="title">{{ title }}</div>
+    <div class="">
+      <div class="flex flex-wrap">
         <div
           class="col-sm-12"
-          :class="{
+          v-bind:class="{
             'fixed-first-column': isFixedFirstColumn,
             'fixed-first-second-column': isFixedFirstColumn && hasCheckbox,
           }"
@@ -16,27 +16,27 @@
             </div>
           </div>
           <table
-            class="vtl-table vtl-table-hover vtl-table-bordered vtl-table-responsive vtl-table-responsive-sm"
             ref="localTable"
-            :style="'max-height: ' + maxHeight + 'px;'"
+            class="vtl-table vtl-table-hover vtl-table-bordered vtl-table-responsive vtl-table-responsive-sm"
+            v-bind:style="'max-height: ' + maxHeight + 'px;'"
           >
-            <thead class="vtl-thead">
-              <tr class="vtl-thead-tr">
-                <th v-if="hasCheckbox" class="vtl-thead-th vtl-checkbox-th">
+            <thead class="">
+              <tr class="">
+                <th v-if="hasCheckbox" class="w-[1%] min-w-10">
                   <div>
                     <input
-                      type="checkbox"
-                      class="vtl-thead-checkbox"
                       v-model="setting.isCheckAll"
+                      type="checkbox"
+                      class=""
                     />
                   </div>
                 </th>
                 <th
                   v-for="(col, index) in columns as Array<any>"
-                  class="vtl-thead-th"
-                  :class="col.headerClasses"
-                  :key="index"
-                  :style="
+                  v-bind:key="index"
+                  class=""
+                  v-bind:class="col.headerClasses"
+                  v-bind:style="
                     Object.assign(
                       {
                         width: col.width ? col.width : 'auto',
@@ -46,8 +46,8 @@
                   "
                 >
                   <div
-                    class="vtl-thead-column"
-                    :class="{
+                    class=""
+                    v-bind:class="{
                       'vtl-sortable': col.sortable,
                       'vtl-both': col.sortable,
                       'vtl-asc':
@@ -55,7 +55,9 @@
                       'vtl-desc':
                         setting.order === col.field && setting.sort === 'desc',
                     }"
-                    @click.prevent="col.sortable ? doSort(col.field) : false"
+                    v-on:click.prevent="
+                      col.sortable ? doSort(col.field) : false
+                    "
                     v-html="col.label"
                   ></div>
                 </th>
@@ -64,21 +66,21 @@
             <template v-if="rows.length > 0">
               <tbody
                 v-if="isStaticMode"
-                class="vtl-tbody"
-                :set="
+                class=""
+                v-bind:set="
                   (templateRows = groupingKey == '' ? [localRows] : localRows)
                 "
               >
                 <template
                   v-for="(rows, groupingIndex) in templateRows"
-                  :key="groupingIndex"
+                  v-bind:key="groupingIndex"
                 >
                   <tr
                     v-if="groupingKey != ''"
                     class="vtl-tbody-tr vtl-group-tr"
                   >
                     <td
-                      :colspan="
+                      v-bind:colspan="
                         hasCheckbox ? columns.length + 1 : columns.length
                       "
                       class="vtl-tbody-td vtl-group-td"
@@ -86,12 +88,12 @@
                       <div class="flex">
                         <div v-if="hasGroupToggle" class="animation">
                           <a
-                            :ref="
+                            v-bind:ref="
                               (el: any) =>
                                 ((toggleButtonRefs[groupingIndex] as any) = el)
                             "
                             class="cursor-pointer"
-                            @click.prevent="
+                            v-on:click.prevent="
                               toggleGroup(groupingIndex.toString())
                             "
                             >▼</a
@@ -110,8 +112,10 @@
                   </tr>
                   <tr
                     v-for="(row, i) in rows"
-                    :key="row[setting.keyColumn] ? row[setting.keyColumn] : i"
-                    :ref="
+                    v-bind:key="
+                      row[setting.keyColumn] ? row[setting.keyColumn] : i
+                    "
+                    v-bind:ref="
                       (el: any) => {
                         if (!groupingRowsRefs[groupingIndex]) {
                           groupingRowsRefs[groupingIndex] = [];
@@ -119,60 +123,106 @@
                         groupingRowsRefs[groupingIndex][i] = el;
                       }
                     "
-                    :name="'vtl-group-' + groupingIndex"
+                    v-bind:name="'vtl-group-' + groupingIndex"
                     class="vtl-tbody-tr"
-                    :class="
+                    v-bind:class="
                       typeof rowClasses === 'function'
                         ? rowClasses(row)
                         : rowClasses
                     "
-                    @mouseenter="addHoverClassToTr"
-                    @mouseleave="removeHoverClassFromTr"
-                    @click="$emit('row-clicked', row)"
+                    v-on:mouseenter="addHoverClassToTr"
+                    v-on:mouseleave="removeHoverClassFromTr"
+                    v-on:click="$emit('row-clicked', row)"
                   >
                     <td v-if="hasCheckbox" class="vtl-tbody-td">
                       <div>
                         <input
-                          type="checkbox"
-                          class="vtl-tbody-checkbox"
-                          :ref="
+                          v-bind:ref="
                             (el: any) => {
                               (rowCheckbox as Array<HTMLElement>).push(el);
                             }
                           "
-                          :value="row[setting.keyColumn]"
-                          @click="checked(row, $event)"
+                          type="checkbox"
+                          class="vtl-tbody-checkbox"
+                          v-bind:value="row[setting.keyColumn]"
+                          v-on:click="checked(row, $event)"
                         />
                       </div>
                     </td>
                     <td
                       v-for="(col, j) in columns as Array<any>"
-                      :key="j"
+                      v-bind:key="j"
                       class="vtl-tbody-td"
-                      :class="['vtl-tbody-td' + j].concat(col.columnClasses)"
-                      :style="col.columnStyles"
-                      @mouseover="addVerticalHighlight(j)"
-                      @mouseleave="removeVerticalHighlight(j)"
+                      v-bind:class="
+                        ['vtl-tbody-td' + j].concat(col.columnClasses)
+                      "
+                      v-bind:style="col.columnStyles"
+                      v-on:mouseover="addVerticalHighlight(j)"
+                      v-on:mouseleave="removeVerticalHighlight(j)"
                     >
                       <router-link
-                        v-bind:to="'/' +col.link + '/' + row.id"
                         v-if="col.link"
+                        v-bind:to="'/' + col.link + '/' + row.id"
                         ><div
                           v-if="col.display"
+                          class="underline font-semibold hover:text-green-300 text-green-500"
                           v-html="col.display(row)"
                         ></div>
                         <div v-else>
                           <div v-if="setting.isSlotMode && slots[col.field]">
-                            <slot :name="col.field" :value="row"></slot>
+                            <slot
+                              v-bind:name="col.field"
+                              v-bind:value="row"
+                            ></slot>
                           </div>
-                          <span v-else>{{ row[col.field] }}</span>
+                          <span
+                            v-else
+                            class="underline font-semibold hover:text-green-500"
+                            >{{ row[col.field] }}</span
+                          >
                         </div>
                       </router-link>
+                      <div v-else-if="col.type == 'tag'">
+                        <div class="flex max-w-52 flex-wrap">
+                          <div
+                            v-for="tag in row[col.field]"
+                            v-bind:key="tag"
+                            class="p-1"
+                          >
+                            <div
+                              class="flex h-8 w-fit items-center justify-start rounded-md"
+                            >
+                              <div
+                                class="flex h-8 min-w-10 w-fit items-center justify-center font-semibold p-2 rounded-2xl"
+                                v-bind:class="getLabel(tag)"
+                              >
+                                {{ tag }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div v-else-if="col.type == 'decimal'">
+                        <span>{{ formatDecimal(row[col.field]) }}</span>
+                      </div>
+
+                      <div v-else-if="col.type == 'date'">
+                        <span>{{ formatDate(row[col.field]) }}</span>
+                      </div>
+
+                      <div v-else-if="col.type == 'datetime'">
+                        <span>{{ formatDateTime(row[col.field]) }}</span>
+                      </div>
+
                       <div v-else>
                         <div v-if="col.display" v-html="col.display(row)"></div>
                         <div v-else>
                           <div v-if="setting.isSlotMode && slots[col.field]">
-                            <slot :name="col.field" :value="row"></slot>
+                            <slot
+                              v-bind:name="col.field"
+                              v-bind:value="row"
+                            ></slot>
                           </div>
                           <span v-else>{{ row[col.field] }}</span>
                         </div>
@@ -183,20 +233,20 @@
               </tbody>
               <tbody
                 v-else
-                :set="
+                v-bind:set="
                   (templateRows = groupingKey == '' ? [rows] : groupingRows)
                 "
               >
                 <template
                   v-for="(rows, groupingIndex) in templateRows"
-                  :key="groupingIndex"
+                  v-bind:key="groupingIndex"
                 >
                   <tr
                     v-if="groupingKey != ''"
                     class="vtl-tbody-tr vtl-group-tr"
                   >
                     <td
-                      :colspan="
+                      v-bind:colspan="
                         hasCheckbox ? columns.length + 1 : columns.length
                       "
                       class="vtl-tbody-td vtl-group-td"
@@ -204,12 +254,12 @@
                       <div class="flex">
                         <div v-if="hasGroupToggle" class="animation">
                           <a
-                            :ref="
+                            v-bind:ref="
                               (el: any) =>
                                 ((toggleButtonRefs[groupingIndex] as any) = el)
                             "
                             class="cursor-pointer"
-                            @click.prevent="
+                            v-on:click.prevent="
                               toggleGroup(groupingIndex.toString())
                             "
                             >▼</a
@@ -228,7 +278,7 @@
                   </tr>
                   <tr
                     v-for="(row, i) in rows"
-                    :ref="
+                    v-bind:ref="
                       (el: any) => {
                         if (!groupingRowsRefs[groupingIndex]) {
                           groupingRowsRefs[groupingIndex] = [];
@@ -236,45 +286,52 @@
                         groupingRowsRefs[groupingIndex][i] = el;
                       }
                     "
-                    :name="'vtl-group-' + groupingIndex"
-                    :key="row[setting.keyColumn] ? row[setting.keyColumn] : i"
+                    v-bind:key="
+                      row[setting.keyColumn] ? row[setting.keyColumn] : i
+                    "
+                    v-bind:name="'vtl-group-' + groupingIndex"
                     class="vtl-tbody-tr"
-                    :class="
+                    v-bind:class="
                       typeof rowClasses === 'function'
                         ? rowClasses(row)
                         : rowClasses
                     "
-                    @mouseenter="addHoverClassToTr"
-                    @mouseleave="removeHoverClassFromTr"
-                    @click="$emit('row-clicked', row)"
+                    v-on:mouseenter="addHoverClassToTr"
+                    v-on:mouseleave="removeHoverClassFromTr"
+                    v-on:click="$emit('row-clicked', row)"
                   >
                     <td v-if="hasCheckbox" class="vtl-tbody-td">
                       <div>
                         <input
-                          type="checkbox"
-                          class="vtl-tbody-checkbox"
-                          :ref="
+                          v-bind:ref="
                             (el: any) =>
                               (rowCheckbox as Array<HTMLElement>).push(el)
                           "
-                          :value="row[setting.keyColumn]"
-                          @click="checked(row, $event)"
+                          type="checkbox"
+                          class="vtl-tbody-checkbox"
+                          v-bind:value="row[setting.keyColumn]"
+                          v-on:click="checked(row, $event)"
                         />
                       </div>
                     </td>
                     <td
                       v-for="(col, j) in columns as Array<any>"
-                      :key="j"
+                      v-bind:key="j"
                       class="vtl-tbody-td"
-                      :class="['vtl-tbody-td' + j].concat(col.columnClasses)"
-                      :style="col.columnStyles"
-                      @mouseover="addVerticalHighlight(j)"
-                      @mouseleave="removeVerticalHighlight(j)"
+                      v-bind:class="
+                        ['vtl-tbody-td' + j].concat(col.columnClasses)
+                      "
+                      v-bind:style="col.columnStyles"
+                      v-on:mouseover="addVerticalHighlight(j)"
+                      v-on:mouseleave="removeVerticalHighlight(j)"
                     >
                       <div v-if="col.display" v-html="col.display(row)"></div>
                       <div v-else>
                         <div v-if="setting.isSlotMode && slots[col.field]">
-                          <slot :name="col.field" :value="row"></slot>
+                          <slot
+                            v-bind:name="col.field"
+                            v-bind:value="row"
+                          ></slot>
                         </div>
                         <span v-else>{{ row[col.field] }}</span>
                       </div>
@@ -286,7 +343,7 @@
           </table>
         </div>
       </div>
-      <div class="vtl-paging vtl-row" v-if="rows.length > 0">
+      <div v-if="rows.length > 0" class="vtl-paging flex flex-wrap">
         <template v-if="!setting.isHidePaging">
           <div class="vtl-paging-info col-sm-12 col-md-4">
             <div role="status" aria-live="polite">
@@ -305,13 +362,13 @@
               messages.pageSizeChangeLabel
             }}</span>
             <select
-              class="vtl-paging-count-dropdown"
               v-model="setting.pageSize"
+              class="vtl-paging-count-dropdown"
             >
               <option
                 v-for="pageOption in pageOptions as Array<pageOption>"
-                :value="pageOption.value"
-                :key="pageOption.value"
+                v-bind:key="pageOption.value"
+                v-bind:value="pageOption.value"
               >
                 {{ pageOption.text }}
               </option>
@@ -319,11 +376,11 @@
             <span class="vtl-paging-page-label">{{
               messages.gotoPageLabel
             }}</span>
-            <select class="vtl-paging-page-dropdown" v-model="setting.page">
+            <select v-model="setting.page" class="vtl-paging-page-dropdown">
               <option
                 v-for="n in setting.maxPage"
-                :key="n"
-                :value="parseInt(n.toString())"
+                v-bind:key="n"
+                v-bind:value="parseInt(n.toString())"
               >
                 {{ n }}
               </option>
@@ -334,12 +391,12 @@
               <ul class="vtl-paging-pagination-ul vtl-pagination">
                 <li
                   class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-first page-item"
-                  :class="{ disabled: setting.page <= 1 }"
+                  v-bind:class="{ disabled: setting.page <= 1 }"
                 >
                   <a
                     class="vtl-paging-pagination-page-link vtl-paging-pagination-page-link-first page-link cursor-pointer"
                     aria-label="Previous"
-                    @click.prevent="setting.page = 1"
+                    v-on:click.prevent="setting.page = 1"
                   >
                     <span aria-hidden="true">&laquo;</span>
                     <span class="sr-only">First</span>
@@ -347,37 +404,37 @@
                 </li>
                 <li
                   class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-prev page-item"
-                  :class="{ disabled: setting.page <= 1 }"
+                  v-bind:class="{ disabled: setting.page <= 1 }"
                 >
                   <a
                     class="vtl-paging-pagination-page-link vtl-paging-pagination-page-link-prev page-link cursor-pointer"
                     aria-label="Previous"
-                    @click.prevent="prevPage"
+                    v-on:click.prevent="prevPage"
                   >
                     <span aria-hidden="true">&lt;</span>
                     <span class="sr-only">Prev</span>
                   </a>
                 </li>
                 <li
-                  class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-number page-item"
                   v-for="n in setting.paging"
-                  :key="n"
-                  :class="{ disabled: setting.page === n }"
+                  v-bind:key="n"
+                  class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-number page-item"
+                  v-bind:class="{ disabled: setting.page === n }"
                 >
                   <a
                     class="vtl-paging-pagination-page-link vtl-paging-pagination-page-link-number page-link cursor-pointer"
-                    @click.prevent="movePage(n)"
+                    v-on:click.prevent="movePage(n)"
                     >{{ n }}</a
                   >
                 </li>
                 <li
                   class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-next page-item"
-                  :class="{ disabled: setting.page >= setting.maxPage }"
+                  v-bind:class="{ disabled: setting.page >= setting.maxPage }"
                 >
                   <a
                     class="vtl-paging-pagination-page-link vtl-paging-pagination-page-link-next page-link cursor-pointer"
                     aria-label="Next"
-                    @click.prevent="nextPage"
+                    v-on:click.prevent="nextPage"
                   >
                     <span aria-hidden="true">&gt;</span>
                     <span class="sr-only">Next</span>
@@ -385,12 +442,12 @@
                 </li>
                 <li
                   class="vtl-paging-pagination-page-li vtl-paging-pagination-page-li-last page-item"
-                  :class="{ disabled: setting.page >= setting.maxPage }"
+                  v-bind:class="{ disabled: setting.page >= setting.maxPage }"
                 >
                   <a
                     class="vtl-paging-pagination-page-link vtl-paging-pagination-page-link-last page-link cursor-pointer"
                     aria-label="Next"
-                    @click.prevent="setting.page = setting.maxPage"
+                    v-on:click.prevent="setting.page = setting.maxPage"
                   >
                     <span aria-hidden="true">&raquo;</span>
                     <span class="sr-only">Last</span>
@@ -401,7 +458,7 @@
           </div>
         </template>
       </div>
-      <div class="vtl-row" v-else>
+      <div v-else class="flex flex-wrap">
         <div class="vtl-empty-msg col-sm-12 text-center">
           {{ messages.noDataAvailable }}
         </div>
@@ -413,7 +470,6 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script setup lang="ts">
 import {
-  defineComponent,
   ref,
   reactive,
   computed,
@@ -422,6 +478,13 @@ import {
   nextTick,
   onMounted,
 } from "vue";
+
+import {
+  getLabel,
+  formatDecimal,
+  formatDate,
+  formatDateTime,
+} from "@/utils/utils";
 
 interface pageOption {
   value: number;
@@ -1160,15 +1223,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.vtl-checkbox-th {
-  width: 1%;
-  min-width: 38px;
-}
-.vtl-checkbox-td {
-  width: 1%;
-  min-width: 38px;
-}
-
 .vtl-both {
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAATCAQAAADYWf5HAAAAkElEQVQoz7X QMQ5AQBCF4dWQSJxC5wwax1Cq1e7BAdxD5SL+Tq/QCM1oNiJidwox0355mXnG/DrEtIQ6azioNZQxI0ykPhTQIwhCR+BmBYtlK7kLJYwWCcJA9M4qdrZrd8pPjZWPtOqdRQy320YSV17OatFC4euts6z39GYMKRPCTKY9UnPQ6P+GtMRfGtPnBCiqhAeJPmkqAAAAAElFTkSuQmCC");
 }
@@ -1208,18 +1262,6 @@ onMounted(() => {
   justify-content: center;
 }
 
-.vtl-card {
-  position: relative;
-  display: -ms-flexbox;
-  display: flex;
-  -ms-flex-direction: column;
-  flex-direction: column;
-  min-width: 0;
-  word-wrap: break-word;
-  background-color: #fff;
-  background-clip: border-box;
-}
-
 select {
   width: auto;
   border: 1px solid #cccccc;
@@ -1235,16 +1277,16 @@ select {
   color: #212529;
   border-collapse: collapse;
 }
-
+/* 
 th {
   text-align: inherit;
-}
-
+} */
+/* 
 tr {
   display: table-row;
   vertical-align: inherit;
   border-color: inherit;
-}
+} */
 
 .vtl-table-bordered thead td,
 .vtl-table-bordered thead th {
@@ -1286,13 +1328,6 @@ tr {
 
 .vtl-table-responsive > .vtl-table-bordered {
   border: 0;
-}
-
-.vtl-row {
-  display: -ms-flexbox;
-  display: flex;
-  -ms-flex-wrap: wrap;
-  flex-wrap: wrap;
 }
 
 .vtl-pagination {
@@ -1355,10 +1390,6 @@ tr {
   max-width: 100%;
 }
 
-.text-center {
-  text-align: center;
-}
-
 @media (min-width: 576px) {
   .vtl-table-responsive-sm {
     display: block;
@@ -1387,7 +1418,7 @@ tr {
   z-index: 1;
 }
 
-.fixed-first-column {
+/* .fixed-first-column {
   overflow-x: auto;
 }
 .fixed-first-column tr th:first-child {
@@ -1459,26 +1490,19 @@ tr {
   background-color: #ececec;
 }
 
-.flex {
-  display: flex;
-}
 .animation {
   transform: rotate(0deg);
   transition: transform 0.3s;
 }
-.cursor-pointer {
-  cursor: pointer;
-}
+
 .rotated-90 {
   transform: rotate(-90deg);
 }
 .hidden {
   display: none;
 }
-.ml-2 {
-  margin-left: 0.5rem;
-}
+
 .vtl-tbody-td.hover {
   background-color: #ececec;
-}
+} */
 </style>

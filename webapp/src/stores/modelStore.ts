@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { defineStore } from "pinia";
 import { axiosWrapper } from "@/utils/utils";
 import type { Model } from "@/types";

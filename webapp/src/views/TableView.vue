@@ -2,7 +2,7 @@
   <div class="flex h-full w-full">
     <section
       id="content-container"
-      class="flex h-full w-full p-2 flex-col bg-gray-300 dark:bg-gray-700"
+      class="w-full flex p-2 flex-col bg-gray-300 h-full dark:bg-gray-700"
     >
       <div v-if="child_instance_type" class="m-2 text-3xl dark:text-slate-300">
         [{{ instance_type }}] <b> {{ modelStore.instance?.name }}</b> - List for
@@ -10,8 +10,8 @@
       </div>
 
       <FabToolbar
-        class="m-2"
         v-model="keyword"
+        class="m-2"
         v-on:new-clicked="showCreateNewInstanceModal = true"
         v-on:delete-clicked="showDeleteInstanceModal = true"
         v-on:export-clicked="exportData"
@@ -70,7 +70,7 @@ import ModalDelete from "@/components/ModalDelete.vue";
 import FabToolbar from "@/components/FabToolbar.vue";
 import TableLite from "@/components/TableLiteTs.vue";
 
-import type { Model } from "@/types";
+import type { TableModel, Model } from "@/types";
 
 const modelStore = useModelStore();
 const router = useRouter();
@@ -105,7 +105,7 @@ const exportData = () => {
   save_to_csv(modelStore.instances, instance_type.value);
 };
 
-const model_default_fields = [
+const model_default_fields = computed(() => [
   {
     name: "id",
     type: "",
@@ -115,20 +115,20 @@ const model_default_fields = [
       return x.id.substring(0, 8).concat("...");
     },
   },
-  { name: "name", type: "", link: link_type.value },
+  { name: "name", type: "" },
   { name: "owned_by", type: "" },
   { name: "tags", type: "tag" },
   { name: "updated_by", type: "" },
   {
     name: "updated_at",
-    type: "date",
+    type: "datetime",
   },
   { name: "created_by", type: "" },
   {
     name: "created_at",
     type: "date",
   },
-];
+]);
 
 const showCreateNewInstanceModal = ref(false);
 const showDeleteInstanceModal = ref(false);
@@ -136,19 +136,22 @@ const showDeleteInstanceModal = ref(false);
 // TABLE
 const cols = computed(() => {
   const data = [];
-  for (const x of model_default_fields.concat(
+  for (const x of model_default_fields.value.concat(
     modelStore.models[link_type.value]?.["skema"]["fields"] ?? [],
   )) {
-    data.push({
-      label: x.name,
-      field: x.name,
-      // headerClasses: ["bg-slate-200", "text-black"],
-      columnClasses: ["dark:bg-gray-600", "text-white"],
-      isKey: x.is_key ?? false,
-      sortable: true,
-      display: x.display || null,
-      link: x.link,
-    });
+    if (x.in_overview || x.in_overview === undefined) {
+      data.push({
+        label: x.name,
+        field: x.name,
+        // headerClasses: ["bg-slate-200", "text-black"],
+        columnClasses: ["dark:bg-gray-600", "text-white"],
+        isKey: x.is_key ?? false,
+        sortable: true,
+        display: x.display || null,
+        link: x.link,
+        type: x.type || null,
+      });
+    }
   }
 
   return data;
@@ -297,6 +300,7 @@ watch(
         ],
       ];
     }
+    console.log(model_default_fields.value);
   },
 );
 

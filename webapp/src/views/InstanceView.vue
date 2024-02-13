@@ -350,7 +350,6 @@ const instance_id = computed(() => {
 });
 
 const create_new_tag = async (new_tag: string) => {
-
   const tags = modelStore.instance?.tags ?? [];
 
   if (!tags.includes(new_tag)) {
@@ -363,7 +362,7 @@ const create_new_tag = async (new_tag: string) => {
       tags,
     );
   }
-  showModalNewInput.value = false
+  showModalNewInput.value = false;
 };
 
 const save_new_value = async (new_v: string, old_v: string, field: string) => {

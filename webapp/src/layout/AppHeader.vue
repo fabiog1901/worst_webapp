@@ -68,11 +68,13 @@
                 v-on:click="routerSearchLinker(item.comp_id)"
                 >{{ k }}:
               </label>
-              <div class="flex" v-for="i in item[k]" v-bind:key="i">
+              <div v-for="i in item[k]" v-bind:key="i" class="flex">
                 <div
                   class="hover:cursor-pointer hover:underline"
                   v-on:click="routerSearchLinker(item.comp_id)"
-                  >-  {{ i }}</div>
+                >
+                  - {{ i }}
+                </div>
               </div>
             </div>
             <div v-if="item[k] && !Array.isArray(item[k])">

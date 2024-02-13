@@ -1,32 +1,56 @@
 <template>
   <section class="flex flex-wrap justify-around items-stretch">
     <div class="flex justify-center items-center">
-      <Bar class="p-2" :options="chart_options" :data="chart_data" />
+      <Bar
+        class="p-2"
+        v-bind:options="chart_options"
+        v-bind:data="chart_data"
+      />
     </div>
     <div class="flex justify-center items-center">
-      <Bubble class="p-2" :data="bubble_data" :options="chart_options" />
+      <Bubble
+        class="p-2"
+        v-bind:data="bubble_data"
+        v-bind:options="chart_options"
+      />
     </div>
     <div class="flex justify-center items-center">
-      <Doughnut class="p-2" :data="doughnut_data" :options="chart_options" />
+      <Doughnut
+        class="p-2"
+        v-bind:data="doughnut_data"
+        v-bind:options="chart_options"
+      />
     </div>
     <div class="flex justify-center items-center">
-      <Line class="p-2" :data="line_data" :options="chart_options" />
+      <Line
+        class="p-2"
+        v-bind:data="line_data"
+        v-bind:options="chart_options"
+      />
     </div>
     <div class="flex justify-center items-center">
-      <Pie class="p-2" :data="pie_data" :options="chart_options" />
+      <Pie class="p-2" v-bind:data="pie_data" v-bind:options="chart_options" />
     </div>
     <div class="flex justify-center items-center">
       <PolarArea
         class="p-2"
-        :data="polararea_data"
-        :options="chart_options_l"
+        v-bind:data="polararea_data"
+        v-bind:options="chart_options_l"
       />
     </div>
     <div class="flex justify-center items-center">
-      <Scatter class="p-2" :data="scatter_data" :options="chart_options" />
+      <Scatter
+        class="p-2"
+        v-bind:data="scatter_data"
+        v-bind:options="chart_options"
+      />
     </div>
     <div class="flex justify-center items-center">
-      <Radar class="p-2" :data="radar_data" :options="chart_options_l" />
+      <Radar
+        class="p-2"
+        v-bind:data="radar_data"
+        v-bind:options="chart_options_l"
+      />
     </div>
   </section>
 </template>

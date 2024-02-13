@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import { useDateFormat } from "@vueuse/core";
 
 import exportFromJSON from "export-from-json";
 
@@ -22,9 +23,15 @@ export const formatDecimal = (value: any) => {
 
 export const formatDate = (value: any) => {
   if (value) {
-    return new Date(value).toDateString();
+    return useDateFormat(value, "YYYY-MM-DD").value;
   }
+  return "";
+};
 
+export const formatDateTime = (value: any) => {
+  if (value) {
+    return useDateFormat(value, "YYYY-MM-DD HH:mm").value;
+  }
   return "";
 };
 

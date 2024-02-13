@@ -45,7 +45,6 @@
       Create Model
     </div>
   </section>
-
 </template>
 
 <script setup lang="ts">
@@ -67,12 +66,10 @@ const delete_worst_model = async (m: string) => {
   modelStore.models = await modelStore.get_all_models();
 };
 
-
 const create_worst_model = async () => {
   modelStore.create_model(m_json.value);
   modelStore.models = await modelStore.get_all_models();
 };
-
 
 onMounted(async () => {
   modelStore.models = await modelStore.get_all_models();

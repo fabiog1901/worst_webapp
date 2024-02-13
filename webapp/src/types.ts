@@ -20,7 +20,15 @@ export interface Model {
   updated_at: string;
   updated_by: string;
   attachments: string[];
-  in_overview: boolean;
+  in_overview?: boolean;
   type: string;
-  header: string;
+}
+
+export interface TableModel {
+  name: string;
+  type: string;
+  in_overview?: boolean;
+  link?: string;
+  is_key?: boolean;
+  display?: any;
 }
