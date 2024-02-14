@@ -21,6 +21,10 @@ import threading
 import time
 import urllib.parse as parse
 
+from fastapi import HTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.staticfiles import StaticFiles
+
 AUTH_URL = os.getenv("AUTH_URL")
 TOKEN_URL = os.getenv("TOKEN_URL")
 SCOPE = os.getenv("SCOPE")
@@ -47,9 +51,29 @@ app = FastAPI(
 )
 
 
-app.mount("/app", StaticFiles(directory="webapp/dist"), name="app")
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        try:
+            return await super().get_response(path, scope)
+        except (HTTPException, StarletteHTTPException) as ex:
+            if ex.status_code == 404:
+                return await super().get_response("index.html", scope)
+            else:
+                raise ex
 
-origins = ["http://localhost:5500", "http://localhost:5500/app"]
+
+app.mount(
+    "/app", SPAStaticFiles(directory="webapp/dist", html=True), name="spa-static-files"
+)
+
+# app.mount("/app", StaticFiles(directory="webapp/dist"))
+
+origins = [
+    "http://localhost:5500",
+    "http://localhost:5500/app",
+    "http://localhost",
+    "http://localhost/app",
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,26 +84,34 @@ app.add_middleware(
 )
 
 
+# @app.get(
+#     "/app",
+# )
+# async def home() -> FileResponse:
+#     return FileResponse("webapp/dist/index.html")
+
+
 @app.get(
-    "/",
+    "/healthcheck",
 )
-async def home() -> FileResponse:
-    return FileResponse("webapp/dist/index.html")
-
-
-@app.get("/healthcheck")
 async def healthcheck() -> dict:
     return {"hello": "worst"}
 
 
-@app.get("/me", dependencies=[Depends(dep.get_current_user)])
+@app.get(
+    "/me",
+    dependencies=[Depends(dep.get_current_user)],
+)
 async def get_user_me(
     current_user: Annotated[User, Depends(dep.get_current_user)]
 ) -> User | None:
     return current_user
 
 
-@app.get("/authorization_code", tags=["auth"])
+@app.get(
+    "/authorization_code",
+    tags=["auth"],
+)
 async def get_authorization_code() -> RedirectResponse:
     return AUTH_URL + "?{}".format(
         parse.urlencode(
@@ -94,7 +126,10 @@ async def get_authorization_code() -> RedirectResponse:
     )
 
 
-@app.get("/token", tags=["auth"])
+@app.get(
+    "/token",
+    tags=["auth"],
+)
 async def get_token(authorization_code: str):
     # exchange auth code for token
     try:
