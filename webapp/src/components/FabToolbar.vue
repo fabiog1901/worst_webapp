@@ -26,7 +26,7 @@
     </div>
     <div
       id="delete-button"
-      class="mx-2 flex cursor-pointer items-center justify-between rounded-xl hover:bg-green-400 bg-red-600 p-2 text-white"
+      class="mx-2 flex cursor-pointer items-center justify-between rounded-xl hover:bg-red-400 bg-red-600 p-2 text-white"
       v-on:click="$emit('delete-clicked')"
     >
       <span class="mx-1">Delete</span>

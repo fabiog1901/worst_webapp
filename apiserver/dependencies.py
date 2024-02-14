@@ -180,8 +180,8 @@ async def get_current_user(
         authenticate_value = "Bearer"
 
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Could not validate authentication credentials",
         headers={"WWW-Authenticate": authenticate_value},
     )
 
@@ -200,7 +200,7 @@ async def get_current_user(
         if scope not in token_scopes:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Not enough permissions. Missing scopes: {security_scopes.scopes}",
+                detail=f"AuthZ exception. Missing scopes: {security_scopes.scopes}",
                 headers={"WWW-Authenticate": authenticate_value},
             )
     

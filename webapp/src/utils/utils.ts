@@ -134,13 +134,25 @@ function request(method: string) {
         return r.data;
       })
       .catch((error) => {
-        if (error.response.status === 401) {
-          console.error("not authorized");
-          authStore.logout();
-        } else {
-          // TODO handle 422 gracefully
-          //return error.response;
-          authStore.logout();
+        switch (error.response.status) {
+          case 403: {
+            console.error("User is not authenticated");
+            authStore.logout();
+            break;
+          }
+          case 401: {
+            alert(error.response.data.detail);
+            break;
+          }
+          case 422: {
+            console.warn(JSON.stringify(error.response.data, undefined, 4));
+            alert(
+              `JSON object sent to apiserver does not comform to expectation.
+              Check error message in console log for details.
+              `,
+            );
+            break;
+          }
         }
       });
   };
