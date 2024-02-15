@@ -1,13 +1,7 @@
-__pycache__
-.py*
-
-.venv
 .scratch.txt
-.start-test-env.sh
-.testdata
-
-cockroach-data
 TODO
+play.*
+archive/
 
 # Logs
 logs
@@ -20,7 +14,7 @@ dist
 dist-ssr
 coverage
 *.local
-.*
+.env.*
 !.env*.example
 
 # Editor directories and files
@@ -29,5 +23,3 @@ coverage
 
 
 
-play.*
-archive/
