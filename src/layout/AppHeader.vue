@@ -167,7 +167,7 @@
         </svg>
       </div>
       <div class="top-navigation-icon">
-        {{ authStore.user.user_details.fullname }}
+        {{ authStore.fullname }}
       </div>
     </div>
   </section>
@@ -189,7 +189,7 @@ const open_ais_hits = ref(false);
 
 const customSearchClient = instantMeiliSearch(
   `${import.meta.env.VITE_APP_API_URL}/search`,
-  authStore.user.access_token,
+  authStore.access_token,
 ).searchClient;
 
 onMounted(() => {

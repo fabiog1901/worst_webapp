@@ -16,6 +16,6 @@ const app = createApp(App);
 
 app.use(InstantSearch);
 app.use(GlobalCmComponent);
-app.use(pinia)
-app.use(router)
+app.use(pinia);
+app.use(router);
 app.mount("#app");

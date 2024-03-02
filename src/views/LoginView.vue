@@ -20,10 +20,43 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/authStore";
+import { generateRandomString, pkceChallengeFromVerifier } from "@/utils/utils";
 
 const authStore = useAuthStore();
 
-const sso_login = () => {
-  authStore.get_auth_code_url();
+const sso_login = async () => {
+  const oidc_config = await authStore.get_auth_config();
+
+  localStorage.setItem("oidc_config", JSON.stringify(oidc_config));
+
+  // Create and store a random "state" value
+  var state = generateRandomString();
+  localStorage.setItem("pkce_state", state);
+
+  // Create and store a new PKCE code_verifier (the plaintext random secret)
+  var code_verifier = generateRandomString();
+  localStorage.setItem("pkce_code_verifier", code_verifier);
+
+  // Hash and base64-urlencode the secret to use as the challenge
+  var code_challenge = await pkceChallengeFromVerifier(code_verifier);
+
+  // Build the authorization URL
+  const url =
+    oidc_config.authorization_endpoint +
+    "?response_type=code" +
+    "&client_id=" +
+    encodeURIComponent(oidc_config.client_id) +
+    "&state=" +
+    encodeURIComponent(state) +
+    "&scope=" +
+    encodeURIComponent(oidc_config.requested_scopes) +
+    "&redirect_uri=" +
+    encodeURIComponent(oidc_config.redirect_uri) +
+    "&code_challenge=" +
+    encodeURIComponent(code_challenge) +
+    "&code_challenge_method=S256";
+
+  // Redirect to the authorization server
+  window.location = url;
 };
 </script>

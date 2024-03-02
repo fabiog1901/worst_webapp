@@ -56,7 +56,7 @@ router.beforeEach(async (to) => {
   // redirect to login page if not logged in and trying to access a restricted page
   if (
     // make sure the user is authenticated
-    !authStore.user &&
+    !authStore.id_token &&
     // Avoid an infinite redirect
     to.path !== "/login" &&
     to.path !== "/callback"
